@@ -169,27 +169,24 @@ const Home = () => {
                   <h6 className=" guide-text">SERVICES</h6>
 
                   <h5 className="lh-base text-center pb-3">
-                    Areas of Practice
+                    Client Functions
                   </h5>
                   <div className="row mt-3 gx-3 flex-column flex-md-row ">
                     <div className="col-md-6">
                       <h5 className="color text-center pb-4">
-                        Law Office
+                        IPCLookup
                       </h5>
                       <div className="d-flex align-items-center">
-                        <img
+                        {/* <img
                           src="/assets/barou.webp"
                           className="barou img-fluid mx-auto d-block rounded-2"
                           alt="Bar Association Logo"
                           width="150"
                           height="150"
-                        />
+                        /> */}
                       </div>
                       <p className="pt-4 px-2">
-                        Legal assistance and representation in commercial law,
-                        company incorporation, civil law, labor law, family law,
-                        insolvency proceedings, debt recovery, administrative
-                        law, etc.
+                      IPCLookup refers to identifying relevant sections of the Indian Penal Code (IPC) for specific crimes. It helps legal professionals and citizens find applicable laws and penalties, ensuring proper legal interpretation and action under the IPC, India's primary criminal code.
                       </p>
                       <div className="py-3 text-center">
                         <Link to="/law-office">
@@ -205,23 +202,21 @@ const Home = () => {
                     </div>
                     <div className="col-md-6">
                       <h5 className="color text-center pb-4">
-                        Insolvency Office
+                        LegalServices
                       </h5>
                       <div className="d-flex align-items-center">
-                        <img
+                        {/* <img
                           src="/assets/unpir.webp"
                           className="unpir img-fluid mx-auto d-block rounded-2"
                           alt="UNPIR Logo"
                           width="150"
                           height="150"
-                        />
+                        /> */}
                       </div>
                       <p className="pt-4 px-2">
-                        Services in the pre-insolvency stage, mergers, and
-                        divisions of companies, insolvency, restructuring,
-                        judicial reorganization, bankruptcy, judicial and
-                        administrative liquidation, debt recovery, asset
-                        evaluation and valorization.
+                         The SearchLawyers React component lets users search for lawyers by location, expertise, and fees, sending a GET request via axios and displaying results dynamically.
+
+                        Legal services involve professional assistance from lawyers for handling legal issues like court representation, advice, contracts, and dispute resolution.
                       </p>
                       <div className="py-3 text-center">
                         <Link to="/insolvency">
@@ -249,7 +244,7 @@ const Home = () => {
               <div className="card-body">
                 <h6 className="guide-text mb-4">ABOUT US</h6>
                 <h5 className="lh-base text-center pb-4">
-                  Why choose the Law and Insolvency Office?
+                  Why choose Lex Net?
                 </h5>
                 <p className="text-separator fw-normal">
                   We understand the complexities of legal matters and the stress
@@ -261,12 +256,12 @@ const Home = () => {
             </div>
           <div className="col col-md-5 order-md-2 mt-5">
           <div className="square container d-flex flex-column justify-content-center align-items-center py-5 w-50 border border-white border-4 fw-bold">
-            <div>
+            {/* <div>
                  <FontAwesomeIcon icon={faGavel} size="2x" />
-            </div>
-                <div>10+
-                </div>
-                  <div>years of experience
+           </div> */}
+                {/* <div>
+                </div> */}
+                <div>
                   {/* <div>
                     // src="/assets/office-law-people.jpg"
                     //  className="img-fluid d-block rounded-2"
@@ -275,7 +270,7 @@ const Home = () => {
                   </div> */}
 
 
-                  </div>
+                </div>
           </div>
               </div>
 

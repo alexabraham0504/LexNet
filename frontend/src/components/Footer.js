@@ -34,7 +34,7 @@ const Footer = () => {
             
               </span>
               <p className="content pt-3 px-3">
-                Our law office can guide you through legal and financial challenges. We are dedicated to protecting your interests and providing personalized solutions.
+                Our Site can guide you through legal and financial challenges. We are dedicated to protecting your interests and providing personalized solutions.
               </p>
             </div>
 

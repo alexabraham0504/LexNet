@@ -24,7 +24,7 @@ function App() {
             </title>
             <meta
               name="description"
-              content="Cabinet de avocatură și insolvență condus de Alina Marin. Consultanță, asistență și reprezentare pentru probleme juridice și de insolvență. Contactați-ne pentru soluții profesioniste."
+              content="Lex Net | Legal Consulting| Services "
             />
           </Helmet>
           <Navbar />

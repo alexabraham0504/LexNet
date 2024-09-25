@@ -148,16 +148,15 @@
 
 
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // useNavigate to navigate after login
+import { Link } from "react-router-dom";
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-
-  const [error, setError] = useState(""); // To handle error messages
-  const navigate = useNavigate(); // Use useNavigate instead of useHistory
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -168,10 +167,11 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Clear any previous errors
+    setLoading(true);
+    setError(""); // Reset error state
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await fetch("/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -181,22 +181,16 @@ const Login = () => {
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Handle successful login (e.g., save token, redirect)
-        console.log("Login Successful:", data.message);
-
-        // If you are using JWT, save the token here
-        // localStorage.setItem("token", data.token);
-
-        // Redirect to dashboard or homepage using useNavigate
-        navigate("/dashboard"); // Change the route as per your app structure
-      } else {
-        // Display error message from backend
-        setError(data.message);
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to log in");
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      setError("An error occurred. Please try again.");
+
+      // Handle successful login (e.g., redirect, save token, etc.)
+      console.log("Login successful");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,9 +198,6 @@ const Login = () => {
     <div style={styles.loginPage}>
       <div style={styles.loginContainer}>
         <h2 style={styles.loginTitle}>Client Login</h2>
-
-        {error && <p style={styles.errorText}>{error}</p>} {/* Display error */}
-
         <form onSubmit={handleSubmit}>
           <div style={styles.formGroup}>
             <label htmlFor="email" style={styles.formLabel}>
@@ -238,9 +229,11 @@ const Login = () => {
             />
           </div>
 
-          <button type="submit" style={styles.btnLogin}>
-            Login
+          <button type="submit" style={styles.btnLogin} disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
+
+          {error && <p style={{ color: "red" }}>{error}</p>}
 
           <div style={styles.formOptions}>
             <Link to="/register" style={styles.centeredLink}>
@@ -256,27 +249,26 @@ const Login = () => {
   );
 };
 
-// CSS Styles as JS object (same as before)
+// Updated styles
 const styles = {
   loginPage: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
-    backgroundImage: "url('/path/to/your/image.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
+    backgroundImage: "url('/assets/loginpicture.jpg')", // Path to your background image
+    backgroundSize: "cover", // Make the image cover the whole page
+    backgroundPosition: "center", // Center the image
     fontFamily: "'Open Sans', sans-serif",
   },
   loginContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    backgroundColor: "rgba(255, 255, 255, 0.6)", // Add transparency for a sleek look
     padding: "2rem",
-    borderRadius: "12px",
-    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
+    borderRadius: "8px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
     maxWidth: "400px",
     width: "100%",
-    textAlign: "center",
-    backdropFilter: "blur(10px)",
+    textAlign: "center", // Center content inside the container
   },
   loginTitle: {
     color: "#2d6da5",
@@ -316,7 +308,7 @@ const styles = {
     marginTop: "1.5rem",
   },
   formOptions: {
-    marginTop: "2rem",
+    marginTop: "2rem", // Add space between form and links
   },
   centeredLink: {
     display: "block",
@@ -324,17 +316,10 @@ const styles = {
     fontSize: "0.9rem",
     fontWeight: "600",
     textDecoration: "none",
-    marginBottom: "0.5rem",
+    marginBottom: "0.5rem", // Space between the two links
     transition: "color 0.3s",
-    textAlign: "center",
-  },
-  errorText: {
-    color: "red",
-    marginBottom: "1rem",
+    textAlign: "center", // Center the link
   },
 };
 
 export default Login;
-
-
-
