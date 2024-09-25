@@ -148,9 +148,11 @@
 
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
+  const navigate=useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -171,22 +173,20 @@ const Login = () => {
     setError(""); // Reset error state
 
     try {
-      const response = await fetch("/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.post("http://localhost:3000/login",formData);
 
-      const data = await response.json();
+      const data = await response.data;
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to log in");
+      if (data.message === "Login successful.") {
+        alert("login success")
+       navigate("/")
+      }
+      else{
+        alert("login failed",data.message)
       }
 
       // Handle successful login (e.g., redirect, save token, etc.)
-      console.log("Login successful");
+      // console.log("Login successful");
     } catch (err) {
       setError(err.message);
     } finally {

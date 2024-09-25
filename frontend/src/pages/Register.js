@@ -417,12 +417,14 @@
 // export default Register;
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 // Import FontAwesome icons (make sure you have FontAwesome installed: npm install @fortawesome/react-fontawesome @fortawesome/free-solid-svg-icons)
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import axios from "axios";
 
 const Register = () => {
+  const navigate=useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -504,21 +506,20 @@ const Register = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await axios.post("http://localhost:3000/register",formData);
 
-      const data = await response.json();
+      const data = await response.data;
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to register");
+      if (data.message === "User registered successfully.") {
+        alert("User registered successfully.")
+       navigate("/login")
+      }
+      else{
+        alert("registration failed",data.message)
+        navigate("/register")
       }
 
-      console.log("Registration successful");
+     
     } catch (err) {
       setErrors({ submit: err.message });
     } finally {

@@ -16,7 +16,7 @@ const LegalServices = () => {
       <div className="legal-services">
         <Helmet>
           <title>
-            Legal Services | Lawyer Bucharest | Law and Insolvency Office Alina Marin
+            Legal Services | Lawyer kanjirappally | Lex Net
           </title>
 
           <meta

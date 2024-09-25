@@ -7,7 +7,7 @@ const router = express.Router();
 // Register route
 router.post("/register", async (req, res) => {
   const { firstName, lastName, email, phone, password } = req.body;
-
+  
   try {
     const newUser = new User({
       firstName,
@@ -28,6 +28,7 @@ router.post("/register", async (req, res) => {
 // Login route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  console.log(req.body)
 
   try {
     const user = await User.findOne({ email });

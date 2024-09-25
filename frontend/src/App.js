@@ -20,7 +20,7 @@ function App() {
         <BrowserRouter>
           <Helmet>
             <title>
-             Lex Net 
+             Lex Net | Client Page
             </title>
             <meta
               name="description"
