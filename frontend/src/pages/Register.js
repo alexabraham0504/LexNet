@@ -1,440 +1,24 @@
-// import React, { useState } from "react";
-
-// const Register = () => {
-//   const [formData, setFormData] = useState({
-//     firstName: "",
-//     lastName: "",
-//     email: "",
-//     phone: "",
-//     password: "",
-//     confirmPassword: "",
-//   });
-
-//   const [errors, setErrors] = useState({});
-
-//   // Form field validation logic
-//   const validateForm = () => {
-//     let newErrors = {};
-
-//     // First Name validation: only alphabets
-//     if (!formData.firstName.trim()) {
-//       newErrors.firstName = "First name is required";
-//     } else if (!/^[A-Za-z]+$/.test(formData.firstName)) {
-//       newErrors.firstName = "First name must contain only alphabets";
-//     }
-
-//     // Last Name validation: only alphabets
-//     if (!formData.lastName.trim()) {
-//       newErrors.lastName = "Last name is required";
-//     } else if (!/^[A-Za-z]+$/.test(formData.lastName)) {
-//       newErrors.lastName = "Last name must contain only alphabets";
-//     }
-
-//     // Email validation with enhanced regex for standard email format
-//     if (!formData.email) {
-//       newErrors.email = "Email is required";
-//     } else if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$/.test(formData.email)) {
-//       newErrors.email = "Please enter a valid email address";
-//     }
-
-//     // Phone validation: must be 10 digits
-//     if (!formData.phone) {
-//       newErrors.phone = "Phone number is required";
-//     } else if (!/^\d{10}$/.test(formData.phone)) {
-//       newErrors.phone = "Phone number must be a 10-digit number";
-//     }
-
-//     // Password validation: combination of letters, numbers, special characters, min 4 max 10
-//     if (!formData.password) {
-//       newErrors.password = "Password is required";
-//     } else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{4,10}$/.test(formData.password)) {
-//       newErrors.password =
-//         "Password must be 4-10 characters long and include letters, numbers, and special characters";
-//     }
-
-//     // Confirm Password validation: must match password
-//     if (formData.password !== formData.confirmPassword) {
-//       newErrors.confirmPassword = "Passwords do not match";
-//     }
-
-//     return newErrors;
-//   };
-
-//   const handleChange = (e) => {
-//     setFormData({
-//       ...formData,
-//       [e.target.name]: e.target.value,
-//     });
-//   };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     const validationErrors = validateForm();
-//     if (Object.keys(validationErrors).length > 0) {
-//       setErrors(validationErrors);
-//     } else {
-//       // Form submission logic goes here (e.g., API call)
-//       console.log("Form submitted", formData);
-//       setErrors({});
-//     }
-//   };
-
-//   return (
-//     <div className="register-page">
-//       <div className="register-container">
-//         <h2 className="register-title">Client Registration</h2>
-//         <form onSubmit={handleSubmit}>
-//           {/* First Name */}
-//           <div className="form-group">
-//             <label htmlFor="firstName">First Name</label>
-//             <input
-//               type="text"
-//               id="firstName"
-//               name="firstName"
-//               value={formData.firstName}
-//               onChange={handleChange}
-//               className={errors.firstName ? "error" : ""}
-//               required
-//             />
-//             {errors.firstName && (
-//               <p className="error-message">{errors.firstName}</p>
-//             )}
-//           </div>
-
-//           {/* Last Name */}
-//           <div className="form-group">
-//             <label htmlFor="lastName">Last Name</label>
-//             <input
-//               type="text"
-//               id="lastName"
-//               name="lastName"
-//               value={formData.lastName}
-//               onChange={handleChange}
-//               className={errors.lastName ? "error" : ""}
-//               required
-//             />
-//             {errors.lastName && (
-//               <p className="error-message">{errors.lastName}</p>
-//             )}
-//           </div>
-
-//           {/* Email */}
-//           <div className="form-group">
-//             <label htmlFor="email">Email</label>
-//             <input
-//               type="email"
-//               id="email"
-//               name="email"
-//               value={formData.email}
-//               onChange={handleChange}
-//               className={errors.email ? "error" : ""}
-//               required
-//             />
-//             {errors.email && <p className="error-message">{errors.email}</p>}
-//           </div>
-
-//           {/* Phone */}
-//           <div className="form-group">
-//             <label htmlFor="phone">Phone</label>
-//             <input
-//               type="tel"
-//               id="phone"
-//               name="phone"
-//               value={formData.phone}
-//               onChange={handleChange}
-//               className={errors.phone ? "error" : ""}
-//               required
-//             />
-//             {errors.phone && <p className="error-message">{errors.phone}</p>}
-//           </div>
-
-//           {/* Password */}
-//           <div className="form-group">
-//             <label htmlFor="password">Password</label>
-//             <input
-//               type="password"
-//               id="password"
-//               name="password"
-//               value={formData.password}
-//               onChange={handleChange}
-//               className={errors.password ? "error" : ""}
-//               required
-//             />
-//             {errors.password && (
-//               <p className="error-message">{errors.password}</p>
-//             )}
-//           </div>
-
-//           {/* Confirm Password */}
-//           <div className="form-group">
-//             <label htmlFor="confirmPassword">Confirm Password</label>
-//             <input
-//               type="password"
-//               id="confirmPassword"
-//               name="confirmPassword"
-//               value={formData.confirmPassword}
-//               onChange={handleChange}
-//               className={errors.confirmPassword ? "error" : ""}
-//               required
-//             />
-//             {errors.confirmPassword && (
-//               <p className="error-message">{errors.confirmPassword}</p>
-//             )}
-//           </div>
-
-//           <button type="submit" className="btn-register">
-//             Register
-//           </button>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Register;
-// import React, { useState } from "react";
-// import { Link } from "react-router-dom";
-
-// const Register = () => {
-//   const [formData, setFormData] = useState({
-//     firstName: "",
-//     lastName: "",
-//     email: "",
-//     phone: "",
-//     password: "",
-//   });
-//   const [error, setError] = useState("");
-//   const [loading, setLoading] = useState(false);
-
-//   const handleChange = (e) => {
-//     setFormData({
-//       ...formData,
-//       [e.target.name]: e.target.value,
-//     });
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setLoading(true);
-//     setError(""); // Reset error state
-
-//     try {
-//       const response = await fetch("/auth/register", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify(formData),
-//       });
-
-//       const data = await response.json();
-
-//       if (!response.ok) {
-//         throw new Error(data.message || "Failed to register");
-//       }
-
-//       // Handle successful registration (e.g., redirect to login)
-//       console.log("Registration successful");
-//     } catch (err) {
-//       setError(err.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div style={styles.registerPage}>
-//       <div style={styles.registerContainer}>
-//         <h2 style={styles.registerTitle}>Client Register</h2>
-//         <form onSubmit={handleSubmit}>
-//           <div style={styles.formGroup}>
-//             <label htmlFor="firstName" style={styles.formLabel}>
-//               First Name
-//             </label>
-//             <input
-//               type="text"
-//               id="firstName"
-//               name="firstName"
-//               value={formData.firstName}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <div style={styles.formGroup}>
-//             <label htmlFor="lastName" style={styles.formLabel}>
-//               Last Name
-//             </label>
-//             <input
-//               type="text"
-//               id="lastName"
-//               name="lastName"
-//               value={formData.lastName}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <div style={styles.formGroup}>
-//             <label htmlFor="email" style={styles.formLabel}>
-//               Email
-//             </label>
-//             <input
-//               type="email"
-//               id="email"
-//               name="email"
-//               value={formData.email}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <div style={styles.formGroup}>
-//             <label htmlFor="phone" style={styles.formLabel}>
-//               Phone
-//             </label>
-//             <input
-//               type="text"
-//               id="phone"
-//               name="phone"
-//               value={formData.phone}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <div style={styles.formGroup}>
-//             <label htmlFor="password" style={styles.formLabel}>
-//               Password
-//             </label>
-//             <input
-//               type="password"
-//               id="password"
-//               name="password"
-//               value={formData.password}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <button type="submit" style={styles.btnRegister} disabled={loading}>
-//             {loading ? "Registering..." : "Register"}
-//           </button>
-
-//           {error && <p style={styles.errorMessage}>{error}</p>}
-
-//           <div style={styles.formOptions}>
-//             <Link to="/login" style={styles.centeredLink}>
-//               Already have an account? Login
-//             </Link>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
-
-// // Updated Inline Styles with Background Image
-// const styles = {
-//   registerPage: {
-//     display: "flex",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     minHeight: "100vh",
-//     backgroundImage: "url('/assets/registerpic.jpg')", // Path to your background image
-//     backgroundSize: "cover", // Make the image cover the whole page
-//     backgroundPosition: "center", // Center the image
-//   },
-//   registerContainer: {
-//     backgroundColor: "rgba(255, 255, 255, 0.6)", // Add transparency for a sleek look
-//     padding: "2rem",
-//     borderRadius: "12px",
-//     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-//     maxWidth: "420px",
-//     width: "100%",
-//   },
-//   registerTitle: {
-//     textAlign: "center",
-//     color: "#2d6da5",
-//     fontSize: "1.8rem",
-//     fontWeight: "bold",
-//     marginBottom: "1.5rem",
-//   },
-//   formGroup: {
-//     marginBottom: "1.5rem",
-//   },
-//   formLabel: {
-//     display: "block",
-//     fontSize: "1rem",
-//     fontWeight: "500",
-//     marginBottom: "0.5rem",
-//     color: "#333",
-//   },
-//   formInput: {
-//     width: "100%",
-//     padding: "0.9rem",
-//     border: "1px solid #c2b697",
-//     borderRadius: "6px",
-//     fontSize: "1rem",
-//     backgroundColor: "#f9f9f9",
-//     transition: "border-color 0.3s ease",
-//   },
-//   errorMessage: {
-//     color: "red",
-//     fontSize: "0.85rem",
-//     marginTop: "0.5rem",
-//   },
-//   btnRegister: {
-//     display: "block",
-//     width: "100%",
-//     padding: "0.9rem",
-//     backgroundColor: "#2d6da5",
-//     color: "#fff",
-//     border: "none",
-//     borderRadius: "6px",
-//     fontSize: "1rem",
-//     fontWeight: "500",
-//     cursor: "pointer",
-//     transition: "background-color 0.3s ease",
-//   },
-//   formOptions: {
-//     textAlign: "center",
-//     marginTop: "1.5rem",
-//   },
-//   centeredLink: {
-//     textDecoration: "none",
-//     color: "#2d6da5",
-//     fontWeight: "500",
-//     fontSize: "0.95rem",
-//   },
-// };
-
-// export default Register;
-
 import React, { useState } from "react";
-import { Link,useNavigate } from "react-router-dom";
-// Import FontAwesome icons (make sure you have FontAwesome installed: npm install @fortawesome/react-fontawesome @fortawesome/free-solid-svg-icons)
+import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
 const Register = () => {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
+    role: "Client", // Default to Client
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateField = (name, value) => {
     let error = "";
@@ -442,7 +26,9 @@ const Register = () => {
       case "firstName":
       case "lastName":
         if (!/^[a-zA-Z]+$/.test(value)) {
-          error = `${name === "firstName" ? "First" : "Last"} name should contain only alphabets.`;
+          error = `${
+            name === "firstName" ? "First" : "Last"
+          } name should contain only alphabets.`;
         }
         break;
       case "email":
@@ -453,8 +39,9 @@ const Register = () => {
       case "phone":
         if (!/^\d{10}$/.test(value)) {
           error = "Phone number must be a valid 10-digit number.";
-        } else if (/^(\d)\1+$/.test(value)) {
-          error = "Phone number cannot contain the same digit repeated.";
+        } else if (/^(\d)\1{2,}$/.test(value)) {
+          error =
+            "Phone number cannot contain the same digit repeated more than three times.";
         }
         break;
       case "password":
@@ -468,6 +55,11 @@ const Register = () => {
           error = "Password must contain at least one number.";
         } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
           error = "Password must contain at least one special character.";
+        }
+        break;
+      case "confirmPassword":
+        if (value !== formData.password) {
+          error = "Passwords do not match.";
         }
         break;
       default:
@@ -506,20 +98,19 @@ const Register = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:3000/register",formData);
-
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        formData
+      );
       const data = await response.data;
 
       if (data.message === "User registered successfully.") {
-        alert("User registered successfully.")
-       navigate("/login")
+        alert("User registered successfully.");
+        navigate("/login");
+      } else {
+        alert("Registration failed", data.message);
+        navigate("/register");
       }
-      else{
-        alert("registration failed",data.message)
-        navigate("/register")
-      }
-
-     
     } catch (err) {
       setErrors({ submit: err.message });
     } finally {
@@ -531,11 +122,16 @@ const Register = () => {
     setShowPassword(!showPassword);
   };
 
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   return (
     <div style={styles.registerPage}>
       <div style={styles.registerContainer}>
-        <h2 style={styles.registerTitle}>Client Register</h2>
+        <h2 style={styles.registerTitle}>Register</h2>
         <form onSubmit={handleSubmit}>
+          {/* First Name */}
           <div style={styles.formGroup}>
             <label htmlFor="firstName" style={styles.formLabel}>
               First Name
@@ -552,9 +148,12 @@ const Register = () => {
                 borderColor: errors.firstName ? "red" : "#c2b697",
               }}
             />
-            {errors.firstName && <p style={styles.errorMessage}>{errors.firstName}</p>}
+            {errors.firstName && (
+              <p style={styles.errorMessage}>{errors.firstName}</p>
+            )}
           </div>
 
+          {/* Last Name */}
           <div style={styles.formGroup}>
             <label htmlFor="lastName" style={styles.formLabel}>
               Last Name
@@ -571,9 +170,12 @@ const Register = () => {
                 borderColor: errors.lastName ? "red" : "#c2b697",
               }}
             />
-            {errors.lastName && <p style={styles.errorMessage}>{errors.lastName}</p>}
+            {errors.lastName && (
+              <p style={styles.errorMessage}>{errors.lastName}</p>
+            )}
           </div>
 
+          {/* Email */}
           <div style={styles.formGroup}>
             <label htmlFor="email" style={styles.formLabel}>
               Email
@@ -593,12 +195,13 @@ const Register = () => {
             {errors.email && <p style={styles.errorMessage}>{errors.email}</p>}
           </div>
 
+          {/* Phone */}
           <div style={styles.formGroup}>
             <label htmlFor="phone" style={styles.formLabel}>
               Phone
             </label>
             <input
-              type="text"
+              type="tel"
               id="phone"
               name="phone"
               value={formData.phone}
@@ -612,6 +215,7 @@ const Register = () => {
             {errors.phone && <p style={styles.errorMessage}>{errors.phone}</p>}
           </div>
 
+          {/* Password */}
           <div style={styles.formGroup}>
             <label htmlFor="password" style={styles.formLabel}>
               Password
@@ -629,22 +233,73 @@ const Register = () => {
                   borderColor: errors.password ? "red" : "#c2b697",
                 }}
               />
-              <span onClick={togglePasswordVisibility} style={styles.passwordToggleIcon}>
-                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+              <span
+                onClick={togglePasswordVisibility}
+                style={styles.passwordToggleIcon}
+              >
+                <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} />
               </span>
             </div>
-            {errors.password && <p style={styles.errorMessage}>{errors.password}</p>}
+            {errors.password && (
+              <p style={styles.errorMessage}>{errors.password}</p>
+            )}
           </div>
 
-          <button
-            type="submit"
-            style={styles.btnRegister}
-            disabled={loading}
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
+          {/* Confirm Password */}
+          <div style={styles.formGroup}>
+            <label htmlFor="confirmPassword" style={styles.formLabel}>
+              Confirm Password
+            </label>
+            <div style={styles.passwordWrapper}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                style={{
+                  ...styles.formInput,
+                  borderColor: errors.confirmPassword ? "red" : "#c2b697",
+                }}
+              />
+              <span
+                onClick={toggleConfirmPasswordVisibility}
+                style={styles.passwordToggleIcon}
+              >
+                <FontAwesomeIcon
+                  icon={showConfirmPassword ? faEye : faEyeSlash}
+                />
+              </span>
+            </div>
+            {errors.confirmPassword && (
+              <p style={styles.errorMessage}>{errors.confirmPassword}</p>
+            )}
+          </div>
+
+          {/* Role Dropdown */}
+          <div style={styles.formGroup}>
+            <label htmlFor="role" style={styles.formLabel}>
+              Role
+            </label>
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              style={styles.formInput}
+              required
+            >
+              <option value="Client">Client</option>
+              <option value="Lawyer">Lawyer</option>
+            </select>
+          </div>
 
           {errors.submit && <p style={styles.errorMessage}>{errors.submit}</p>}
+
+          <button type="submit" style={styles.btnRegister} disabled={loading}>
+            {loading ? "Registering..." : "Register"}
+          </button>
 
           <div style={styles.formOptions}>
             <Link to="/login" style={styles.centeredLink}>
@@ -668,37 +323,51 @@ const styles = {
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay for better text contrast
+    display: "flex",
+    justifyContent: "flex-end", // Align overlay to right
+    alignItems: "center",
+  },
   registerContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.6)",
-    padding: "2rem",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-    maxWidth: "420px",
-    width: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.3)", // Make it transparent
+    padding: "3rem",
+    borderRadius: "30px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.9)",
+    maxWidth: "400px",
+    width: "80%",
+    textAlign: "left",
+    marginLeft: "45rem", // Add some margin to the right
   },
   registerTitle: {
     textAlign: "center",
-    color: "#2d6da5",
-    fontSize: "1.8rem",
+    color: "#02182b",
+    fontSize: "1.5rem",
     fontWeight: "bold",
-    marginBottom: "1.5rem",
+    marginBottom: "1rem",
   },
   formGroup: {
-    marginBottom: "1.5rem",
+    marginBottom: "0.8rem",
   },
   formLabel: {
     display: "block",
-    fontSize: "1rem",
+    fontSize: "0.9rem",
     fontWeight: "500",
-    marginBottom: "0.5rem",
-    color: "#333",
+    marginBottom: "0rem",
+    color: "#02182b",
+    fontWeight: "bold",
   },
   formInput: {
     width: "100%",
-    padding: "0.9rem",
+    padding: "0.5rem", // Smaller padding
     border: "1px solid #c2b697",
-    borderRadius: "6px",
-    fontSize: "1rem",
+    borderRadius: "13px",
+    fontSize: "0.8rem", // Smaller font size
     backgroundColor: "#f9f9f9",
     transition: "border-color 0.3s ease",
   },
@@ -711,42 +380,40 @@ const styles = {
     right: "10px",
     cursor: "pointer",
     transform: "translateY(-50%)",
-    backgroundColor: "white",
     padding: "5px",
     borderRadius: "50%",
-    fontSize: "1.2rem",
-    color: "#333",
-    boxShadow: "0 0 4px rgba(0, 0, 0, 0.2)",
+    fontSize: ".75rem", // Icon size
   },
   errorMessage: {
     color: "red",
-    fontSize: "0.85rem",
-    marginTop: "0.5rem",
+    fontSize: "0.75rem", // Error message size
+    marginTop: "0.3rem",
   },
   btnRegister: {
     display: "block",
     width: "100%",
-    padding: "0.9rem",
+    padding: "0.5rem", // Reduced button padding
     backgroundColor: "#2d6da5",
     color: "#fff",
     border: "none",
     borderRadius: "6px",
-    fontSize: "1rem",
+    fontSize: "0.85rem", // Button font size
     fontWeight: "500",
     cursor: "pointer",
     transition: "background-color 0.3s ease",
   },
   formOptions: {
     textAlign: "center",
-    marginTop: "1.5rem",
+    marginTop: "0.3rem",
+    marginBottom: "1rem", // Adjusted margin
+    borderRadius: "5px",
   },
   centeredLink: {
     textDecoration: "none",
-    color: "#2d6da5",
+    color: "#02182b",
     fontWeight: "500",
-    fontSize: "0.95rem",
+    fontSize: "bold", // Smaller link font size
   },
 };
 
 export default Register;
-

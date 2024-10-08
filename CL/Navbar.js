@@ -7,10 +7,7 @@ const Navbar = () => {
     <>
       <div className="nav">
         <Header />
-        <nav
-          className="navbar navbar-dark w-100 navbar-expand-md slide-in"
-          style={styles.navbar}
-        >
+        <nav className="navbar navbar-dark w-100 navbar-expand-md slide-in" style={styles.navbar}>
           <div className="container-xxl">
             <div className="navbar-brand d-flex align-items-center">
               <img
@@ -38,14 +35,8 @@ const Navbar = () => {
               id="main-nav"
             >
               <ul className="navbar-nav">
-                {[
-                  "/",
-                  "/law-office",
-                  "/SearchLawyers",
-                  "/useful-info",
-                  "/contact",
-                ].map((path, index) => {
-                  const linkNames = ["Home", "Useful Info", "Contact"];
+                {["/", "/law-office", "/SearchLawyers", "/useful-info", "/contact"].map((path, index) => {
+                  const linkNames = ["Home", "IPCLookup", "SearchLawyers", "Useful Info", "Contact"];
                   return (
                     <li className="nav-item mx-3 mb-2" key={index}>
                       <NavLink
@@ -83,7 +74,6 @@ const navbarStyles = `
   .nav {
     font-size: 1.1rem;
     font-weight: 500;
-    width: '100%', // Full width
   }
 
   .nav .logo-image {

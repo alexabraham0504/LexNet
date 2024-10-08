@@ -1,158 +1,9 @@
-// import React, { useState } from "react";
-// import { Link } from "react-router-dom";
-
-// const Login = () => {
-//   const [formData, setFormData] = useState({
-//     email: "",
-//     password: "",
-//   });
-
-//   const handleChange = (e) => {
-//     setFormData({
-//       ...formData,
-//       [e.target.name]: e.target.value,
-//     });
-//   };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-    
-//   };
-
-//   return (
-//     <div style={styles.loginPage}>
-//       <div style={styles.loginContainer}>
-//         <h2 style={styles.loginTitle}>Client Login</h2>
-//         <form onSubmit={handleSubmit}>
-//           <div style={styles.formGroup}>
-//             <label htmlFor="email" style={styles.formLabel}>
-//               Email
-//             </label>
-//             <input
-//               type="email"
-//               id="email"
-//               name="email"
-//               value={formData.email}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <div style={styles.formGroup}>
-//             <label htmlFor="password" style={styles.formLabel}>
-//               Password
-//             </label>
-//             <input
-//               type="password"
-//               id="password"
-//               name="password"
-//               value={formData.password}
-//               onChange={handleChange}
-//               required
-//               style={styles.formInput}
-//             />
-//           </div>
-
-//           <button type="submit" style={styles.btnLogin}>
-//             Login
-//           </button>
-
-//           {/* Centered Sign Up and Forgot Password */}
-//           <div style={styles.formOptions}>
-//             <Link to="/register" style={styles.centeredLink}>
-//               Sign Up
-//             </Link>
-//             <Link to="/forgotpassword" style={styles.centeredLink}>
-//               Forgot Password?
-//             </Link>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
-
-// // CSS Styles as JS object
-// const styles = {
-//   loginPage: {
-//     display: "flex",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     minHeight: "100vh",
-//     backgroundColor: "#f4f4f4",
-//     fontFamily: "'Open Sans', sans-serif",
-//   },
-//   loginContainer: {
-//     backgroundColor: "#fff",
-//     padding: "2rem",
-//     borderRadius: "8px",
-//     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-//     maxWidth: "400px",
-//     width: "100%",
-//     textAlign: "center", // Center content inside the container
-//   },
-//   loginTitle: {
-//     color: "#2d6da5",
-//     fontSize: "1.5rem",
-//     marginBottom: "1.5rem",
-//     fontWeight: "bold",
-//   },
-//   formGroup: {
-//     marginBottom: "1rem",
-//     textAlign: "left",
-//   },
-//   formLabel: {
-//     display: "block",
-//     fontSize: "0.9rem",
-//     marginBottom: "0.5rem",
-//     color: "#053661",
-//   },
-//   formInput: {
-//     width: "100%",
-//     padding: "0.8rem",
-//     border: "1px solid #c2b697",
-//     borderRadius: "4px",
-//     fontSize: "0.9rem",
-//     color: "#333",
-//   },
-//   btnLogin: {
-//     display: "block",
-//     width: "100%",
-//     padding: "0.8rem",
-//     backgroundColor: "#2d6da5",
-//     color: "#fff",
-//     border: "none",
-//     borderRadius: "4px",
-//     fontSize: "1rem",
-//     cursor: "pointer",
-//     transition: "background-color 0.3s ease",
-//     marginTop: "1.5rem",
-//   },
-//   formOptions: {
-//     marginTop: "2rem", // Add space between form and links
-//   },
-//   centeredLink: {
-//     display: "block",
-//     color: "#053661",
-//     fontSize: "0.9rem",
-//     fontWeight: "600",
-//     textDecoration: "none",
-//     marginBottom: "0.5rem", // Space between the two links
-//     transition: "color 0.3s",
-//     textAlign: "center", // Center the link
-//   },
-// };
-
-// export default Login;
-
-
 import React, { useState } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -170,127 +21,171 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(""); // Reset error state
+    setError("");
 
     try {
-      const response = await axios.post("http://localhost:3000/login",formData);
-
-      const data = await response.data;
+      const response = await axios.post("http://localhost:5000/api/auth/login", formData);
+      const data = response.data;
 
       if (data.message === "Login successful.") {
-        alert("login success")
-       navigate("/")
+        alert("Login success");
+        navigate("/");
+      } else {
+        alert(`Login failed: ${data.message}`);
       }
-      else{
-        alert("login failed",data.message)
-      }
-
-      // Handle successful login (e.g., redirect, save token, etc.)
-      // console.log("Login successful");
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Navigate to the Register page
+  const handleSignUp = () => {
+    navigate("/register");
+  };
+
   return (
     <div style={styles.loginPage}>
-      <div style={styles.loginContainer}>
-        <h2 style={styles.loginTitle}>Client Login</h2>
-        <form onSubmit={handleSubmit}>
-          <div style={styles.formGroup}>
-            <label htmlFor="email" style={styles.formLabel}>
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              style={styles.formInput}
-            />
-          </div>
+      <div style={styles.logoContainer}>
+        <img src="/favicon.png" alt="Logo" style={styles.logo} /> {/* Update with your logo path */}
+        <h1 style={styles.appName}>Lex Net</h1>
+      </div>
+      <div style={styles.overlay}>
+        <div style={styles.loginContainer}>
+          <h2 style={styles.loginTitle}>Welcome Back</h2>
+          <form onSubmit={handleSubmit}>
+            <div style={styles.formGroup}>
+              <label htmlFor="email" style={styles.formLabel}>Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                style={styles.formInput}
+                placeholder="Enter your email"
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label htmlFor="password" style={styles.formLabel}>Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                style={styles.formInput}
+                placeholder="Enter your password"
+              />
+            </div>
+            <div style={styles.rememberMe}>
+              <input type="checkbox" id="rememberMe" />
+              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>Remember Me</label>
+            </div>
+            <button type="submit" style={styles.btnLogin} disabled={loading}>
+              {loading ? "Signing in..." : "Login"}
+            </button>
+            {error && <p style={{ color: "red" }}>{error}</p>}
 
-          <div style={styles.formGroup}>
-            <label htmlFor="password" style={styles.formLabel}>
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              style={styles.formInput}
-            />
-          </div>
-
-          <button type="submit" style={styles.btnLogin} disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
-
-          {error && <p style={{ color: "red" }}>{error}</p>}
-
-          <div style={styles.formOptions}>
-            <Link to="/register" style={styles.centeredLink}>
+            <button type="button" onClick={handleSignUp} style={styles.btnSignUp}>
               Sign Up
-            </Link>
-            <Link to="/forgotpassword" style={styles.centeredLink}>
-              Forgot Password?
-            </Link>
-          </div>
-        </form>
+            </button>
+            <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
+          </form>
+        </div>
       </div>
     </div>
   );
 };
 
-// Updated styles
 const styles = {
   loginPage: {
+    position: "relative",
     display: "flex",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
     minHeight: "100vh",
-    backgroundImage: "url('/assets/loginpicture.jpg')", // Path to your background image
-    backgroundSize: "cover", // Make the image cover the whole page
-    backgroundPosition: "center", // Center the image
+    backgroundImage: "url('/assets/loginpicture.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
     fontFamily: "'Open Sans', sans-serif",
   },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
   loginContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.6)", // Add transparency for a sleek look
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     padding: "2rem",
     borderRadius: "8px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.9)",
     maxWidth: "400px",
     width: "100%",
-    textAlign: "center", // Center content inside the container
+    textAlign: "center",
+    marginRight: "15rem",
+  },
+  // Logo and App Name styles
+  logoContainer: {
+    position: "absolute",
+    top: "20px",
+    left: "20px",
+    display: "flex",
+    alignItems: "center",
+  },
+  logo: {
+    width: "100px",
+    marginRight: "10px", // Add space between logo and app name
+  },
+  appName: {
+    fontSize: "1.8rem",
+    color: "#fff",
+    fontWeight: "bold",
   },
   loginTitle: {
-    color: "#2d6da5",
+    color: "#fff",
     fontSize: "1.5rem",
-    marginBottom: "1.5rem",
+    marginBottom: "1rem",
     fontWeight: "bold",
   },
   formGroup: {
     marginBottom: "1rem",
     textAlign: "left",
+    fontWeight: "bold",
   },
   formLabel: {
     display: "block",
     fontSize: "0.9rem",
     marginBottom: "0.5rem",
-    color: "#053661",
+    color: "#333",
+    fontWeight: "bold",
   },
   formInput: {
     width: "100%",
-    padding: "0.8rem",
-    border: "1px solid #c2b697",
-    borderRadius: "4px",
+    padding: "0.6rem",
+    border: "1px solid #ccc",
+    borderRadius: "13px",
+    fontSize: "0.9rem",
+    color: "#333",
+    marginBottom: "1rem",
+  },
+  rememberMe: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "1rem",
+    fontWeight: "bold",
+  },
+  rememberMeLabel: {
+    marginLeft: "0.5rem",
     fontSize: "0.9rem",
     color: "#333",
   },
@@ -298,27 +193,36 @@ const styles = {
     display: "block",
     width: "100%",
     padding: "0.8rem",
-    backgroundColor: "#2d6da5",
+    backgroundColor: "#007bff",
     color: "#fff",
     border: "none",
-    borderRadius: "4px",
+    borderRadius: "5px",
     fontSize: "1rem",
     cursor: "pointer",
     transition: "background-color 0.3s ease",
-    marginTop: "1.5rem",
+    marginTop: "1rem",
+    fontWeight: "bold",
   },
-  formOptions: {
-    marginTop: "2rem", // Add space between form and links
-  },
-  centeredLink: {
+  btnSignUp: {
     display: "block",
-    color: "#053661",
+    width: "100%",
+    padding: "0.8rem",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    fontSize: "1rem",
+    cursor: "pointer",
+    transition: "background-color 0.3s ease",
+    marginTop: "1rem",
+    fontWeight: "bold",
+  },
+  forgotPassword: {
+    display: "block",
+    color: "#fff",
     fontSize: "0.9rem",
-    fontWeight: "600",
-    textDecoration: "none",
-    marginBottom: "0.5rem", // Space between the two links
-    transition: "color 0.3s",
-    textAlign: "center", // Center the link
+    marginTop: "1rem",
+    fontWeight: "bold",
   },
 };
 

@@ -6,8 +6,10 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
-  password: { type: String, required: true }, // Plain text password
+  password: { type: String, required: true }, 
+  resetPasswordToken: { type: String },  // For password reset
+  resetPasswordExpires: { type: Date } ,// Plain text password
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model("Users", userSchema);
 module.exports = User;
