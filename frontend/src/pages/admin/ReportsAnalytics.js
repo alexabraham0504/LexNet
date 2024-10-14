@@ -13,8 +13,8 @@ const ReportsAnalytics = () => {
             { id: 2, user: 'Lawyer1', activity: 'Consultation Scheduled', timestamp: '2024-09-24 11:30 AM' },
         ]);
         setLawyerPerformance([
-            { id: 1, name: 'Lawyer A', casesHandled: 10, earnings: '$5,000' },
-            { id: 2, name: 'Lawyer B', casesHandled: 15, earnings: '$7,500' },
+            { id: 1, name: 'Lawyer A', casesHandled: 10, earnings: 'Rs.5,000' },
+            { id: 2, name: 'Lawyer B', casesHandled: 15, earnings: 'Rs.7,500' },
         ]);
     }, []);
 

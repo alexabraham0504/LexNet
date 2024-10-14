@@ -1,15 +1,16 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Helmet } from "react-helmet";
+
+// Pages
 import Info from "./pages/Info";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import ErrorPage from "./pages/ErrorPage";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -38,7 +39,6 @@ import ClientMessaging from "./pages/lawyer/ClientMessaging";
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LegalDocumentAnalysis from "./pages/lawyer/LegalDocumentAnalysis";
 import ProfileManagement from "./pages/lawyer/ProfileManagement";
-import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -49,8 +49,8 @@ function App() {
           <meta name="description" content="Lex Net | Legal Consulting | Services" />
         </Helmet>
 
-        
         <Routes>
+          {/* General Pages */}
           <Route path="/" element={<Home />} />
           <Route path="/info" element={<Info />} />
           <Route path="/contact" element={<Contact />} />
@@ -60,7 +60,7 @@ function App() {
           <Route path="/forgotpassword" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-          {/* Admin pages */}
+          {/* Admin Pages */}
           <Route path="/admindashboard" element={<AdminDashboard />} />
           <Route path="/contentmoderation" element={<ContentModeration />} />
           <Route path="/lawyerverification" element={<LawyerVerification />} />
@@ -68,7 +68,7 @@ function App() {
           <Route path="/reportsanalytics" element={<ReportsAnalytics />} />
           <Route path="/usermanagement" element={<UserManagement />} />
 
-          {/* Client pages */}
+          {/* Client Pages */}
           <Route path="/appoint" element={<Appoint />} />
           <Route path="/caseanalysis" element={<CaseAnalysis />} />
           <Route path="/clientchatpage" element={<ClientChatPage />} />
@@ -79,7 +79,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/review" element={<Review />} />
 
-          {/* Lawyer pages */}
+          {/* Lawyer Pages */}
           <Route path="/appointmentscheduling" element={<AppointmentScheduling />} />
           <Route path="/billingpayment" element={<BillingPayment />} />
           <Route path="/casemanagement" element={<CaseManagement />} />
@@ -88,7 +88,6 @@ function App() {
           <Route path="/legaldocumentanalysis" element={<LegalDocumentAnalysis />} />
           <Route path="/profilemanagement" element={<ProfileManagement />} />
         </Routes>
-        
       </BrowserRouter>
     </div>
   );

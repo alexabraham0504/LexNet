@@ -1,12 +1,11 @@
 import React from "react";
-import Header from "./Header";
 import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
   return (
     <>
       <div className="nav">
-        <Header />
+        {/* <Header /> */}
         <nav
           className="navbar navbar-dark w-100 navbar-expand-md slide-in"
           style={styles.navbar}

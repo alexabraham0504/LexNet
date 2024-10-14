@@ -10,7 +10,7 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
+  
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -18,18 +18,49 @@ const Login = () => {
     });
   };
 
+
+  const handleGoogleSignIn = () => {
+    window.open("http://localhost:5000/auth/google/callback", "_self")
+};
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+  
+    // Predefined admin credentials
+    const adminEmail = "admin@gmail.com";
+    const adminPassword = "admin@123";
+  
+    // Check if the input matches the admin credentials
+    if (formData.email === adminEmail && formData.password === adminPassword) {
+      // Redirect to admin dashboard directly
+      alert("Login success");
+      
+      // sessionStorage.setItem("firstName", "Admin");
+      navigate("/AdminDashboard");
+      setLoading(false); // Stop loading state
+      return; // Exit the function early
+    }
+  
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", formData);
       const data = response.data;
-
+  
       if (data.message === "Login successful.") {
         alert("Login success");
-        navigate("/");
+        console.log(data)
+        localStorage.setItem("name", response.data.firstName);
+        
+        // Navigate based on the role
+        if (data.role === "Admin") {
+          navigate("/AdminDashboard");
+        } else if (data.role === "Lawyer") {
+          navigate("/LawyerDashboard");
+        } else if (data.role === "Client") {
+          navigate("/ClientDashboard");
+        }
       } else {
         alert(`Login failed: ${data.message}`);
       }
@@ -39,11 +70,11 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  
   // Navigate to the Register page
-  const handleSignUp = () => {
-    navigate("/register");
-  };
+  // const handleSignUp = () => {
+  //   navigate("/register");
+  // };
 
   return (
     <div style={styles.loginPage}>
@@ -90,9 +121,9 @@ const Login = () => {
             </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <button type="button" onClick={handleSignUp} style={styles.btnSignUp}>
-              Sign Up
-            </button>
+            {/* <button type="button" className="google-signup-button" onClick={handleGoogleSignIn}>
+              Sign Up With Google
+              </button> */}
             <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
           </form>
         </div>

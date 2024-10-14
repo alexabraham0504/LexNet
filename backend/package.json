@@ -17,9 +17,13 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
+    "json": "^11.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.3",
     "nodemailer": "^6.9.15",
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "passport": "^0.7.0",
+    "passport-google-oauth2": "^0.2.0",
+    "web-token": "^1.1.4"
   }
 }

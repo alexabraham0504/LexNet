@@ -36,13 +36,17 @@ const Register = () => {
           error = "Email must be in lowercase and a valid format.";
         }
         break;
-      case "phone":
-        if (!/^\d{10}$/.test(value)) {
-          error = "Phone number must be a valid 10-digit number.";
-        } else if (/^(\d)\1{2,}$/.test(value)) {
-          error =
-            "Phone number cannot contain the same digit repeated more than three times.";
-        }
+        case "phone":
+          if (!/^\d{10}$/.test(value)) {
+            error = "Phone number must be a valid 10-digit number.";
+          } else if (/^(\d)\1{2,}$/.test(value)) {
+            error =
+              "Phone number cannot contain the same digit repeated more than three times.";
+          } else if (/^0/.test(value)) {
+            error = "Phone number cannot start with 0.";
+          } else if (/^.{0,2}0/.test(value)) {
+            error = "The first three digits of the phone number cannot contain 0.";
+          }
         break;
       case "password":
         if (value.length < 8) {
@@ -360,7 +364,7 @@ const styles = {
     fontWeight: "500",
     marginBottom: "0rem",
     color: "#02182b",
-    fontWeight: "bold",
+    // fontWeight: "bold",
   },
   formInput: {
     width: "100%",

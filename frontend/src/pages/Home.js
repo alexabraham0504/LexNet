@@ -8,14 +8,16 @@ import {
   faCommentsDollar,
   // faGavel,
 } from "@fortawesome/free-solid-svg-icons";
-import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
+import Footer from "../components/footer/footer-admin";
+import Navbar from "../components/navbar/navbar-admin";
+import Header from "../components/header/header-admin";
 // import "./Home.css"; // Ensure this path is correct
 
 const Home = () => {
   return (
     <>
       <div className="home-page">
+        <Header />
         <Navbar />
         <Helmet>
           <title>Lex Net</title>
@@ -32,8 +34,10 @@ const Home = () => {
               <div className="text-container d-flex flex-column justify-content-start align-items-start pt-6 slide">
                 <div className="text-1 fs-2 pb-3">Lex Net</div>
                 <div className="text-2 fs-4">
-                  Legal Consulting and Services 
-                  <span className="fw-bold"><br /> Kanjirappally{" "}</span>
+                  Legal Consulting and Services
+                  <span className="fw-bold">
+                    <br /> Kanjirappally{" "}
+                  </span>
                 </div>
                 <div className="text-3 fst-italic fw-light">
                   "There is no true justice where there is no truth, and justice
@@ -131,9 +135,14 @@ const Home = () => {
             <div className="col-lg-7">
               <div className="card-body">
                 <h6 className="guide-text mb-4">INTRO</h6>
-                <h5 className="lh-base text-center pb-4">Are you facing a legal issue?</h5>
+                <h5 className="lh-base text-center pb-4">
+                  Are you facing a legal issue?
+                </h5>
                 <p className="text-separator fw-normal">
-                  Our Site, led by Lex Net, offers consultancy, assistance, and representation for legal issues and debt recovery before courts and public authorities. We aim to stand by your side to find the best solutions for your problems.
+                  Our Site, led by Lex Net, offers consultancy, assistance, and
+                  representation for legal issues and debt recovery before
+                  courts and public authorities. We aim to stand by your side to
+                  find the best solutions for your problems.
                 </p>
               </div>
             </div>
@@ -203,9 +212,12 @@ const Home = () => {
             <div className="col-lg-7">
               <div className="card-body">
                 <h6 className="guide-text mb-4">ABOUT US</h6>
-                <h5 className="lh-base text-center pb-4">Why choose Lex Net?</h5>
+                <h5 className="lh-base text-center pb-4">
+                  Why choose Lex Net?
+                </h5>
                 <p className="text-separator fw-normal">
-                  We understand the complexities of legal matters and are committed to providing you with the best support possible.
+                  We understand the complexities of legal matters and are
+                  committed to providing you with the best support possible.
                 </p>
               </div>
             </div>

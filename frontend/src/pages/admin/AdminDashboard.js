@@ -4,17 +4,20 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers,
-  faUserTie,
-  faFileAlt,
-  faCog,
+  faUserCheck,
+  faLaptopCode,
+  faChartLine,
+  faUserCog,
 } from "@fortawesome/free-solid-svg-icons";
-import Footer from "../../components/Footer";
-import Navbar from "../../components/Navbar";
+// import Header from "../../components/header/header-admin";
+import Navbar from "../../components/navbar/navbar-admin";
+import Footer from "../../components/footer/footer-admin";
 
 const AdminDashboard = () => {
   return (
     <>
       <div className="admin-dashboard-page">
+        {/* <Header/> */}
         <Navbar />
         <Helmet>
           <title>Admin Dashboard - Lex Net</title>
@@ -62,7 +65,7 @@ const AdminDashboard = () => {
                       aria-label="Lawyer Verfication"
                     >
                       <span className="p-3">
-                        <FontAwesomeIcon icon={faUserTie} size="1x" />
+                        <FontAwesomeIcon icon={faUserCheck} size="1x" />
                       </span>
                       Lawyer Verification
                     </button>
@@ -75,20 +78,20 @@ const AdminDashboard = () => {
                       aria-label="Platform"
                     >
                       <span className="p-3">
-                        <FontAwesomeIcon icon={faFileAlt} size="1x" />
+                        <FontAwesomeIcon icon={faLaptopCode} size="1x" />
                       </span>
                       Platform
                     </button>
                   </Link>
                 </div>
                 <div className="col flex-grow-1">
-                  <Link to="/ReportAnalytics">
+                  <Link to="/ReportsAnalytics">
                     <button
                       className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
-                      aria-label="Report Analytics"
+                      aria-label="Reports Analytics"
                     >
                       <span className="p-3">
-                        <FontAwesomeIcon icon={faCog} size="1x" />
+                        <FontAwesomeIcon icon={faChartLine} size="1x" />
                       </span>
                       Reports Analytics
                     </button>
@@ -101,8 +104,7 @@ const AdminDashboard = () => {
                       aria-label="User Management"
                     >
                       <span className="p-3">
-                      <FontAwesomeIcon icon={faUserTie} size="1x" />
-
+                        <FontAwesomeIcon icon={faUserCog} size="1x" />
                       </span>
                       User Management
                     </button>
@@ -130,7 +132,7 @@ const AdminDashboard = () => {
                   aria-label="Lawyer Verification"
                 >
                   <span className="p-3">
-                    <FontAwesomeIcon icon={faUserTie} size="1x" />
+                    <FontAwesomeIcon icon={faUserCheck} size="1x" />
                   </span>
                   Lawyer Verification
                 </button>
@@ -141,9 +143,31 @@ const AdminDashboard = () => {
                   aria-label="Platfrom"
                 >
                   <span className="p-3">
-                    <FontAwesomeIcon icon={faFileAlt} size="1x" />
+                    <FontAwesomeIcon icon={faLaptopCode} size="1x" />
                   </span>
                   Platform
+                </button>
+              </Link>
+              <Link to="/ReportsAnalytics">
+                <button
+                  className="btn btn-outline-dark type-button p-2 btn-md"
+                  aria-label="Reports Analytics"
+                >
+                  <span className="p-3">
+                    <FontAwesomeIcon icon={faChartLine} size="1x" />
+                  </span>
+                  Reports Analytics
+                </button>
+              </Link>
+              <Link to="/UserManagement">
+                <button
+                  className="btn btn-outline-dark type-button p-2 btn-md"
+                  aria-label="UserManagement"
+                >
+                  <span className="p-3">
+                    <FontAwesomeIcon icon={faUserCog} size="1x" />
+                  </span>
+                  User Management
                 </button>
               </Link>
             </div>

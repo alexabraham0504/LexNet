@@ -1,194 +1,205 @@
-import React, { useState } from "react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
+import React from "react";
+import { Link } from "react-router-dom";
+// import Header from "../../components/header/header-lawyer";
+import Navbar from "../../components/navbar/navbar-lawyer";
+import Footer from "../../components/footer/footer-lawyer";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUserCog,
+  faFileAlt,
+  faComments,
+  faClipboardList,
+  faMoneyBillWave,
+  faCalendarPlus,
+} from "@fortawesome/free-solid-svg-icons";
 
 const LawyerDashboard = () => {
-  // Sample data for dashboard
-  const [activeCases, setActiveCases] = useState([
-    { caseId: 101, clientName: "John Doe", status: "In Progress" },
-    { caseId: 102, clientName: "Jane Smith", status: "Pending" },
-    { caseId: 103, clientName: "Mark White", status: "Closed" },
-  ]);
-
-  const [appointments, setAppointments] = useState([
-    { clientName: "John Doe", date: "Sep 26, 2024", time: "10:00 AM" },
-    { clientName: "Jane Smith", date: "Sep 27, 2024", time: "2:00 PM" },
-  ]);
-
-  const [messages, setMessages] = useState([
-    { clientName: "Mark White", message: "Please review the case documents." },
-    {
-      clientName: "Jane Smith",
-      message: "What is the next step for our case?",
-    },
-  ]);
-
-  const performanceMetrics = {
-    clientSatisfaction: "95%",
-    successfulCases: 24,
-    totalCases: 30,
-    engagementRate: "87%",
-  };
-
   return (
-    <div style={styles.dashboardPage}>
-      <Navbar /> {/* Navbar placed at the top */}
-      <div style={styles.dashboardContainer}>
-        <h2 style={styles.dashboardTitle}>Lawyer Dashboard</h2>
-
-        {/* Active Cases Overview */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Active Cases Overview</h3>
-          <ul style={styles.cardList}>
-            {activeCases.map((caseItem) => (
-              <li key={caseItem.caseId} style={styles.listItem}>
-                <span style={styles.listLabel}>Client:</span>{" "}
-                {caseItem.clientName} -{" "}
-                <span style={styles.listLabel}>Status:</span> {caseItem.status}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Upcoming Appointments */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Upcoming Appointments</h3>
-          <ul style={styles.cardList}>
-            {appointments.map((appointment, index) => (
-              <li key={index} style={styles.listItem}>
-                <span style={styles.listLabel}>Client:</span>{" "}
-                {appointment.clientName} -{" "}
-                <span style={styles.listLabel}>Date:</span> {appointment.date}{" "}
-                at {appointment.time}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Client Messages */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Client Messages</h3>
-          <ul style={styles.cardList}>
-            {messages.map((message, index) => (
-              <li key={index} style={styles.listItem}>
-                <span style={styles.listLabel}>Client:</span>{" "}
-                {message.clientName} -{" "}
-                <span style={styles.listLabel}>Message:</span> {message.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Performance Metrics */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Performance Metrics</h3>
-          <div style={styles.metricsContainer}>
-            <div style={styles.metric}>
-              <h4 style={styles.metricValue}>
-                {performanceMetrics.clientSatisfaction}
-              </h4>
-              <p style={styles.metricLabel}>Client Satisfaction</p>
-            </div>
-            <div style={styles.metric}>
-              <h4 style={styles.metricValue}>
-                {performanceMetrics.successfulCases}
-              </h4>
-              <p style={styles.metricLabel}>Successful Cases</p>
-            </div>
-            <div style={styles.metric}>
-              <h4 style={styles.metricValue}>
-                {performanceMetrics.totalCases}
-              </h4>
-              <p style={styles.metricLabel}>Total Cases</p>
-            </div>
-            <div style={styles.metric}>
-              <h4 style={styles.metricValue}>
-                {performanceMetrics.engagementRate}
-              </h4>
-              <p style={styles.metricLabel}>Engagement Rate</p>
+    <>
+      <div className="lawyer-dashboard-page">
+        {/* <Header /> */}
+        <Navbar /> {/* Navbar placed at the top */}
+        
+        {/* HERO SECTION */}
+        <div className="container-fluid">
+          <div className="row">
+            <div className="hero-section">
+              <div className="hero-overlay"></div>
+              <div className="text-container d-flex flex-column justify-content-start align-items-start pt-6 slide">
+                <div className="text-1 fs-2 pb-3">Welcome, Lawyer!</div>
+                <div className="text-2 fs-4">
+                  Manage your cases and appointments efficiently
+                </div>
+              </div>
+              {/* Horizontal Buttons */}
+              <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
+                <div className="col flex-grow-1">
+                  <Link to="/ProfileManagement">
+                    <button
+                      id="horizontal1"
+                      className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
+                      aria-label="ProfileManagement"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faUserCog} size="1x" />
+                      </span>
+                      ProfileMgmt
+                    </button>
+                  </Link>
+                </div>
+                <div className="col flex-grow-1">
+                  <Link to="/LegalDocumentAnalysis">
+                    <button
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="LegalDocumentAnalysis"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faFileAlt} size="1x" />
+                      </span>
+                      DocAnalysis
+                    </button>
+                  </Link>
+                </div>
+                <div className="col flex-grow-1">
+                  <Link to="/ClientMessaging">
+                    <button
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="ClientMessaging"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faComments} size="1x" />
+                      </span>
+                      ClientMsg
+                    </button>
+                  </Link>
+                </div>
+                <div className="col flex-grow-1">
+                  <Link to="/CaseManagement">
+                    <button
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="CaseManagement"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faClipboardList} size="1x" />
+                      </span>
+                      CaseMgmt
+                    </button>
+                  </Link>
+                </div>
+                <div className="col flex-grow-1">
+                  <Link to="/BillingPayment">
+                    <button
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="BillingPayment"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faMoneyBillWave} size="1x" />
+                      </span>
+                      BillPay
+                    </button>
+                  </Link>
+                </div>
+                <div className="col flex-grow-1">
+                  <Link to="/AppointmentScheduling">
+                    <button
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="AppointmentScheduling"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faCalendarPlus} size="1x" />
+                      </span>
+                      AppSched
+                    </button>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        
+        <Footer /> {/* Footer placed at the bottom */}
       </div>
-      <Footer /> {/* Footer placed at the bottom */}
-    </div>
-  );
-};
 
-// Styles
-const styles = {
-  dashboardPage: {
-    display: "flex",
-    flexDirection: "column", // Stack items vertically
-    minHeight: "100vh",
-    backgroundImage: "url('/assets/lawyerdashboard.jpg')", // Uncomment if using a background image
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  },
-  dashboardContainer: {
-    display: "flex",
-    flexDirection: "column", // Ensure contents are stacked vertically
-    flex: 1, // Take remaining space
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    padding: "2rem",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-    maxWidth: "720px",
-    margin: "2rem auto", // Center horizontally and add margin
-  },
-  dashboardTitle: {
-    textAlign: "center",
-    color: "#2d6da5",
-    fontSize: "2rem",
-    fontWeight: "bold",
-    marginBottom: "2rem",
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: "1.5rem",
-    borderRadius: "8px",
-    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-    marginBottom: "1.5rem",
-  },
-  cardTitle: {
-    fontSize: "1.5rem",
-    color: "#2d6da5",
-    marginBottom: "1rem",
-  },
-  cardList: {
-    listStyleType: "none",
-    paddingLeft: "0",
-    marginBottom: "0",
-  },
-  listItem: {
-    padding: "0.8rem",
-    backgroundColor: "#f2f2f2",
-    borderRadius: "6px",
-    marginBottom: "0.8rem",
-  },
-  listLabel: {
-    fontWeight: "bold",
-  },
-  metricsContainer: {
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  metric: {
-    backgroundColor: "#3498db",
-    color: "#fff",
-    textAlign: "center",
-    padding: "1rem",
-    borderRadius: "6px",
-    width: "23%",
-  },
-  metricValue: {
-    fontSize: "1.8rem",
-    margin: "0",
-  },
-  metricLabel: {
-    marginTop: "0.5rem",
-    fontSize: "1rem",
-  },
+      <style>
+        {`
+          /* HOME PAGE ====================== */
+          .home-page {
+            font-size: 0.9rem;
+            max-width: 100%;
+          }
+          .hero-section {
+            background-image: url("/assets/hero.webp");
+            height: 600px; /* Adjust as necessary */
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+          }
+          .hero-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+          }
+          .text-container {
+            position: relative;
+            z-index: 1;
+            margin-top: 8rem;
+            margin-left: 3rem;
+          }
+          .text-1,
+          .text-2 {
+            color: #fff;
+            font-family: "Marmelad", sans-serif;
+            letter-spacing: 0.1rem;
+          }
+          .text-2 {
+            line-height: 2rem;
+          }
+          .text-2 span {
+            color: rgb(232, 189, 134);
+            font-size: 1.3rem;
+          }
+          .text-3 {
+            color: #ebe2d6ff;
+            font-size: 0.9rem;
+            padding-top: 3rem;
+            line-height: 1.8rem;
+            width: 60%;
+          }
+          .text-3 span {
+            font-size: 0.7rem;
+          }
+          .slide {
+            opacity: 0;
+            transform: translateX(-100%);
+            animation: slideLeft 1s forwards;
+          }
+          @keyframes slideLeft {
+            from {
+              opacity: 0;
+              transform: translateX(-100%);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            .text-container {
+              margin-left: 1rem;
+            }
+            .text-3 {
+              width: 90%;
+            }
+          }
+        `}
+      </style>
+    </>
+  );
 };
 
 export default LawyerDashboard;

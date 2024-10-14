@@ -6,11 +6,12 @@ const nodemailer = require("nodemailer");
 const router = express.Router();
 require("dotenv").config(); 
 const bcrypt = require('bcrypt');
-
+const { console } = require("inspector");
+const jwt = require('jsonwebtoken');
 
 // Register route
 router.post("/register", async (req, res) => {
-  const { firstName, lastName, email, phone, password } = req.body;
+  const { firstName, lastName, email, phone, password,role } = req.body;
   
   try {
     const newUser = new User({
@@ -19,6 +20,7 @@ router.post("/register", async (req, res) => {
       email,
       phone,
       password, // Store password directly
+      role,
     });
 
     await newUser.save();
@@ -32,27 +34,40 @@ router.post("/register", async (req, res) => {
 // Login route
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
-    console.log(req.body)
+     // Check if `firstName` exists in the response
+
   
     try {
       const user = await User.findOne({ email });
       if (!user) {
         return res.status(400).json({ message: "Invalid credentials1." });
       }
+  //       // Create JWT token
+  const token = jwt.sign({ id: user._id, role: user.role }, 'process.env.JWT_SECRET', {
+    expiresIn: '1h',
+  });
+
+  // Send token as response
+  res.json({ token });
   
       // Compare plain text password
       if (user.password !== password) {
         return res.status(400).json({ message: "password is wrong" });
       }
       else{
-      res.status(200).json({ message: "Login successful." })};
+      res.status(200).json({ message: "Login successful.",
+        role: user.role,
+        FirstName: user.firstName,
+
+       })};
+      
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error." });
     }
   });
 
-
+//Forgot password route
 router.post('/forgot-password', async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -90,7 +105,7 @@ router.post('/forgot-password', async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
+// Reset password route
 router.post('/resetpassword/:token', async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
