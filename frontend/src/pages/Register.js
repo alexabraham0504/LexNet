@@ -7,8 +7,8 @@ import axios from "axios";
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    fullName: "",
+    // lastName: "",
     email: "",
     phone: "",
     password: "",
@@ -23,31 +23,34 @@ const Register = () => {
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
-      case "firstName":
-      case "lastName":
+      case "fullName":
+        // case "lastName":
         if (!/^[a-zA-Z]+$/.test(value)) {
           error = `${
-            name === "firstName" ? "First" : "Last"
+            name === "fullName" ? "Full" : "Name"
           } name should contain only alphabets.`;
         }
         break;
-      case "email":
-        if (!/^[a-z0-9]+@[a-z]+\.[a-z]{2,3}$/.test(value)) {
-          error = "Email must be in lowercase and a valid format.";
+        // case "email":
+        //   if (!/^[a-z0-9]+@[a-z]+\.[a-z]{2,6}$/.test(value)) {
+        //     error = "Email must be in lowercase and a valid format.";
+        //   }
+        //   break;
+        
+      case "phone":
+        if (!/^\d{10}$/.test(value)) {
+          error = "Phone number must be a valid 10-digit number.";
+        } else if (/^(\d)\1{2,}$/.test(value)) {
+          error =
+            "Phone number cannot contain the same digit repeated more than three times.";
+        } else if (/^0/.test(value)) {
+          error = "Phone number cannot start with 0.";
+        } else if (/^(?:[1-9][0-9]?0{2,})/.test(value)) {
+          error =
+            "The first three digits of the phone number cannot contain repetitive 0s.";
         }
         break;
-        case "phone":
-          if (!/^\d{10}$/.test(value)) {
-            error = "Phone number must be a valid 10-digit number.";
-          } else if (/^(\d)\1{2,}$/.test(value)) {
-            error =
-              "Phone number cannot contain the same digit repeated more than three times.";
-          } else if (/^0/.test(value)) {
-            error = "Phone number cannot start with 0.";
-          } else if (/^.{0,2}0/.test(value)) {
-            error = "The first three digits of the phone number cannot contain 0.";
-          }
-        break;
+
       case "password":
         if (value.length < 8) {
           error = "Password must be at least 8 characters long.";
@@ -85,6 +88,43 @@ const Register = () => {
     validateField(name, value);
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   const newErrors = {};
+  //   Object.keys(formData).forEach((field) => {
+  //     const error = validateField(field, formData[field]);
+  //     if (error) {
+  //       newErrors[field] = error;
+  //     }
+  //   });
+
+  //   if (Object.keys(newErrors).length > 0) {
+  //     setErrors(newErrors);
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   try {
+  //     const response = await axios.post(
+  //       "http://localhost:5000/api/auth/register",
+  //       formData
+  //     );
+  //     const data = await response.data;
+
+  //     if (data.message === "User registered successfully.") {
+  //       alert("User registered successfully.");
+  //       navigate("/login");
+  //     } else {
+  //       alert("Registration failed", data.message);
+  //       navigate("/register");
+  //     }
+  //   } catch (err) {
+  //     setErrors({ submit: err.message });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
@@ -108,9 +148,12 @@ const Register = () => {
       );
       const data = await response.data;
 
-      if (data.message === "User registered successfully.") {
-        alert("User registered successfully.");
-        navigate("/login");
+      if (
+        data.message ===
+        "Registration successful. Please check your email to verify your account."
+      ) {
+        alert(data.message);
+        navigate("/verifyemail");
       } else {
         alert("Registration failed", data.message);
         navigate("/register");
@@ -135,16 +178,16 @@ const Register = () => {
       <div style={styles.registerContainer}>
         <h2 style={styles.registerTitle}>Register</h2>
         <form onSubmit={handleSubmit}>
-          {/* First Name */}
+          {/* Full Name */}
           <div style={styles.formGroup}>
-            <label htmlFor="firstName" style={styles.formLabel}>
-              First Name
+            <label htmlFor="fullName" style={styles.formLabel}>
+              Full Name
             </label>
             <input
               type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
+              id="fullName"
+              name="fullName"
+              value={formData.fullName}
               onChange={handleChange}
               required
               style={{
@@ -157,7 +200,7 @@ const Register = () => {
             )}
           </div>
 
-          {/* Last Name */}
+          {/* Last Name
           <div style={styles.formGroup}>
             <label htmlFor="lastName" style={styles.formLabel}>
               Last Name
@@ -177,7 +220,7 @@ const Register = () => {
             {errors.lastName && (
               <p style={styles.errorMessage}>{errors.lastName}</p>
             )}
-          </div>
+          </div> */}
 
           {/* Email */}
           <div style={styles.formGroup}>

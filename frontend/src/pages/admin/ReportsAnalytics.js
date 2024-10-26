@@ -1,88 +1,133 @@
-import React, { useEffect, useState } from 'react';
-// import './ReportsAnalytics.css'; // Optional CSS for styling
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Chart from "chart.js/auto";
 
 const ReportsAnalytics = () => {
-    const [userActivity, setUserActivity] = useState([]);
-    const [lawyerPerformance, setLawyerPerformance] = useState([]);
-    const [systemHealth, setSystemHealth] = useState({ uptime: '99.9%', status: 'All systems operational' });
+  const [userActivity, setUserActivity] = useState([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Sample data (replace with actual API calls)
-        setUserActivity([
-            { id: 1, user: 'Client1', activity: 'Viewed Legal Document', timestamp: '2024-09-24 10:00 AM' },
-            { id: 2, user: 'Lawyer1', activity: 'Consultation Scheduled', timestamp: '2024-09-24 11:30 AM' },
-        ]);
-        setLawyerPerformance([
-            { id: 1, name: 'Lawyer A', casesHandled: 10, earnings: 'Rs.5,000' },
-            { id: 2, name: 'Lawyer B', casesHandled: 15, earnings: 'Rs.7,500' },
-        ]);
-    }, []);
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, []);
 
-    return (
-        <div className="reports-analytics">
-            <h1>Reports & Analytics</h1>
-            
-            <div className="report-section">
-                <h2>User Activity</h2>
-                <table className="activity-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Activity</th>
-                            <th>Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {userActivity.map(item => (
-                            <tr key={item.id}>
-                                <td>{item.user}</td>
-                                <td>{item.activity}</td>
-                                <td>{item.timestamp}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+  const fetchAnalyticsData = async () => {
+    try {
+      // Fetch user activity reports
+      const activityResponse = await axios.get("http://localhost:5000/api/auth/user-activity");
+      console.log("User Activity Response:", activityResponse.data); // Debug log
+      setUserActivity(activityResponse.data);
+  
+      // Fetch performance metrics
+      const performanceResponse = await axios.get("http://localhost:5000/api/auth/performance-metrics");
+      console.log("Performance Metrics Response:", performanceResponse.data); // Debug log
+      setPerformanceMetrics(performanceResponse.data);
+  
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+      setLoading(false);
+    }
+  };
 
-            <div className="report-section">
-                <h2>Lawyer Performance</h2>
-                <table className="performance-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Cases Handled</th>
-                            <th>Earnings</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {lawyerPerformance.map(item => (
-                            <tr key={item.id}>
-                                <td>{item.name}</td>
-                                <td>{item.casesHandled}</td>
-                                <td>{item.earnings}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+  const styles = {
+    container: { padding: "20px" },
+    heading: { marginBottom: "20px" },
+    reportSection: { marginBottom: "40px" },
+    table: { width: "100%", borderCollapse: "collapse", marginBottom: "20px" },
+    th: { padding: "12px", textAlign: "left", backgroundColor: "#f4f4f4", borderBottom: "1px solid #ddd" },
+    td: { padding: "12px", textAlign: "left", borderBottom: "1px solid #ddd" },
+    chartContainer: { width: "600px", margin: "0 auto" }
+  };
 
-            <div className="report-section">
-                <h2>Platform Health</h2>
-                <p>Status: {systemHealth.status}</p>
-                <p>Uptime: {systemHealth.uptime}</p>
-            </div>
+  const renderUserActivityTable = () => (
+    <table style={styles.table}>
+      <thead>
+        <tr>
+          <th style={styles.th}>Lawyer Name</th>
+          <th style={styles.th}>Client Inquiries</th>
+          <th style={styles.th}>Legal Service Requests</th>
+        </tr>
+      </thead>
+      <tbody>
+        {userActivity.map((activity, index) => (
+          <tr key={index}>
+            <td style={styles.td}>{activity.lawyerName}</td>
+            <td style={styles.td}>{activity.clientInquiries}</td>
+            <td style={styles.td}>{activity.serviceRequests}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 
-            <style jsx>{`
-                .reports-analytics { padding: 20px; }
-                h1 { text-align: center; }
-                .report-section { margin: 20px 0; }
-                .activity-table, .performance-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                th, td { padding: 12px; border: 1px solid #ddd; }
-                th { background-color: #f2f2f2; }
-                tr:hover { background-color: #f1f1f1; }
-            `}</style>
+  const renderPerformanceMetrics = () => (
+    <div>
+      {performanceMetrics.map((metric, index) => (
+        <div key={index} style={styles.reportSection}>
+          <h3>{metric.title}</h3>
+          <p>{metric.description}</p>
+          <div style={styles.chartContainer}>
+            <canvas id={`chart-${index}`} width="400" height="200"></canvas>
+          </div>
         </div>
-    );
+      ))}
+    </div>
+  );
+
+  useEffect(() => {
+    if (performanceMetrics.length > 0) {
+      performanceMetrics.forEach((metric, index) => {
+        const ctx = document.getElementById(`chart-${index}`);
+        if (ctx) {
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: metric.data.labels,
+              datasets: [
+                {
+                  label: metric.title,
+                  data: metric.data.values,
+                  borderColor: "#4caf50",
+                  backgroundColor: "rgba(76, 175, 80, 0.2)",
+                  fill: true,
+                },
+              ],
+            },
+          });
+        }
+      });
+    }
+  }, [performanceMetrics]);
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.heading}>Analytics and Reporting</h2>
+      {loading ? (
+        <p>Loading analytics data...</p>
+      ) : (
+        <>
+          <div style={styles.reportSection}>
+            <h3>User Activity Reports</h3>
+            {userActivity.length > 0 ? (
+              renderUserActivityTable()
+            ) : (
+              <p>No user activity data available.</p>
+            )}
+          </div>
+
+          <div style={styles.reportSection}>
+            <h3>Performance Metrics</h3>
+            {performanceMetrics.length > 0 ? (
+              renderPerformanceMetrics()
+            ) : (
+              <p>No performance metrics data available.</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 export default ReportsAnalytics;

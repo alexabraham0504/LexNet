@@ -20,7 +20,7 @@ const Home = () => {
         <Header />
         <Navbar />
         <Helmet>
-          <title>Lex Net</title>
+          <title>Lex Net-Home</title>
           <meta
             name="description"
             content="Our Site, led by Lex Net, offers consultancy, assistance, and representation for legal issues and debt recovery before courts and public authorities."

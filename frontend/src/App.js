@@ -11,6 +11,8 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./components/VerifyEmail"; // Corrected Import
+import VerifyYourEmail from "./pages/VerifyyourEmail"; // Corrected Import //
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -38,7 +40,7 @@ import CaseManagement from "./pages/lawyer/CaseManagement";
 import ClientMessaging from "./pages/lawyer/ClientMessaging";
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LegalDocumentAnalysis from "./pages/lawyer/LegalDocumentAnalysis";
-import ProfileManagement from "./pages/lawyer/ProfileManagement";
+import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
 
 function App() {
   return (
@@ -59,6 +61,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/verify/:token" element={<VerifyEmail />} /> {/* Corrected Route */}
+          <Route path="/verifyemail" element={<VerifyYourEmail />} />
+
 
           {/* Admin Pages */}
           <Route path="/admindashboard" element={<AdminDashboard />} />
@@ -86,7 +91,7 @@ function App() {
           <Route path="/clientmessaging" element={<ClientMessaging />} />
           <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
           <Route path="/legaldocumentanalysis" element={<LegalDocumentAnalysis />} />
-          <Route path="/profilemanagement" element={<ProfileManagement />} />
+          <Route path="/lawyerregistration" element={<LawyerRegistration />} />
         </Routes>
       </BrowserRouter>
     </div>

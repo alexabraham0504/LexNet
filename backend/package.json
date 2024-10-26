@@ -10,20 +10,26 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/material": "^6.1.4",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
+    "chart.js": "^4.4.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
     "json": "^11.0.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.6.3",
+    "mongoose": "^8.7.1",
+    "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.15",
     "nodemon": "^3.1.7",
     "passport": "^0.7.0",
     "passport-google-oauth2": "^0.2.0",
+    "react-hook-form": "^7.53.0",
     "web-token": "^1.1.4"
   }
 }

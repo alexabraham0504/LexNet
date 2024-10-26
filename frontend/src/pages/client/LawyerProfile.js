@@ -1,119 +1,221 @@
-import React from "react";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const LawyerProfile = ({ lawyer, onMessageClick, onScheduleClick }) => {
+// Messaging Component
+const Messaging = ({ lawyerId, clientId }) => {
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+
+  useEffect(() => {
+    // Fetch messages between client and lawyer
+    const fetchMessages = async () => {
+      try {
+        const res = await axios.get(`/api/messages/${lawyerId}/${clientId}`);
+        setMessages(res.data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+    fetchMessages();
+  }, [lawyerId, clientId]);
+
+  const handleSendMessage = async () => {
+    if (newMessage.trim() === '') return;
+
+    const messageData = {
+      senderId: clientId,
+      receiverId: lawyerId,
+      text: newMessage,
+    };
+
+    try {
+      const res = await axios.post(`/api/messages`, messageData);
+      setMessages([...messages, res.data]);
+      setNewMessage(''); // Clear input field
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
   return (
-    <div style={styles.profileContainer}>
-      <h2 style={styles.header}>{lawyer.name}</h2>
-      <div style={styles.detailsContainer}>
-        <div style={styles.detail}>
-          <h3 style={styles.subHeader}>Expertise</h3>
-          <p style={styles.text}>{lawyer.expertise}</p>
-        </div>
-        <div style={styles.detail}>
-          <h3 style={styles.subHeader}>Qualifications</h3>
-          <p style={styles.text}>{lawyer.qualifications}</p>
-        </div>
-        <div style={styles.detail}>
-          <h3 style={styles.subHeader}>Years of Experience</h3>
-          <p style={styles.text}>{lawyer.yearsOfExperience}</p>
-        </div>
-        <div style={styles.detail}>
-          <h3 style={styles.subHeader}>Availability</h3>
-          <p style={styles.text}>{lawyer.availability}</p>
-        </div>
-        <div style={styles.detail}>
-          <h3 style={styles.subHeader}>Client Reviews</h3>
-          <p style={styles.text}>
-            {lawyer.reviews.map((review, index) => (
-              <div key={index}>
-                <strong>{review.clientName}:</strong> {review.comment} ⭐{review.rating}
-              </div>
-            ))}
-          </p>
-        </div>
+    <div style={styles.messagingContainer}>
+      <div style={styles.messageBox}>
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            style={
+              msg.senderId === clientId ? styles.messageClient : styles.messageLawyer
+            }
+          >
+            {msg.text}
+          </div>
+        ))}
       </div>
-      <div style={styles.buttonContainer}>
-        <button onClick={onMessageClick} style={styles.button}>
-          Message Lawyer
-        </button>
-        <button onClick={onScheduleClick} style={styles.button}>
-          Schedule Appointment
+      <div style={styles.sendMessage}>
+        <input
+          type="text"
+          placeholder="Type your message..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          style={styles.input}
+        />
+        <button onClick={handleSendMessage} style={styles.button}>
+          Send
         </button>
       </div>
     </div>
   );
 };
 
-// Sample Lawyer Data
-const sampleLawyer = {
-  name: "John Doe",
-  expertise: "Family Law",
-  qualifications: "JD from Harvard Law School",
-  yearsOfExperience: 10,
-  availability: "Mon-Fri, 9 AM - 5 PM",
-  reviews: [
-    { clientName: "Alice", comment: "Very helpful!", rating: 5 },
-    { clientName: "Bob", comment: "Great experience.", rating: 4 },
-  ],
+// Appointment Scheduling Component
+const Appointment = ({ lawyerId, clientId }) => {
+  const [selectedDate, setSelectedDate] = useState('');
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState('');
+
+  useEffect(() => {
+    // Fetch available slots for the selected lawyer
+    const fetchAvailableSlots = async () => {
+      try {
+        const res = await axios.get(`/api/appointments/availability/${lawyerId}`);
+        setAvailableSlots(res.data);
+      } catch (error) {
+        console.error('Error fetching available slots:', error);
+      }
+    };
+    fetchAvailableSlots();
+  }, [lawyerId]);
+
+  const handleScheduleAppointment = async () => {
+    if (!selectedDate || !selectedSlot) return;
+
+    const appointmentData = {
+      lawyerId,
+      clientId,
+      date: selectedDate,
+      timeSlot: selectedSlot,
+    };
+
+    try {
+      await axios.post(`/api/appointments/schedule`, appointmentData);
+      alert('Appointment scheduled successfully!');
+    } catch (error) {
+      console.error('Error scheduling appointment:', error);
+    }
+  };
+
+  return (
+    <div style={styles.appointmentContainer}>
+      <h3 style={styles.title}>Schedule Appointment</h3>
+      <label style={styles.label}>Select Date</label>
+      <input
+        type="date"
+        value={selectedDate}
+        onChange={(e) => setSelectedDate(e.target.value)}
+        style={styles.input}
+      />
+
+      <label style={styles.label}>Select Time Slot</label>
+      <select
+        value={selectedSlot}
+        onChange={(e) => setSelectedSlot(e.target.value)}
+        style={styles.input}
+      >
+        <option value="">Select a time slot</option>
+        {availableSlots.map((slot, index) => (
+          <option key={index} value={slot}>
+            {slot}
+          </option>
+        ))}
+      </select>
+
+      <button onClick={handleScheduleAppointment} style={styles.button}>
+        Confirm Appointment
+      </button>
+    </div>
+  );
 };
 
-// Styles
+// Combined Messaging and Appointment Component
+const LawyerProfile = ({ lawyerId, clientId }) => {
+  return (
+    <div style={styles.lawyerInteractionContainer}>
+      <Messaging lawyerId={lawyerId} clientId={clientId} />
+      <Appointment lawyerId={lawyerId} clientId={clientId} />
+    </div>
+  );
+};
+
+// CSS-in-JS Styling
 const styles = {
-  profileContainer: {
-    padding: "20px",
-    maxWidth: "800px",
-    margin: "0 auto",
-    border: "1px solid #ccc",
-    borderRadius: "6px",
-    backgroundColor: "#f9f9f9",
+  messagingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: '400px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '20px',
   },
-  header: {
-    textAlign: "center",
-    fontSize: "28px",
-    marginBottom: "20px",
-    color: "#2d6da5",
+  messageBox: {
+    height: '300px',
+    overflowY: 'auto',
+    padding: '10px',
+    backgroundColor: '#f9f9f9',
+    borderRadius: '8px',
+    marginBottom: '10px',
   },
-  detailsContainer: {
-    marginBottom: "20px",
+  messageClient: {
+    backgroundColor: '#007bff',
+    color: 'white',
+    padding: '8px',
+    borderRadius: '12px',
+    marginBottom: '10px',
+    alignSelf: 'flex-end',
   },
-  detail: {
-    marginBottom: "15px",
+  messageLawyer: {
+    backgroundColor: '#f1f1f1',
+    padding: '8px',
+    borderRadius: '12px',
+    marginBottom: '10px',
+    alignSelf: 'flex-start',
   },
-  subHeader: {
-    fontSize: "20px",
-    marginBottom: "5px",
-    color: "#333",
+  sendMessage: {
+    display: 'flex',
   },
-  text: {
-    margin: "0",
-    color: "#555",
-  },
-  buttonContainer: {
-    display: "flex",
-    justifyContent: "space-between",
+  input: {
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
   },
   button: {
-    padding: "10px 20px",
-    backgroundColor: "#2d6da5",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    flex: "1",
-    margin: "0 10px",
+    padding: '10px 20px',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    marginLeft: '10px',
+    cursor: 'pointer',
+  },
+  appointmentContainer: {
+    width: '300px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    padding: '16px',
+  },
+  title: {
+    marginBottom: '15px',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '5px',
+  },
+  lawyerInteractionContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '20px',
   },
 };
 
-const App = () => {
-  const handleMessageClick = () => {
-    alert("Message functionality not implemented yet.");
-  };
-
-  const handleScheduleClick = () => {
-    alert("Scheduling functionality not implemented yet.");
-  };
-
-  return <LawyerProfile lawyer={sampleLawyer} onMessageClick={handleMessageClick} onScheduleClick={handleScheduleClick} />;
-};
-
-export default App;
+export default LawyerProfile;

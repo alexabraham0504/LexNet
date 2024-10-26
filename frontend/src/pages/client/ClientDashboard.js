@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { Helmet } from "react-helmet";
 import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
 // import Header from "../../components/header/header-client";
@@ -52,6 +53,13 @@ const ClientDashboard = () => {
       <div className="client-dashboard-page">
         {/* <Header /> */}
         <Navbar />
+        <Helmet>
+          <title>Client Dashboard - Lex Net</title>
+          <meta
+            name="description"
+            // content="Admin dashboard for managing Lex Net legal services."
+          />
+        </Helmet>
 
         {/* Hero Section */}
         <div className="container-fluid">
@@ -85,7 +93,8 @@ const ClientDashboard = () => {
                         className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
                         aria-label={button.label}
                       >
-                        <i className={`fas fa-${button.icon} me-2`}></i> {button.label}
+                        <i className={`fas fa-${button.icon} me-2`}></i>{" "}
+                        {button.label}
                       </button>
                     </Link>
                   </div>
@@ -96,7 +105,11 @@ const ClientDashboard = () => {
             {/* Buttons for small screens */}
             <div className="mobile-btn d-md-none d-flex justify-content-between pt-2">
               {[
-                { to: "/client-chat-page", icon: "comments", label: "Client Chat" },
+                {
+                  to: "/client-chat-page",
+                  icon: "comments",
+                  label: "Client Chat",
+                },
                 { to: "/appoint", icon: "calendar-alt", label: "Book" },
                 { to: "/review", icon: "star", label: "Rate" },
                 { to: "/profile", icon: "user", label: "Me" },
@@ -106,7 +119,8 @@ const ClientDashboard = () => {
               ].map((button, index) => (
                 <Link key={index} to={button.to}>
                   <button className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1">
-                    <i className={`fas fa-${button.icon} me-2`}></i> {button.label}
+                    <i className={`fas fa-${button.icon} me-2`}></i>{" "}
+                    {button.label}
                   </button>
                 </Link>
               ))}
@@ -119,13 +133,14 @@ const ClientDashboard = () => {
 
       <style>
         {`
-          .client-dashboard-page {
+          /* HOME PAGE ====================== */
+          .home-page {
             font-size: 0.9rem;
             max-width: 100%;
           }
           .hero-section {
-            background-image: url("/assets/client-dashboard.jpg");
-            height: 600px;
+            background-image: url("/assets/hero.webp");
+            height: 600px; /* Adjust as necessary */
             background-size: cover;
             background-position: center;
             position: relative;
@@ -145,7 +160,8 @@ const ClientDashboard = () => {
             margin-top: 8rem;
             margin-left: 3rem;
           }
-          .text-1, .text-2 {
+          .text-1,
+          .text-2 {
             color: #fff;
             font-family: "Marmelad", sans-serif;
             letter-spacing: 0.1rem;
@@ -164,61 +180,32 @@ const ClientDashboard = () => {
             line-height: 1.8rem;
             width: 60%;
           }
-          .slide {
-            animation: slideIn 1s ease-out;
+          .text-3 span {
+            font-size: 0.7rem;
           }
-
-          @keyframes slideIn {
+          .slide {
+            opacity: 0;
+            transform: translateX(-100%);
+            animation: slideLeft 1s forwards;
+          }
+          @keyframes slideLeft {
             from {
               opacity: 0;
-              transform: translateY(20px);
+              transform: translateX(-100%);
             }
             to {
               opacity: 1;
-              transform: translateY(0);
+              transform: translateX(0);
             }
           }
-
-          .horizontal-btn {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            padding: 2rem 0;
-          }
-
-          .type-button {
-            font-family: "Marmelad", sans-serif;
-            font-size: 1.2rem;
-            letter-spacing: 0.1rem;
-            text-transform: uppercase;
-            transition: all 0.3s ease-in-out;
-          }
-
-          .type-button:hover {
-            background-color: #343a40;
-            color: #fff;
-          }
-
-          /* Mobile buttons */
-          .mobile-btn {
-            margin: 0.5rem;
-          }
-
-          .mobile-btn button {
-            flex-grow: 1;
-          }
-
-          /* General styling */
-          .btn-outline-dark {
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #343a40;
-            border-color: #343a40;
-            transition: background-color 0.3s ease, color 0.3s ease;
-          }
-
-          .btn-outline-dark:hover {
-            background-color: #343a40;
-            color: #ffffff;
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            .text-container {
+              margin-left: 1rem;
+            }
+            .text-3 {
+              width: 90%;
+            }
           }
         `}
       </style>

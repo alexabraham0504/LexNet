@@ -18,31 +18,14 @@ const Login = () => {
     });
   };
 
-
   const handleGoogleSignIn = () => {
-    window.open("http://localhost:5000/auth/google/callback", "_self")
-};
-
+    window.open("http://localhost:5000/auth/google/callback", "_self");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-  
-    // Predefined admin credentials
-    const adminEmail = "admin@gmail.com";
-    const adminPassword = "admin@123";
-  
-    // Check if the input matches the admin credentials
-    if (formData.email === adminEmail && formData.password === adminPassword) {
-      // Redirect to admin dashboard directly
-      alert("Login success");
-      
-      // sessionStorage.setItem("firstName", "Admin");
-      navigate("/AdminDashboard");
-      setLoading(false); // Stop loading state
-      return; // Exit the function early
-    }
   
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", formData);
@@ -50,8 +33,9 @@ const Login = () => {
   
       if (data.message === "Login successful.") {
         alert("Login success");
-        console.log(data)
-        localStorage.setItem("name", response.data.firstName);
+        console.log(data);
+        localStorage.setItem("token", data.token); // Store the JWT token
+        localStorage.setItem("name", data.firstName); // Store the user's first name
         
         // Navigate based on the role
         if (data.role === "Admin") {
@@ -70,16 +54,11 @@ const Login = () => {
       setLoading(false);
     }
   };
-  
-  // Navigate to the Register page
-  // const handleSignUp = () => {
-  //   navigate("/register");
-  // };
 
   return (
     <div style={styles.loginPage}>
       <div style={styles.logoContainer}>
-        <img src="/favicon.png" alt="Logo" style={styles.logo} /> {/* Update with your logo path */}
+        <img src="/favicon.png" alt="Logo" style={styles.logo} />
         <h1 style={styles.appName}>Lex Net</h1>
       </div>
       <div style={styles.overlay}>
@@ -116,14 +95,10 @@ const Login = () => {
               <input type="checkbox" id="rememberMe" />
               <label htmlFor="rememberMe" style={styles.rememberMeLabel}>Remember Me</label>
             </div>
-            <button type="submit" style={styles.btnLogin} disabled={loading}>
+            <button id="login" type="submit" style={styles.btnLogin} disabled={loading}>
               {loading ? "Signing in..." : "Login"}
             </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
-
-            {/* <button type="button" className="google-signup-button" onClick={handleGoogleSignIn}>
-              Sign Up With Google
-              </button> */}
             <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
           </form>
         </div>

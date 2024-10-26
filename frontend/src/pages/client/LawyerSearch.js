@@ -1,281 +1,371 @@
-import React, { useState } from "react";
+// import React, { useEffect, useState } from "react";
+// import axios from "axios";
+// import Footer from "../../components/footer/footer-client";
+// import Navbar from "../../components/navbar/navbar-client";
+
+// const LawyerSearch = () => {
+//   const [verifiedLawyers, setVerifiedLawyers] = useState([]);
+//   const [searchTerm, setSearchTerm] = useState("");
+
+//   useEffect(() => {
+//     fetchVerifiedLawyers();
+//   }, []);
+
+//   const fetchVerifiedLawyers = async () => {
+//     try {
+//       // Use GET request to fetch verified lawyers
+//       const response = await axios.get("http://localhost:5000/api/verified");
+//       console.log("All verified lawyers:", response.data); // Log response to check
+
+//       // Filter lawyers who have isVerified set to true and are active
+//       const filteredLawyers = response.data.filter(
+//         (lawyer) => lawyer.isVerified === true && lawyer.isActive === true
+//       );
+
+//       // Set the filtered lawyers to the state
+//       setVerifiedLawyers(filteredLawyers);
+//     } catch (error) {
+//       console.error("Error fetching verified lawyers:", error);
+//     }
+//   };
+
+//   // Filter lawyers by search term (case-insensitive)
+//   const filteredLawyers = verifiedLawyers.filter(
+//     (lawyer) =>
+//       lawyer.fullname &&
+//       lawyer.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+//   );
+
+//   return (
+//     <div>
+//       <Navbar />
+
+//       <div className="search-lawyers-container">
+//         <div className="search-box">
+//           <h1>Find Verified Lawyers</h1>
+//           <input
+//             type="text"
+//             placeholder="Search Lawyers..."
+//             value={searchTerm}
+//             onChange={(e) => setSearchTerm(e.target.value)}
+//           />
+//         </div>
+
+//         {/* Verified Lawyers Table */}
+//         <div className="table-container">
+//           <table className="lawyer-table">
+//             <thead>
+//               <tr>
+//                 <th>Profile Picture</th>
+//                 <th>Name</th>
+//                 <th>Specialization</th>
+//                 <th>Location</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {filteredLawyers.map((lawyer) => (
+//                 <tr key={lawyer._id}>
+//                   <td>
+//                     {lawyer.profilePicture ? (
+//                       <img
+//                         src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+//                         alt="Profile"
+//                         className="profile-picture"
+//                       />
+//                     ) : (
+//                       "No Image"
+//                     )}
+//                   </td>
+//                   <td>{lawyer.fullname}</td>
+//                   <td>{lawyer.specialization}</td>
+//                   <td>{lawyer.location}</td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+
+//         <style jsx>{`
+//           .search-lawyers-container {
+//             max-width: 1200px;
+//             margin: 0 auto;
+//             padding: 40px;
+//             text-align: center;
+//           }
+
+//           .search-box {
+//             margin-bottom: 30px;
+//           }
+
+//           h1 {
+//             font-size: 2.2em;
+//             color: #333;
+//             margin-bottom: 20px;
+//           }
+
+//           input {
+//             padding: 12px;
+//             width: 60%;
+//             max-width: 500px;
+//             border-radius: 30px;
+//             border: 1px solid #ddd;
+//             font-size: 1em;
+//             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+//             margin-bottom: 20px;
+//           }
+
+//           input:focus {
+//             outline: none;
+//             border: 1px solid #007bff;
+//             box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+//           }
+
+//           .table-container {
+//             overflow-x: auto;
+//           }
+
+//           .lawyer-table {
+//             width: 100%;
+//             border-collapse: collapse;
+//             margin-top: 20px;
+//             border-radius: 10px;
+//             overflow: hidden;
+//             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+//           }
+
+//           th,
+//           td {
+//             padding: 14px;
+//             text-align: center;
+//             border-bottom: 1px solid #ddd;
+//             font-size: 1em;
+//           }
+
+//           th {
+//             background-color: #007bff;
+//             color: white;
+//           }
+
+//           tr:nth-child(even) {
+//             background-color: #f9f9f9;
+//           }
+
+//           tr:hover {
+//             background-color: #f1f1f1;
+//           }
+
+//           .profile-picture {
+//             width: 50px;
+//             height: 50px;
+//             border-radius: 50%;
+//             object-fit: cover;
+//           }
+
+//           @media screen and (max-width: 768px) {
+//             input {
+//               width: 90%;
+//             }
+
+//             th,
+//             td {
+//               padding: 10px;
+//             }
+//           }
+//         `}</style>
+//       </div>
+
+//       <Footer />
+//     </div>
+//   );
+// };
+
+// export default LawyerSearch;
+
+
+
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Footer from "../../components/footer/footer-client";
+import Navbar from "../../components/navbar/navbar-client";
 
 const LawyerSearch = () => {
-  const [searchFilters, setSearchFilters] = useState({
-    expertise: "",
-    location: "",
-    fees: "",
-    availability: "",
-    reviews: "",
-  });
+  const [verifiedLawyers, setVerifiedLawyers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [lawyers, setLawyers] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      expertise: "Family Law",
-      location: "New York",
-      fees: "$200/hr",
-      availability: "Available",
-      reviews: 4.5,
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      expertise: "Corporate Law",
-      location: "California",
-      fees: "$300/hr",
-      availability: "Busy",
-      reviews: 4.8,
-    },
-    {
-      id: 3,
-      name: "Michael Johnson",
-      expertise: "Criminal Law",
-      location: "Texas",
-      fees: "$250/hr",
-      availability: "Available",
-      reviews: 4.2,
-    },
-    // Add more lawyer profiles as needed
-  ]);
+  useEffect(() => {
+    fetchVerifiedLawyers();
+  }, []);
 
-  const [filteredLawyers, setFilteredLawyers] = useState(lawyers);
-  const [shortlistedLawyers, setShortlistedLawyers] = useState([]);
+  const fetchVerifiedLawyers = async () => {
+    try {
+      // Use GET request to fetch verified lawyers
+      const response = await axios.get("http://localhost:5000/api/verified");
+      console.log("All verified lawyers:", response.data); // Log response to check
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setSearchFilters({
-      ...searchFilters,
-      [name]: value,
-    });
-  };
-
-  const applyFilters = () => {
-    const filtered = lawyers.filter((lawyer) => {
-      return (
-        (searchFilters.expertise ? lawyer.expertise.includes(searchFilters.expertise) : true) &&
-        (searchFilters.location ? lawyer.location.includes(searchFilters.location) : true) &&
-        (searchFilters.fees ? lawyer.fees === searchFilters.fees : true) &&
-        (searchFilters.availability ? lawyer.availability === searchFilters.availability : true) &&
-        (searchFilters.reviews ? lawyer.reviews >= parseFloat(searchFilters.reviews) : true)
+      // Filter lawyers who have isVerified set to true and are active
+      const filteredLawyers = response.data.filter(
+        (lawyer) => lawyer.isVerified === true && lawyer.isActive === true
       );
-    });
-    setFilteredLawyers(filtered);
-  };
 
-  const handleShortlist = (lawyer) => {
-    if (!shortlistedLawyers.includes(lawyer)) {
-      setShortlistedLawyers([...shortlistedLawyers, lawyer]);
+      // Set the filtered lawyers to the state
+      setVerifiedLawyers(filteredLawyers);
+    } catch (error) {
+      console.error("Error fetching verified lawyers:", error);
     }
   };
 
+  // Filter lawyers by search term (case-insensitive)
+  const filteredLawyers = verifiedLawyers.filter(
+    (lawyer) =>
+      lawyer.fullname &&
+      lawyer.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div style={styles.searchContainer}>
-      <h2 style={styles.header}>Find a Lawyer</h2>
-      <div style={styles.filtersContainer}>
-        <div style={styles.filterGroup}>
-          <label style={styles.label}>Expertise</label>
+    <div>
+      <Navbar />
+
+      <div className="search-lawyers-container">
+        <div className="search-box">
+          <h1>Find Verified Lawyers</h1>
           <input
             type="text"
-            name="expertise"
-            value={searchFilters.expertise}
-            onChange={handleFilterChange}
-            placeholder="e.g. Family Law"
-            style={styles.input}
+            placeholder="Search Lawyers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={styles.filterGroup}>
-          <label style={styles.label}>Location</label>
-          <input
-            type="text"
-            name="location"
-            value={searchFilters.location}
-            onChange={handleFilterChange}
-            placeholder="e.g. New York"
-            style={styles.input}
-          />
+
+        {/* Verified Lawyers Table */}
+        <div className="table-container">
+          <table className="lawyer-table">
+            <thead>
+              <tr>
+                <th>Profile Picture</th>
+                <th>Name</th>
+                <th>Specialization</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLawyers.map((lawyer) => (
+                <tr key={lawyer._id}>
+                  <td>
+                    {lawyer.profilePicture ? (
+                      <img
+                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        alt="Profile"
+                        className="profile-picture"
+                      />
+                    ) : (
+                      <img
+                        src="/images/default-profile.png"
+                        alt="No Profile"
+                        className="profile-picture"
+                      />
+                    )}
+                  </td>
+                  <td>{lawyer.fullname}</td>
+                  <td>{lawyer.specialization}</td>
+                  <td>{lawyer.location}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div style={styles.filterGroup}>
-          <label style={styles.label}>Fees</label>
-          <input
-            type="text"
-            name="fees"
-            value={searchFilters.fees}
-            onChange={handleFilterChange}
-            placeholder="e.g. $200/hr"
-            style={styles.input}
-          />
-        </div>
-        <div style={styles.filterGroup}>
-          <label style={styles.label}>Availability</label>
-          <input
-            type="text"
-            name="availability"
-            value={searchFilters.availability}
-            onChange={handleFilterChange}
-            placeholder="e.g. Available"
-            style={styles.input}
-          />
-        </div>
-        <div style={styles.filterGroup}>
-          <label style={styles.label}>Reviews</label>
-          <input
-            type="number"
-            name="reviews"
-            value={searchFilters.reviews}
-            onChange={handleFilterChange}
-            placeholder="e.g. 4.5"
-            style={styles.input}
-          />
-        </div>
-        <button onClick={applyFilters} style={styles.button}>
-          Apply Filters
-        </button>
+
+        <style jsx>{`
+          .search-lawyers-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+            text-align: center;
+          }
+
+          .search-box {
+            margin-bottom: 30px;
+          }
+
+          h1 {
+            font-size: 2.2em;
+            color: #333;
+            margin-bottom: 20px;
+          }
+
+          input {
+            padding: 12px;
+            width: 60%;
+            max-width: 500px;
+            border-radius: 30px;
+            border: 1px solid #ddd;
+            font-size: 1em;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+          }
+
+          input:focus {
+            outline: none;
+            border: 1px solid #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+          }
+
+          .table-container {
+            overflow-x: auto;
+          }
+
+          .lawyer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+
+          th,
+          td {
+            padding: 14px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            font-size: 1em;
+          }
+
+          th {
+            background-color: #007bff;
+            color: white;
+          }
+
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+
+          tr:hover {
+            background-color: #f1f1f1;
+          }
+
+          .profile-picture {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+
+          @media screen and (max-width: 768px) {
+            input {
+              width: 90%;
+            }
+
+            th,
+            td {
+              padding: 10px;
+            }
+          }
+        `}</style>
       </div>
 
-      <div style={styles.resultsContainer}>
-        <h3 style={styles.resultsHeader}>Search Results</h3>
-        {filteredLawyers.length > 0 ? (
-          filteredLawyers.map((lawyer) => (
-            <div key={lawyer.id} style={styles.lawyerCard}>
-              <h4 style={styles.lawyerName}>{lawyer.name}</h4>
-              <p style={styles.lawyerInfo}>
-                Expertise: {lawyer.expertise}
-                <br />
-                Location: {lawyer.location}
-                <br />
-                Fees: {lawyer.fees}
-                <br />
-                Availability: {lawyer.availability}
-                <br />
-                Reviews: {lawyer.reviews} ⭐
-              </p>
-              <button
-                onClick={() => handleShortlist(lawyer)}
-                style={styles.shortlistButton}
-              >
-                Shortlist
-              </button>
-            </div>
-          ))
-        ) : (
-          <p style={styles.noResults}>No lawyers found. Please adjust your filters.</p>
-        )}
-      </div>
-
-      {shortlistedLawyers.length > 0 && (
-        <div style={styles.shortlistContainer}>
-          <h3 style={styles.shortlistHeader}>Shortlisted Lawyers</h3>
-          {shortlistedLawyers.map((lawyer) => (
-            <div key={lawyer.id} style={styles.lawyerCard}>
-              <h4 style={styles.lawyerName}>{lawyer.name}</h4>
-              <p style={styles.lawyerInfo}>
-                Expertise: {lawyer.expertise}
-                <br />
-                Location: {lawyer.location}
-                <br />
-                Fees: {lawyer.fees}
-                <br />
-                Availability: {lawyer.availability}
-                <br />
-                Reviews: {lawyer.reviews} ⭐
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      <Footer />
     </div>
   );
-};
-
-// Styles
-const styles = {
-  searchContainer: {
-    padding: "20px",
-    maxWidth: "1200px",
-    margin: "0 auto",
-  },
-  header: {
-    textAlign: "center",
-    fontSize: "24px",
-    marginBottom: "20px",
-    color: "#2d6da5",
-  },
-  filtersContainer: {
-    display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
-    gap: "15px",
-    marginBottom: "20px",
-  },
-  filterGroup: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  label: {
-    marginBottom: "5px",
-    fontWeight: "bold",
-    color: "#333",
-  },
-  input: {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    width: "100%",
-  },
-  button: {
-    padding: "10px 20px",
-    backgroundColor: "#2d6da5",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    gridColumn: "span 5",
-    marginTop: "10px",
-  },
-  resultsContainer: {
-    marginTop: "30px",
-  },
-  resultsHeader: {
-    fontSize: "20px",
-    marginBottom: "15px",
-    color: "#333",
-  },
-  lawyerCard: {
-    border: "1px solid #ccc",
-    borderRadius: "6px",
-    padding: "15px",
-    marginBottom: "15px",
-  },
-  lawyerName: {
-    fontSize: "18px",
-    marginBottom: "10px",
-    color: "#2d6da5",
-  },
-  lawyerInfo: {
-    marginBottom: "10px",
-    color: "#555",
-  },
-  shortlistButton: {
-    padding: "8px 16px",
-    backgroundColor: "#f39c12",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-  },
-  noResults: {
-    color: "#e74c3c",
-    textAlign: "center",
-  },
-  shortlistContainer: {
-    marginTop: "40px",
-  },
-  shortlistHeader: {
-    fontSize: "20px",
-    marginBottom: "15px",
-    color: "#333",
-  },
 };
 
 export default LawyerSearch;

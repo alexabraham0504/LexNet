@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+
+import { Helmet } from "react-helmet";
 // import Header from "../../components/header/header-lawyer";
 import Navbar from "../../components/navbar/navbar-lawyer";
 import Footer from "../../components/footer/footer-lawyer";
@@ -19,7 +21,13 @@ const LawyerDashboard = () => {
       <div className="lawyer-dashboard-page">
         {/* <Header /> */}
         <Navbar /> {/* Navbar placed at the top */}
-        
+        <Helmet>
+          <title>Lawyer Dashboard - Lex Net</title>
+          <meta
+            name="description"
+            // content="Admin dashboard for managing Lex Net legal services."
+          />
+        </Helmet>
         {/* HERO SECTION */}
         <div className="container-fluid">
           <div className="row">
@@ -34,16 +42,15 @@ const LawyerDashboard = () => {
               {/* Horizontal Buttons */}
               <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 <div className="col flex-grow-1">
-                  <Link to="/ProfileManagement">
+                  <Link to="/LawyerRegistration">
                     <button
-                      id="horizontal1"
-                      className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
-                      aria-label="ProfileManagement"
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="Register"
                     >
                       <span className="p-3">
                         <FontAwesomeIcon icon={faUserCog} size="1x" />
                       </span>
-                      ProfileMgmt
+                      Profile
                     </button>
                   </Link>
                 </div>
@@ -116,7 +123,6 @@ const LawyerDashboard = () => {
             </div>
           </div>
         </div>
-        
         <Footer /> {/* Footer placed at the bottom */}
       </div>
 

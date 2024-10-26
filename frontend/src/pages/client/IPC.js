@@ -1,54 +1,45 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import Footer from "../../components/footer/footer-admin";
+// import Header from "../../components/header/header-admin";
+import Navbar from "../../components/navbar/navbar-admin";
 const IPC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleSearch = async () => {
-    if (!searchTerm) return;
+  // Fetch all IPC sections from the backend when the component loads
+  useEffect(() => {
+    fetchIpcSections();
+  }, []);
 
-    setLoading(true);
+  const fetchIpcSections = async () => {
     try {
-      // Mock API request for IPC sections
-      const response = await mockApiRequest(searchTerm);
-      setResults(response);
+      const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
+      const data = await response.json();
+      setResults(data);
     } catch (error) {
       console.error("Error fetching IPC sections:", error);
-      setResults([]);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const mockApiRequest = (term) => {
-    // Mock data to simulate IPC section search results
-    const mockData = [
-      {
-        section: "Section 302",
-        description: "Punishment for murder.",
-        caseStudy: "State v. Ram Singh (2007)",
-      },
-      {
-        section: "Section 376",
-        description: "Punishment for rape.",
-        caseStudy: "State v. Nirmal Singh (2010)",
-      },
-      // Add more mock data as needed
-    ];
+  const handleSearch = () => {
+    if (!searchTerm) return;
 
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const filteredResults = mockData.filter(
-          (item) =>
-            item.section.includes(term) || item.description.includes(term)
-        );
-        resolve(filteredResults);
-      }, 1000);
-    });
+    const filteredResults = results.filter(
+      (item) =>
+        item.section.includes(searchTerm) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setResults(filteredResults);
   };
 
   return (
+  <div>
+   <Navbar />
+    
+    
+      
     <div style={styles.container}>
       <h2 style={styles.header}>IPC Lookup</h2>
       <div style={styles.searchContainer}>
@@ -76,6 +67,10 @@ const IPC = () => {
         </div>
       )}
     </div>
+    
+    
+    <Footer />
+  </div>
   );
 };
 
@@ -83,7 +78,7 @@ const IPC = () => {
 const styles = {
   container: {
     padding: "20px",
-    maxWidth: "600px",
+    maxWidth: "900px", // Increased width for landscape view
     margin: "0 auto",
     border: "1px solid #ccc",
     borderRadius: "6px",
@@ -96,18 +91,20 @@ const styles = {
     color: "#2d6da5",
   },
   searchContainer: {
-    display: "flex",
-    justifyContent: "center",
+    display: "flex", // Align input and button side by side (landscape)
+    justifyContent: "space-between", // Adds space between input and button
     marginBottom: "20px",
+    alignItems: "center", // Vertically centers the elements
   },
   input: {
-    flex: 1,
+    flex: 4, // Takes up more space for the input field
     padding: "10px",
     border: "1px solid #ccc",
     borderRadius: "4px",
-    marginRight: "10px",
+    marginRight: "10px", // Space between input and button
   },
   button: {
+    flex: 1, // Takes up less space for the button
     padding: "10px 20px",
     backgroundColor: "#2d6da5",
     color: "#fff",
