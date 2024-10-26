@@ -27,9 +27,7 @@ const LawyerRegistration = () => {
   useEffect(() => {
     const fetchLawyerData = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/lawyers/me"
-        );
+        const response = await axios.get("http://localhost:5000/api/lawyers/me");
         setLawyerData((prevData) => ({
           ...prevData,
           ...response.data,
@@ -64,7 +62,7 @@ const LawyerRegistration = () => {
     formData.append("fullname", lawyerData.fullname);
     formData.append("email", lawyerData.email);
     formData.append("phone", lawyerData.phone);
-    formData.append("advocate enrollment number", lawyerData.AEN);
+    formData.append("AEN", lawyerData.AEN);
     formData.append("specialization", lawyerData.specialization);
     formData.append("location", lawyerData.location);
     formData.append("availability", lawyerData.availability);
@@ -77,10 +75,7 @@ const LawyerRegistration = () => {
       formData.append("lawDegreeCertificate", lawyerData.lawDegreeCertificate);
     }
     if (lawyerData.barCouncilCertificate) {
-      formData.append(
-        "barCouncilCertificate",
-        lawyerData.barCouncilCertificate
-      );
+      formData.append("barCouncilCertificate", lawyerData.barCouncilCertificate);
     }
     formData.append("visibleToClients", lawyerData.visibleToClients);
 
@@ -88,28 +83,18 @@ const LawyerRegistration = () => {
 
     try {
       if (!lawyerData.id) {
-        await axios.post(
-          "http://localhost:5000/api/lawyers/register",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        alert(
-          "Lawyer profile created successfully! Your profile is under review."
-        );
+        await axios.post("http://localhost:5000/api/lawyers/register", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        alert("Lawyer profile created successfully! Your profile is under review.");
       } else {
-        await axios.put(
-          "http://localhost:5000/api/lawyers/register",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        await axios.put("http://localhost:5000/api/lawyers/register", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
         alert("Lawyer profile updated successfully!");
       }
     } catch (error) {
@@ -130,12 +115,10 @@ const LawyerRegistration = () => {
       <div style={styles.profileContainer}>
         <h2 style={styles.heading}>Lawyer Registration</h2>
 
-        {/* Verification Status Display */}
         <div style={styles.verificationStatus}>
           Verification Status: {lawyerData.verificationStatus}
         </div>
 
-        {/* Profile Picture Upload */}
         <div style={styles.profileImageWrapper}>
           <div style={styles.profileImageContainer}>
             {lawyerData.profilePicture ? (
@@ -153,9 +136,7 @@ const LawyerRegistration = () => {
             )}
           </div>
           <div style={styles.formGroup}>
-            <label style={styles.profilePictureLabel}>
-              Choose Profile Picture
-            </label>
+            <label style={styles.profilePictureLabel}>Choose Profile Picture</label>
             <input
               type="file"
               name="profilePicture"
@@ -165,7 +146,6 @@ const LawyerRegistration = () => {
           </div>
         </div>
 
-        {/* Input Fields in Grid Layout */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -262,7 +242,6 @@ const LawyerRegistration = () => {
             </div>
           </div>
 
-          {/* Law Degree and Bar Council Certificate */}
           <div style={styles.row}>
             <div style={styles.formGroup}>
               <label style={styles.label}>Upload Law Degree Certificate</label>
@@ -284,7 +263,6 @@ const LawyerRegistration = () => {
             </div>
           </div>
 
-          {/* Checkbox for Visibility */}
           <div style={styles.formGroup}>
             <label>
               <input
@@ -334,70 +312,66 @@ const styles = {
   },
   profileImageContainer: {
     marginRight: "20px",
-    border: "2px solid #007bff",
-    borderRadius: "8px",
-    overflow: "hidden",
-    width: "120px",
-    height: "120px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    border: "2px solid #ddd",
+    padding: "10px",
   },
   profileImage: {
-    width: "100%",
-    height: "100%",
+    width: "150px",
+    height: "150px",
+    borderRadius: "50%",
     objectFit: "cover",
   },
   placeholderImage: {
-    width: "100%",
-    height: "100%",
+    width: "150px",
+    height: "150px",
+    borderRadius: "50%",
+    backgroundColor: "#ddd",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f0f0f0",
-    color: "#ccc",
-  },
-  profilePictureLabel: {
-    marginBottom: "8px",
-    fontWeight: "bold",
-  },
-  input: {
-    width: "100%",
-    padding: "8px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-    marginBottom: "15px",
+    alignItems: "center",
     fontSize: "16px",
-  },
-  label: {
-    fontWeight: "bold",
-  },
-  gridContainer: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "15px",
+    color: "#555",
   },
   formGroup: {
     marginBottom: "15px",
   },
+  profilePictureLabel: {
+    fontSize: "14px",
+    fontWeight: "bold",
+  },
+  label: {
+    fontSize: "14px",
+    fontWeight: "bold",
+  },
+  input: {
+    width: "100%",
+    padding: "10px",
+    fontSize: "14px",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+  },
+  gridContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: "20px",
+  },
   row: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "15px",
   },
   saveButtonContainer: {
     display: "flex",
     justifyContent: "center",
-    marginTop: "20px",
   },
   saveButton: {
-    padding: "10px 20px",
     backgroundColor: "#007bff",
     color: "#fff",
+    padding: "10px 20px",
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
     fontWeight: "bold",
+    fontSize: "16px",
   },
 };
 

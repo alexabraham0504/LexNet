@@ -4,7 +4,7 @@ const lawyerSchema = new mongoose.Schema({
   fullname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
-  AEN: { type: String, required: true }, // Advocate Enrollment Number
+  AEN: { type: String, required: true },
   specialization: { type: String, required: true },
   location: { type: String, required: true },
   availability: { type: String, required: true },
@@ -13,9 +13,7 @@ const lawyerSchema = new mongoose.Schema({
   lawDegreeCertificate: { type: String },
   barCouncilCertificate: { type: String },
   visibleToClients: { type: Boolean, default: false },
-  isVerified: { type: Boolean, default: false }, // Added for verification
+  isVerified: { type: Boolean, default: false },
 });
 
-const Lawyer = mongoose.model("Lawyer", lawyerSchema);
-
-module.exports = Lawyer;
+module.exports = mongoose.model("Lawyer", lawyerSchema);

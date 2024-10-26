@@ -1,4 +1,25 @@
 const Lawyer = require("../models/lawyerModel");
+const multer = require("multer");
+const path = require("path");
+
+// Multer file upload configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Customize the path if needed
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// Setup the multer middleware for file uploads
+exports.uploadFiles = upload.fields([
+  { name: "profilePicture", maxCount: 1 },
+  { name: "lawDegreeCertificate", maxCount: 1 },
+  { name: "barCouncilCertificate", maxCount: 1 },
+]);
 
 // Register a new lawyer
 exports.registerLawyer = async (req, res) => {
@@ -12,9 +33,12 @@ exports.registerLawyer = async (req, res) => {
       location,
       availability,
       fees,
-      visibleToClients,
+      visibleToClients, // Passed as string from frontend
     } = req.body;
 
+    const isVisibleToClients = visibleToClients === "true";
+
+    // Check for missing fields
     if (
       !fullname ||
       !email ||
@@ -25,11 +49,16 @@ exports.registerLawyer = async (req, res) => {
       !availability ||
       !fees
     ) {
-      return res
-        .status(400)
-        .json({ message: "Please provide all required fields." });
+      return res.status(400).json({ message: "Please provide all required fields." });
     }
 
+    // Check if a lawyer with this email already exists
+    const existingLawyer = await Lawyer.findOne({ email });
+    if (existingLawyer) {
+      return res.status(409).json({ message: "Email already exists. Please use a different email." });
+    }
+
+    // Create a new lawyer document
     const newLawyer = new Lawyer({
       fullname,
       email,
@@ -40,21 +69,24 @@ exports.registerLawyer = async (req, res) => {
       availability,
       fees,
       profilePicture: req.files?.["profilePicture"]?.[0]?.filename || null,
-      lawDegreeCertificate:
-        req.files?.["lawDegreeCertificate"]?.[0]?.filename || null,
-      barCouncilCertificate:
-        req.files?.["barCouncilCertificate"]?.[0]?.filename || null,
-      visibleToClients: visibleToClients === "true",
+      lawDegreeCertificate: req.files?.["lawDegreeCertificate"]?.[0]?.filename || null,
+      barCouncilCertificate: req.files?.["barCouncilCertificate"]?.[0]?.filename || null,
+      visibleToClients: isVisibleToClients, // Correctly set boolean
       isVerified: false, // Default to unverified
     });
 
+    // Save the lawyer to the database
     await newLawyer.save();
     return res.status(201).json({ message: "Lawyer registered successfully." });
   } catch (error) {
     console.error("Error registering lawyer:", error);
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "Duplicate entry detected." });
+    }
     return res.status(500).json({ error: "Failed to register lawyer." });
   }
 };
+
 
 // Fetch unverified lawyers (For Admin Dashboard)
 exports.getUnverifiedLawyers = async (req, res) => {

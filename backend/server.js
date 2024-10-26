@@ -12,14 +12,14 @@ const profileRoutes = require("./routes/profileRoutes");
 const lawyerRegistrationRoutes = require("./routes/lawyerRegistrationRoutes");
 const ipcRoutes = require("./routes/ipc");
 
-
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB Atlas
 mongoose
-  .connect(process.env.uri, {  // Make sure to use process.env.uri
+  .connect(process.env.uri, {
+    // Make sure to use process.env.uri
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -41,7 +41,6 @@ app.use(
 app.use(express.json());
 app.use(express.static("uploads"));
 app.use("/uploads", express.static("./uploads"));
-
 
 // Session setup
 app.use(
@@ -123,7 +122,9 @@ app.get(
       };
       res.redirect("http://localhost:3000/admindashboard");
     } else {
-      res.status(403).send("Access denied: Only admins can log in with Google.");
+      res
+        .status(403)
+        .send("Access denied: Only admins can log in with Google.");
     }
   }
 );
@@ -131,9 +132,8 @@ app.get(
 // Define your API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api", lawyerRegistrationRoutes);
+app.use("/api/lawyers", lawyerRegistrationRoutes);
 app.use("/api/ipc", ipcRoutes);
-
 
 // Example route
 app.get("/", (req, res) => {
