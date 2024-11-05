@@ -7,7 +7,9 @@
     "bootstrap-icons": "^1.11.3",
     "cors": "^2.8.5",
     "express": "^4.21.1",
-    "react-spring": "^9.7.4"
+    "react-spring": "^9.7.4",
+    "react-toastify": "^10.0.6",
+    "styled-components": "^6.1.13"
   },
   "name": "lexnet",
   "version": "1.0.0",

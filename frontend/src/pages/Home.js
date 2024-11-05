@@ -8,9 +8,9 @@ import {
   faCommentsDollar,
   // faGavel,
 } from "@fortawesome/free-solid-svg-icons";
-import Footer from "../components/footer/footer-admin";
+import Footer from "../components/footer/home-footer";
 import Navbar from "../components/navbar/navbar-admin";
-import Header from "../components/header/header-admin";
+import Header from "../components/header/home-header";
 // import "./Home.css"; // Ensure this path is correct
 
 const Home = () => {

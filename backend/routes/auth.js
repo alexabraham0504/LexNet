@@ -37,9 +37,10 @@ router.post("/register", async (req, res) => {
       fullName,
       email,
       phone,
-      password:hashedPassword, // Store password directly (replace with hashed version)
+      password: hashedPassword,
       role,
-      isVerified: false, // To track verification status
+      isVerified: false,
+      status: "pending"
     });
 
     // Save the user to the database

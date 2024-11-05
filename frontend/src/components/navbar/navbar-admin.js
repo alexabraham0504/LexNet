@@ -2,10 +2,15 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
+  const links = [
+    { path: "/admindashboard", name: "Dashboard" },
+    { path: "/aboutus", name: "Aboutus" },
+    { path: "/contact", name: "Contact" },
+  ];
+
   return (
     <>
       <div className="nav">
-        {/* <Header /> */}
         <nav
           className="navbar navbar-dark w-100 navbar-expand-md slide-in"
           style={styles.navbar}
@@ -37,30 +42,21 @@ const Navbar = () => {
               id="main-nav"
             >
               <ul className="navbar-nav">
-                {[
-                  "/",
-                  "/law-office",
-                  "/SearchLawyers",
-                  "/useful-info",
-                  "/contact",
-                ].map((path, index) => {
-                  const linkNames = ["Home", "Useful Info", "Contact"];
-                  return (
-                    <li className="nav-item mx-3 mb-2" key={index}>
-                      <NavLink
-                        to={path}
-                        style={({ isActive }) => ({
-                          textDecoration: "none",
-                          color: isActive ? "#c2b697" : "#fff",
-                          borderBottom: isActive ? "1px solid #c2b697" : "none",
-                          paddingBottom: isActive ? "5px" : "0",
-                        })}
-                      >
-                        {linkNames[index]}
-                      </NavLink>
-                    </li>
-                  );
-                })}
+                {links.map(({ path, name }, index) => (
+                  <li className="nav-item mx-3 mb-2" key={index}>
+                    <NavLink
+                      to={path}
+                      style={({ isActive }) => ({
+                        textDecoration: "none",
+                        color: isActive ? "#c2b697" : "#fff",
+                        borderBottom: isActive ? "1px solid #c2b697" : "none",
+                        paddingBottom: isActive ? "5px" : "0",
+                      })}
+                    >
+                      {name}
+                    </NavLink>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -99,7 +95,6 @@ const navbarStyles = `
     from {
       transform: translateY(-70%);
     }
-
     to {
       transform: translateY(0);
     }

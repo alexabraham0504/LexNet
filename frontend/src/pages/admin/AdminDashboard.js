@@ -59,7 +59,7 @@ const AdminDashboard = () => {
                   </Link>
                 </div>
                 <div className="col flex-grow-1">
-                  <Link to="/LawyerVerification">
+                  <Link to="/LawyerVerification" id="lawyer-verification">
                     <button
                       className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
                       aria-label="Lawyer Verfication"
@@ -72,7 +72,7 @@ const AdminDashboard = () => {
                   </Link>
                 </div>
                 <div className="col flex-grow-1">
-                  <Link to="/Platform">
+                  <Link to="/Platform"id="platform-section">
                     <button
                       className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
                       aria-label="Platform"
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
                   </Link>
                 </div>
                 <div className="col flex-grow-1">
-                  <Link to="/UserManagement">
+                  <Link to="/UserManagement"id="user-management-section">
                     <button
                       className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
                       aria-label="User Management"

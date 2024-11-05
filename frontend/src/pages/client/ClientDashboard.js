@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Helmet } from "react-helmet";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUser,
+  faSearch,
+  faGavel,
+  faFileAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
-// import Header from "../../components/header/header-client";
 
 const ClientDashboard = () => {
   const [cases, setCases] = useState([]);
@@ -12,6 +18,7 @@ const ClientDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [statusUpdates, setStatusUpdates] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,20 +55,18 @@ const ClientDashboard = () => {
     fetchData();
   }, []);
 
+  const handleCaseDetails = () => {
+    navigate("/clientcasemanagement");
+  };
+
   return (
     <>
       <div className="client-dashboard-page">
-        {/* <Header /> */}
         <Navbar />
         <Helmet>
           <title>Client Dashboard - Lex Net</title>
-          <meta
-            name="description"
-            // content="Admin dashboard for managing Lex Net legal services."
-          />
         </Helmet>
 
-        {/* Hero Section */}
         <div className="container-fluid">
           <div className="row">
             <div className="hero-section">
@@ -77,53 +82,46 @@ const ClientDashboard = () => {
               </div>
 
               {/* Client actions buttons */}
-              <div className="horizontal-btn d-none d-md-flex justify-content-around align-items-end w-100 h-100">
+
+              <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 {[
-                  { to: "/ClientChatPage", icon: "comments", label: "Chat" },
-                  { to: "/Appoint", icon: "calendar-alt", label: "Book" },
-                  { to: "/Review", icon: "star", label: "Rate" },
-                  { to: "/Profile", icon: "user", label: "Me" },
-                  { to: "/LawyerSearch", icon: "search", label: "Search" },
-                  { to: "/LawyerProfile", icon: "briefcase", label: "Lawyer" },
-                  { to: "/IPC", icon: "gavel", label: "IPC" },
+                  { to: "/Profile", icon: faUser, label: "Me" },
+                  { to: "/LawyerSearch", icon: faSearch, label: "Search" },
+                  { to: "/IPC", icon: faGavel, label: "IPC" },
+                  {
+                    onClick: handleCaseDetails,
+                    icon: faFileAlt,
+                    label: "Case Details",
+                  },
                 ].map((button, index) => (
-                  <div key={index} className="col flex-grow-1 text-center">
-                    <Link to={button.to}>
+                  <div key={index} className="col flex-grow-1">
+                    {button.to ? (
+                      <Link to={button.to}>
+                        <button
+                          className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                          aria-label={button.label}
+                        >
+                          <span className="p-3">
+                            <FontAwesomeIcon icon={button.icon} size="1x" />
+                          </span>
+                          {button.label}
+                        </button>
+                      </Link>
+                    ) : (
                       <button
-                        className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
+                        onClick={button.onClick}
+                        className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
                         aria-label={button.label}
                       >
-                        <i className={`fas fa-${button.icon} me-2`}></i>{" "}
+                        <span className="p-3">
+                          <FontAwesomeIcon icon={button.icon} size="1x" />
+                        </span>
                         {button.label}
                       </button>
-                    </Link>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Buttons for small screens */}
-            <div className="mobile-btn d-md-none d-flex justify-content-between pt-2">
-              {[
-                {
-                  to: "/client-chat-page",
-                  icon: "comments",
-                  label: "Client Chat",
-                },
-                { to: "/appoint", icon: "calendar-alt", label: "Book" },
-                { to: "/review", icon: "star", label: "Rate" },
-                { to: "/profile", icon: "user", label: "Me" },
-                { to: "/lawyer-search", icon: "search", label: "Search" },
-                { to: "/lawyer-profile", icon: "briefcase", label: "Lawyer" },
-                { to: "/ipc", icon: "gavel", label: "IPC" },
-              ].map((button, index) => (
-                <Link key={index} to={button.to}>
-                  <button className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1">
-                    <i className={`fas fa-${button.icon} me-2`}></i>{" "}
-                    {button.label}
-                  </button>
-                </Link>
-              ))}
             </div>
           </div>
         </div>
@@ -133,14 +131,13 @@ const ClientDashboard = () => {
 
       <style>
         {`
-          /* HOME PAGE ====================== */
-          .home-page {
+          .client-dashboard-page {
             font-size: 0.9rem;
             max-width: 100%;
           }
           .hero-section {
             background-image: url("/assets/hero.webp");
-            height: 600px; /* Adjust as necessary */
+            height: 600px;
             background-size: cover;
             background-position: center;
             position: relative;
@@ -198,7 +195,6 @@ const ClientDashboard = () => {
               transform: translateX(0);
             }
           }
-          /* Responsive adjustments */
           @media (max-width: 768px) {
             .text-container {
               margin-left: 1rem;

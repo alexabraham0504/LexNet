@@ -32,7 +32,7 @@ const Login = () => {
       const data = response.data;
   
       if (data.message === "Login successful.") {
-        alert("Login success");
+        // alert("Login success");
         console.log(data);
         localStorage.setItem("token", data.token); // Store the JWT token
         localStorage.setItem("name", data.firstName); // Store the user's first name

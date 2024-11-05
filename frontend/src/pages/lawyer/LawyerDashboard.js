@@ -1,33 +1,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
 import { Helmet } from "react-helmet";
-// import Header from "../../components/header/header-lawyer";
 import Navbar from "../../components/navbar/navbar-lawyer";
 import Footer from "../../components/footer/footer-lawyer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faUserCog,
-  faFileAlt,
-  faComments,
-  faClipboardList,
-  faMoneyBillWave,
-  faCalendarPlus,
-} from "@fortawesome/free-solid-svg-icons";
+import { faUserCog, faFileAlt } from "@fortawesome/free-solid-svg-icons";
 
 const LawyerDashboard = () => {
   return (
     <>
       <div className="lawyer-dashboard-page">
-        {/* <Header /> */}
-        <Navbar /> {/* Navbar placed at the top */}
+        <Navbar />
         <Helmet>
           <title>Lawyer Dashboard - Lex Net</title>
           <meta
             name="description"
-            // content="Admin dashboard for managing Lex Net legal services."
+            content="Dashboard for managing cases and appointments for lawyers on Lex Net."
           />
         </Helmet>
+
         {/* HERO SECTION */}
         <div className="container-fluid">
           <div className="row">
@@ -39,13 +30,14 @@ const LawyerDashboard = () => {
                   Manage your cases and appointments efficiently
                 </div>
               </div>
+
               {/* Horizontal Buttons */}
               <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 <div className="col flex-grow-1">
                   <Link to="/LawyerRegistration">
                     <button
                       className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="Register"
+                      aria-label="Profile"
                     >
                       <span className="p-3">
                         <FontAwesomeIcon icon={faUserCog} size="1x" />
@@ -54,68 +46,17 @@ const LawyerDashboard = () => {
                     </button>
                   </Link>
                 </div>
+
                 <div className="col flex-grow-1">
-                  <Link to="/LegalDocumentAnalysis">
+                  <Link to="/lawyercasemanagement">
                     <button
                       className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="LegalDocumentAnalysis"
+                      aria-label="Case Details"
                     >
                       <span className="p-3">
                         <FontAwesomeIcon icon={faFileAlt} size="1x" />
                       </span>
-                      DocAnalysis
-                    </button>
-                  </Link>
-                </div>
-                <div className="col flex-grow-1">
-                  <Link to="/ClientMessaging">
-                    <button
-                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="ClientMessaging"
-                    >
-                      <span className="p-3">
-                        <FontAwesomeIcon icon={faComments} size="1x" />
-                      </span>
-                      ClientMsg
-                    </button>
-                  </Link>
-                </div>
-                <div className="col flex-grow-1">
-                  <Link to="/CaseManagement">
-                    <button
-                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="CaseManagement"
-                    >
-                      <span className="p-3">
-                        <FontAwesomeIcon icon={faClipboardList} size="1x" />
-                      </span>
-                      CaseMgmt
-                    </button>
-                  </Link>
-                </div>
-                <div className="col flex-grow-1">
-                  <Link to="/BillingPayment">
-                    <button
-                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="BillingPayment"
-                    >
-                      <span className="p-3">
-                        <FontAwesomeIcon icon={faMoneyBillWave} size="1x" />
-                      </span>
-                      BillPay
-                    </button>
-                  </Link>
-                </div>
-                <div className="col flex-grow-1">
-                  <Link to="/AppointmentScheduling">
-                    <button
-                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="AppointmentScheduling"
-                    >
-                      <span className="p-3">
-                        <FontAwesomeIcon icon={faCalendarPlus} size="1x" />
-                      </span>
-                      AppSched
+                      Case Hub
                     </button>
                   </Link>
                 </div>
@@ -123,19 +64,19 @@ const LawyerDashboard = () => {
             </div>
           </div>
         </div>
-        <Footer /> {/* Footer placed at the bottom */}
+
+        <Footer />
       </div>
 
       <style>
         {`
-          /* HOME PAGE ====================== */
-          .home-page {
+          .lawyer-dashboard-page {
             font-size: 0.9rem;
             max-width: 100%;
           }
           .hero-section {
             background-image: url("/assets/hero.webp");
-            height: 600px; /* Adjust as necessary */
+            height: 600px;
             background-size: cover;
             background-position: center;
             position: relative;
@@ -164,20 +105,6 @@ const LawyerDashboard = () => {
           .text-2 {
             line-height: 2rem;
           }
-          .text-2 span {
-            color: rgb(232, 189, 134);
-            font-size: 1.3rem;
-          }
-          .text-3 {
-            color: #ebe2d6ff;
-            font-size: 0.9rem;
-            padding-top: 3rem;
-            line-height: 1.8rem;
-            width: 60%;
-          }
-          .text-3 span {
-            font-size: 0.7rem;
-          }
           .slide {
             opacity: 0;
             transform: translateX(-100%);
@@ -193,13 +120,9 @@ const LawyerDashboard = () => {
               transform: translateX(0);
             }
           }
-          /* Responsive adjustments */
           @media (max-width: 768px) {
             .text-container {
               margin-left: 1rem;
-            }
-            .text-3 {
-              width: 90%;
             }
           }
         `}

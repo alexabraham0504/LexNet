@@ -3,9 +3,9 @@ import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
   const links = [
-    { path: "/clientdashboard", name: "Dashboard" },
-    { path: "/aboutus ", name: "Aboutus" },
-    { path: "/contact", name: "Contact" }, // Ensure this is lowercase if your route is lowercase
+    { path: "/", name: "Home" },
+    { path: "/aboutus", name: "Aboutus" },
+    { path: "/contact", name: "Contact" },
   ];
 
   return (
