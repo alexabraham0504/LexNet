@@ -15,7 +15,7 @@ const LawyerSearch = () => {
   const fetchVerifiedLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/verified"
+        "https://lexnet-backend.onrender.com/api/lawyers/verified"
       );
       const activeVerifiedLawyers = response.data.filter(
         (lawyer) => lawyer.isVerified && lawyer.visibleToClients
@@ -29,7 +29,7 @@ const LawyerSearch = () => {
   // Filter lawyers based on search term
   const filteredLawyers = verifiedLawyers.filter((lawyer) => {
     const searchTermLower = searchTerm.toLowerCase(
-      `http://localhost:5000/api/lawyers/verified?search=${searchTerm}`
+      `https://lexnet-backend.onrender.com/api/lawyers/verified?search=${searchTerm}`
     );
     return (
       (lawyer.fullname &&
@@ -64,7 +64,7 @@ const LawyerSearch = () => {
                 <div className="profile-section">
                   {lawyer.profilePicture ? (
                     <img
-                      src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                      src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                       alt={`${lawyer.fullname}'s profile`}
                       className="profile-picture"
                     />

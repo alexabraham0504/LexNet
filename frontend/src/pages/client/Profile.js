@@ -19,7 +19,9 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/profile");
+        const response = await axios.get(
+          "https://lexnet-backend.onrender.com/api/profile"
+        );
         const data = response.data || {
           id: null, // If no profile exists, id will remain null
           fullname: "",
@@ -75,7 +77,7 @@ const Profile = () => {
     try {
       if (!profileData.id) {
         const response = await axios.post(
-          "http://localhost:5000/api/profile",
+          "https://lexnet-backend.onrender.com/api/profile",
           formData,
           {
             headers: {
@@ -89,11 +91,15 @@ const Profile = () => {
           id: response.data.profile._id,
         }));
       } else {
-        await axios.put("http://localhost:5000/api/profile", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        await axios.put(
+          "https://lexnet-backend.onrender.com/api/profile",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
         alert("Profile updated successfully!");
       }
       setEditMode(false); // Exit edit mode after saving

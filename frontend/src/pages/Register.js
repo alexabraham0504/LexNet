@@ -106,7 +106,7 @@ const Register = () => {
   //   setLoading(true);
   //   try {
   //     const response = await axios.post(
-  //       "http://localhost:5000/api/auth/register",
+  //       "https://lexnet-backend.onrender.com/api/auth/register",
   //       formData
   //     );
   //     const data = await response.data;
@@ -143,7 +143,7 @@ const Register = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "https://lexnet-backend.onrender.com/api/auth/register",
         formData
       );
       const data = await response.data;
@@ -344,7 +344,12 @@ const Register = () => {
 
           {errors.submit && <p style={styles.errorMessage}>{errors.submit}</p>}
 
-          <button type="submit" style={styles.btnRegister} disabled={loading} onClick={handleSubmit}>
+          <button
+            type="submit"
+            style={styles.btnRegister}
+            disabled={loading}
+            onClick={handleSubmit}
+          >
             {loading ? "Registering..." : "Register"}
           </button>
 
