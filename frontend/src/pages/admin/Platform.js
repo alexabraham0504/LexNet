@@ -17,9 +17,7 @@ const Platform = () => {
 
   const fetchIpcSections = async () => {
     try {
-      const response = await fetch(
-        "https://lexnet-backend.onrender.com/api/ipc"
-      ); // API endpoint to get IPC sections
+      const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
       const data = await response.json();
       setIpcSections(data);
     } catch (error) {
@@ -31,20 +29,17 @@ const Platform = () => {
   const handleAddSection = async () => {
     if (newSection.trim() !== "" && newDescription.trim() !== "") {
       try {
-        const response = await fetch(
-          "https://lexnet-backend.onrender.com/api/ipc",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              section: newSection.trim(),
-              description: newDescription.trim(),
-              caseStudy: newCaseStudy.trim(), // Include case study in the request
-            }),
-          }
-        );
+        const response = await fetch("http://localhost:5000/api/ipc", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            section: newSection.trim(),
+            description: newDescription.trim(),
+            caseStudy: newCaseStudy.trim(), // Include case study in the request
+          }),
+        });
 
         if (response.ok) {
           setNewSection(""); // Clear input after adding
@@ -61,12 +56,9 @@ const Platform = () => {
   // Handle removing an IPC section
   const handleRemoveSection = async (id) => {
     try {
-      const response = await fetch(
-        `https://lexnet-backend.onrender.com/api/ipc/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`http://localhost:5000/api/ipc/${id}`, {
+        method: "DELETE",
+      });
 
       if (response.ok) {
         fetchIpcSections(); // Fetch updated IPC sections after deletion

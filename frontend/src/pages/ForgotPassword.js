@@ -12,7 +12,7 @@ const ForgotPassword = () => {
 
     try {
       const response = await axios.post(
-        "https://lexnet-backend.onrender.com/api/auth/forgot-password",
+        "http://localhost:5000/api/auth/forgot-password",
         { email }
       );
       setMessage(response.data.message);

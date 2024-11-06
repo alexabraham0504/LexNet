@@ -106,7 +106,7 @@ const Register = () => {
   //   setLoading(true);
   //   try {
   //     const response = await axios.post(
-  //       "https://lexnet-backend.onrender.com/api/auth/register",
+  //       "http://localhost:5000/api/auth/register",
   //       formData
   //     );
   //     const data = await response.data;
@@ -143,7 +143,7 @@ const Register = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "https://lexnet-backend.onrender.com/api/auth/register",
+        "http://localhost:5000/api/auth/register",
         formData
       );
       const data = await response.data;

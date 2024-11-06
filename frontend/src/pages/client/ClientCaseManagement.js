@@ -36,7 +36,7 @@ const ClientCaseManagement = () => {
   const fetchLawyers = async () => {
     try {
       const response = await axios.get(
-        "https://lexnet-backend.onrender.com/api/lawyers/verified"
+        "http://localhost:5000/api/lawyers/verified"
       );
       console.log("All lawyers:", response.data); // Log the complete response
       const activeVerifiedLawyers = response.data.filter(
