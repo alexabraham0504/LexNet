@@ -344,7 +344,7 @@ const Register = () => {
 
           {errors.submit && <p style={styles.errorMessage}>{errors.submit}</p>}
 
-          <button type="submit" style={styles.btnRegister} disabled={loading}>
+          <button type="submit" style={styles.btnRegister} disabled={loading} onClick={handleSubmit}>
             {loading ? "Registering..." : "Register"}
           </button>
 
