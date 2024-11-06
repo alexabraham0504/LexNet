@@ -14,7 +14,9 @@ const IPC = () => {
 
   const fetchIpcSections = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
+      const response = await fetch(
+        "https://lexnet-backend.onrender.com/api/ipc"
+      ); // API endpoint to get IPC sections
       const data = await response.json();
       setResults(data);
     } catch (error) {
@@ -35,42 +37,43 @@ const IPC = () => {
   };
 
   return (
-  <div>
-   <Navbar />
-    
-    
-      
-    <div style={styles.container}>
-      <h2 style={styles.header}>IPC Lookup</h2>
-      <div style={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="Enter IPC section or keyword"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={styles.input}
-        />
-        <button onClick={handleSearch} style={styles.button} disabled={loading}>
-          {loading ? "Searching..." : "Search"}
-        </button>
-      </div>
-      {results.length > 0 && (
-        <div style={styles.resultsContainer}>
-          <h3 style={styles.resultsHeader}>Search Results</h3>
-          {results.map((result, index) => (
-            <div key={index} style={styles.resultCard}>
-              <h4 style={styles.section}>{result.section}</h4>
-              <p style={styles.description}>{result.description}</p>
-              <p style={styles.caseStudy}>Case Study: {result.caseStudy}</p>
-            </div>
-          ))}
+    <div>
+      <Navbar />
+
+      <div style={styles.container}>
+        <h2 style={styles.header}>IPC Lookup</h2>
+        <div style={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Enter IPC section or keyword"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.input}
+          />
+          <button
+            onClick={handleSearch}
+            style={styles.button}
+            disabled={loading}
+          >
+            {loading ? "Searching..." : "Search"}
+          </button>
         </div>
-      )}
+        {results.length > 0 && (
+          <div style={styles.resultsContainer}>
+            <h3 style={styles.resultsHeader}>Search Results</h3>
+            {results.map((result, index) => (
+              <div key={index} style={styles.resultCard}>
+                <h4 style={styles.section}>{result.section}</h4>
+                <p style={styles.description}>{result.description}</p>
+                <p style={styles.caseStudy}>Case Study: {result.caseStudy}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Footer />
     </div>
-    
-    
-    <Footer />
-  </div>
   );
 };
 

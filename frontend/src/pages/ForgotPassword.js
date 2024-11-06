@@ -9,9 +9,12 @@ const ForgotPassword = () => {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/forgot-password", { email });
+      const response = await axios.post(
+        "https://lexnet-backend.onrender.com/api/auth/forgot-password",
+        { email }
+      );
       setMessage(response.data.message);
       setEmail("");
     } catch (error) {
@@ -20,7 +23,6 @@ const ForgotPassword = () => {
       setLoading(false);
     }
   };
-  
 
   return (
     <div style={styles.page}>

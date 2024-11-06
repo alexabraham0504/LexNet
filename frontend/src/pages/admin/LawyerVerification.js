@@ -16,7 +16,7 @@ const LawyerVerification = () => {
   const fetchUnverifiedLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/unverified"
+        "https://lexnet-backend.onrender.com/api/lawyers/unverified"
       );
       setUnverifiedLawyers(response.data);
     } catch (error) {
@@ -27,7 +27,7 @@ const LawyerVerification = () => {
   const fetchVerifiedLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/verified"
+        "https://lexnet-backend.onrender.com/api/lawyers/verified"
       );
       setVerifiedLawyers(response.data);
     } catch (error) {
@@ -37,7 +37,9 @@ const LawyerVerification = () => {
 
   const handleApprove = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/lawyers/approve/${id}`);
+      await axios.put(
+        `https://lexnet-backend.onrender.com/api/lawyers/approve/${id}`
+      );
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
@@ -51,7 +53,9 @@ const LawyerVerification = () => {
 
   const handleReject = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/lawyers/reject/${id}`);
+      await axios.delete(
+        `https://lexnet-backend.onrender.com/api/lawyers/reject/${id}`
+      );
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
@@ -64,7 +68,9 @@ const LawyerVerification = () => {
 
   const handleToggleVisibility = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/lawyers/toggle-visibility/${id}`);
+      await axios.put(
+        `https://lexnet-backend.onrender.com/api/lawyers/toggle-visibility/${id}`
+      );
       fetchVerifiedLawyers(); // Refresh the verified lawyers list after toggling visibility
     } catch (error) {
       console.error("Error toggling lawyer visibility:", error);
@@ -121,7 +127,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.profilePicture ? (
                       <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                         alt="Profile"
                         style={{
                           width: "50px",
@@ -142,7 +148,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.lawDegreeCertificate ? (
                       <a
-                        href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
+                        href={`https://lexnet-backend.onrender.com/uploads/${lawyer.lawDegreeCertificate}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -155,7 +161,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.barCouncilCertificate ? (
                       <a
-                        href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
+                        href={`https://lexnet-backend.onrender.com/uploads/${lawyer.barCouncilCertificate}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -199,7 +205,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.profilePicture ? (
                       <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                         alt="Profile"
                         style={{
                           width: "50px",

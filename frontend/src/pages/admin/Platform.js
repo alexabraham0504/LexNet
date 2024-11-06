@@ -17,7 +17,9 @@ const Platform = () => {
 
   const fetchIpcSections = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
+      const response = await fetch(
+        "https://lexnet-backend.onrender.com/api/ipc"
+      ); // API endpoint to get IPC sections
       const data = await response.json();
       setIpcSections(data);
     } catch (error) {
@@ -29,17 +31,20 @@ const Platform = () => {
   const handleAddSection = async () => {
     if (newSection.trim() !== "" && newDescription.trim() !== "") {
       try {
-        const response = await fetch("http://localhost:5000/api/ipc", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            section: newSection.trim(),
-            description: newDescription.trim(),
-            caseStudy: newCaseStudy.trim(), // Include case study in the request
-          }),
-        });
+        const response = await fetch(
+          "https://lexnet-backend.onrender.com/api/ipc",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              section: newSection.trim(),
+              description: newDescription.trim(),
+              caseStudy: newCaseStudy.trim(), // Include case study in the request
+            }),
+          }
+        );
 
         if (response.ok) {
           setNewSection(""); // Clear input after adding
@@ -56,9 +61,12 @@ const Platform = () => {
   // Handle removing an IPC section
   const handleRemoveSection = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/ipc/${id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `https://lexnet-backend.onrender.com/api/ipc/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (response.ok) {
         fetchIpcSections(); // Fetch updated IPC sections after deletion
@@ -69,7 +77,7 @@ const Platform = () => {
   };
 
   // Filter IPC sections based on the search term
-  const filteredSections = ipcSections.filter(section =>
+  const filteredSections = ipcSections.filter((section) =>
     section.section.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -103,7 +111,7 @@ const Platform = () => {
               style={styles.input}
             />
           </div>
-          
+
           <div style={styles.inputFieldContainer}>
             <label style={styles.headingLabel}>Section Description:</label>
             <input
@@ -141,7 +149,9 @@ const Platform = () => {
                   <div>
                     <strong>{section.section}</strong>: {section.description}
                     {section.caseStudy && (
-                      <p style={styles.caseStudy}>Case Study: {section.caseStudy}</p>
+                      <p style={styles.caseStudy}>
+                        Case Study: {section.caseStudy}
+                      </p>
                     )}
                   </div>
                   <button
@@ -166,103 +176,103 @@ const Platform = () => {
 // CSS-in-JS Styling optimized for landscape mode
 const styles = {
   container: {
-    maxWidth: '90%',
-    padding: '20px',
-    margin: '0 auto',
-    border: '1px solid #ccc',
-    borderRadius: '10px',
-    backgroundColor: '#f9f9f9',
+    maxWidth: "90%",
+    padding: "20px",
+    margin: "0 auto",
+    border: "1px solid #ccc",
+    borderRadius: "10px",
+    backgroundColor: "#f9f9f9",
   },
   title: {
-    textAlign: 'center',
-    marginBottom: '20px',
+    textAlign: "center",
+    marginBottom: "20px",
   },
   searchContainer: {
-    display: 'flex',
-    justifyContent: 'flex-end', // Aligns the search input and button to the right
-    alignItems: 'center',
-    marginBottom: '20px',
+    display: "flex",
+    justifyContent: "flex-end", // Aligns the search input and button to the right
+    alignItems: "center",
+    marginBottom: "20px",
   },
   searchInput: {
-    width: '200px', // Smaller width for the search field
-    padding: '10px',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
-    marginRight: '10px', // Space between input and button
+    width: "200px", // Smaller width for the search field
+    padding: "10px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+    marginRight: "10px", // Space between input and button
   },
   searchButton: {
-    padding: '10px 20px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+    padding: "10px 20px",
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
   },
   input: {
-    width: '100%', // Full width for other input fields
-    padding: '10px',
-    borderRadius: '5px',
-    border: '1px solid #ccc',
-    marginBottom: '10px',
+    width: "100%", // Full width for other input fields
+    padding: "10px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+    marginBottom: "10px",
   },
   inputFieldContainer: {
-    flex: '1',
-    marginBottom: '20px',
+    flex: "1",
+    marginBottom: "20px",
   },
   label: {
-    fontWeight: 'bold',
-    marginBottom: '5px',
-    display: 'block',
+    fontWeight: "bold",
+    marginBottom: "5px",
+    display: "block",
   },
   headingLabel: {
-    fontWeight: 'bold',
-    fontSize: '1.25em', // Increase font size to match the Added IPC Sections heading
-    marginBottom: '5px',
-    display: 'block',
+    fontWeight: "bold",
+    fontSize: "1.25em", // Increase font size to match the Added IPC Sections heading
+    marginBottom: "5px",
+    display: "block",
   },
   sectionInputContainer: {
-    display: 'flex',
-    flexDirection: 'column', // Stack inputs vertically
-    marginBottom: '20px',
-    gap: '10px', // Adding some spacing between inputs
+    display: "flex",
+    flexDirection: "column", // Stack inputs vertically
+    marginBottom: "20px",
+    gap: "10px", // Adding some spacing between inputs
   },
   addButton: {
-    padding: '10px 20px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    alignSelf: 'flex-start',
+    padding: "10px 20px",
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    alignSelf: "flex-start",
   },
   sectionListContainer: {
-    marginBottom: '20px',
+    marginBottom: "20px",
   },
   sectionList: {
-    listStyleType: 'none',
-    padding: '0',
+    listStyleType: "none",
+    padding: "0",
   },
   sectionItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px',
-    backgroundColor: '#e9e9e9',
-    borderRadius: '5px',
-    marginBottom: '10px',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px",
+    backgroundColor: "#e9e9e9",
+    borderRadius: "5px",
+    marginBottom: "10px",
   },
   caseStudy: {
-    fontStyle: 'italic',
-    fontSize: '0.9em',
-    marginTop: '5px',
+    fontStyle: "italic",
+    fontSize: "0.9em",
+    marginTop: "5px",
   },
   removeButton: {
-    padding: '5px 10px',
-    backgroundColor: '#ff4d4d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+    padding: "5px 10px",
+    backgroundColor: "#ff4d4d",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
   },
 };
 

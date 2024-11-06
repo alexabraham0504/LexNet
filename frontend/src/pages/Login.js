@@ -10,7 +10,7 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -19,24 +19,30 @@ const Login = () => {
   };
 
   const handleGoogleSignIn = () => {
-    window.open("http://localhost:5000/auth/google/callback", "_self");
+    window.open(
+      "https://lexnet-backend.onrender.com/auth/google/callback",
+      "_self"
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-  
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", formData);
+      const response = await axios.post(
+        "https://lexnet-backend.onrender.com/api/auth/login",
+        formData
+      );
       const data = response.data;
-  
+
       if (data.message === "Login successful.") {
         // alert("Login success");
         console.log(data);
         localStorage.setItem("token", data.token); // Store the JWT token
         localStorage.setItem("name", data.firstName); // Store the user's first name
-        
+
         // Navigate based on the role
         if (data.role === "Admin") {
           navigate("/AdminDashboard");
@@ -49,7 +55,9 @@ const Login = () => {
         alert(`Login failed: ${data.message}`);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred. Please try again.");
+      setError(
+        err.response?.data?.message || "An error occurred. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -66,7 +74,9 @@ const Login = () => {
           <h2 style={styles.loginTitle}>Welcome Back</h2>
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
-              <label htmlFor="email" style={styles.formLabel}>Email Address</label>
+              <label htmlFor="email" style={styles.formLabel}>
+                Email Address
+              </label>
               <input
                 type="email"
                 id="email"
@@ -79,7 +89,9 @@ const Login = () => {
               />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="password" style={styles.formLabel}>Password</label>
+              <label htmlFor="password" style={styles.formLabel}>
+                Password
+              </label>
               <input
                 type="password"
                 id="password"
@@ -93,13 +105,22 @@ const Login = () => {
             </div>
             <div style={styles.rememberMe}>
               <input type="checkbox" id="rememberMe" />
-              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>Remember Me</label>
+              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>
+                Remember Me
+              </label>
             </div>
-            <button id="login" type="submit" style={styles.btnLogin} disabled={loading}>
+            <button
+              id="login"
+              type="submit"
+              style={styles.btnLogin}
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Login"}
             </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
-            <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
+            <Link to="/forgotpassword" style={styles.forgotPassword}>
+              Lost your password?
+            </Link>
           </form>
         </div>
       </div>

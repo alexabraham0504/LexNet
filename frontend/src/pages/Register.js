@@ -31,12 +31,12 @@ const Register = () => {
           } name should contain only alphabets.`;
         }
         break;
-        // case "email":
-        //   if (!/^[a-z0-9]+@[a-z]+\.[a-z]{2,6}$/.test(value)) {
-        //     error = "Email must be in lowercase and a valid format.";
-        //   }
-        //   break;
-        
+      // case "email":
+      //   if (!/^[a-z0-9]+@[a-z]+\.[a-z]{2,6}$/.test(value)) {
+      //     error = "Email must be in lowercase and a valid format.";
+      //   }
+      //   break;
+
       case "phone":
         if (!/^\d{10}$/.test(value)) {
           error = "Phone number must be a valid 10-digit number.";
@@ -106,7 +106,7 @@ const Register = () => {
   //   setLoading(true);
   //   try {
   //     const response = await axios.post(
-  //       "http://localhost:5000/api/auth/register",
+  //       "https://lexnet-backend.onrender.com/api/auth/register",
   //       formData
   //     );
   //     const data = await response.data;
@@ -143,7 +143,7 @@ const Register = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "https://lexnet-backend.onrender.com/api/auth/register",
         formData
       );
       const data = await response.data;

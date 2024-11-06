@@ -11,7 +11,9 @@ const AdminUserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/auth/users");
+      const response = await axios.get(
+        "https://lexnet-backend.onrender.com/api/auth/users"
+      );
       console.log("All fetched users:", response.data);
       const filteredUsers = response.data.filter((user) => {
         console.log(`User ${user.fullName}, Role: ${user.role}`);
@@ -29,7 +31,7 @@ const AdminUserManagement = () => {
   const handleApproval = async (userId, action) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/approve`,
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/approve`,
         { action }
       );
       fetchUsers();
@@ -42,7 +44,7 @@ const AdminUserManagement = () => {
     const action = currentStatus === "suspended" ? "activate" : "suspend";
     try {
       await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/${action}`
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/${action}`
       );
       fetchUsers();
     } catch (error) {
@@ -85,17 +87,17 @@ const AdminUserManagement = () => {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: "10px"
+      gap: "10px",
     },
     actionGroup: {
       display: "flex",
-      gap: "5px"
+      gap: "5px",
     },
     suspendGroup: {
       display: "flex",
       justifyContent: "center",
-      width: "100%"
-    }
+      width: "100%",
+    },
   };
 
   return (
@@ -144,7 +146,9 @@ const AdminUserManagement = () => {
                     </div>
                     <div style={styles.suspendGroup}>
                       <button
-                        onClick={() => handleToggleSuspend(user._id, user.status)}
+                        onClick={() =>
+                          handleToggleSuspend(user._id, user.status)
+                        }
                         style={{
                           ...styles.button,
                           ...(user.status === "suspended"

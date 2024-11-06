@@ -19,7 +19,9 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/profile");
+        const response = await axios.get(
+          "https://lexnet-backend.onrender.com/api/profile"
+        );
         const data = response.data || {
           id: null, // If no profile exists, id will remain null
           fullname: "",
@@ -74,22 +76,30 @@ const Profile = () => {
 
     try {
       if (!profileData.id) {
-        const response = await axios.post("http://localhost:5000/api/profile", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        const response = await axios.post(
+          "https://lexnet-backend.onrender.com/api/profile",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
         alert("Profile created successfully!");
         setProfileData((prevData) => ({
           ...prevData,
           id: response.data.profile._id,
         }));
       } else {
-        await axios.put("http://localhost:5000/api/profile", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        await axios.put(
+          "https://lexnet-backend.onrender.com/api/profile",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
         alert("Profile updated successfully!");
       }
       setEditMode(false); // Exit edit mode after saving
@@ -106,103 +116,108 @@ const Profile = () => {
   return (
     <div>
       <Navbar />
-    
-    <div style={styles.profileContainer}>
-      <h2 style={styles.heading}>{!profileData.id ? "Create Profile" : "Edit Profile"}</h2>
-      <div style={styles.profileContent}>
-        <div style={styles.leftColumn}>
-          <div style={styles.profileImageContainer}>
-            {profileData.profilePicture ? (
-              typeof profileData.profilePicture === "string" ? (
-                <img
-                  src={profileData.profilePicture}
-                  alt="Profile"
-                  style={styles.profileImage}
-                />
+
+      <div style={styles.profileContainer}>
+        <h2 style={styles.heading}>
+          {!profileData.id ? "Create Profile" : "Edit Profile"}
+        </h2>
+        <div style={styles.profileContent}>
+          <div style={styles.leftColumn}>
+            <div style={styles.profileImageContainer}>
+              {profileData.profilePicture ? (
+                typeof profileData.profilePicture === "string" ? (
+                  <img
+                    src={profileData.profilePicture}
+                    alt="Profile"
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <img
+                    src={URL.createObjectURL(profileData.profilePicture)}
+                    alt="Profile"
+                    style={styles.profileImage}
+                  />
+                )
               ) : (
-                <img
-                  src={URL.createObjectURL(profileData.profilePicture)}
-                  alt="Profile"
-                  style={styles.profileImage}
-                />
-              )
+                <div style={styles.placeholderImage}>No Image</div>
+              )}
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Choose File</label>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                disabled={!editMode}
+                style={styles.input}
+              />
+            </div>
+          </div>
+
+          <div style={styles.rightColumn}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Full Name</label>
+              <input
+                type="text"
+                name="fullname"
+                value={profileData.fullname}
+                onChange={handleChange}
+                disabled={!editMode}
+                style={styles.input}
+                required
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Email</label>
+              <input
+                type="email"
+                name="email"
+                value={profileData.email}
+                onChange={handleChange}
+                disabled={!editMode}
+                style={styles.input}
+                required
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Location</label>
+              <input
+                type="text"
+                name="location"
+                value={profileData.location}
+                onChange={handleChange}
+                disabled={!editMode}
+                style={styles.input}
+                required
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Legal Needs</label>
+              <textarea
+                name="legalNeeds"
+                value={profileData.legalNeeds}
+                onChange={handleChange}
+                disabled={!editMode}
+                style={styles.textarea}
+              ></textarea>
+            </div>
+
+            {editMode ? (
+              <button onClick={handleSave} style={styles.saveButton}>
+                {profileData.id ? "Save Changes" : "Create Profile"}
+              </button>
             ) : (
-              <div style={styles.placeholderImage}>No Image</div>
+              <button
+                onClick={() => setEditMode(true)}
+                style={styles.editButton}
+              >
+                Edit Profile
+              </button>
             )}
           </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Choose File</label>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              disabled={!editMode}
-              style={styles.input}
-            />
-          </div>
-        </div>
-
-        <div style={styles.rightColumn}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Full Name</label>
-            <input
-              type="text"
-              name="fullname"
-              value={profileData.fullname}
-              onChange={handleChange}
-              disabled={!editMode}
-              style={styles.input}
-              required
-            />
-          </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={profileData.email}
-              onChange={handleChange}
-              disabled={!editMode}
-              style={styles.input}
-              required
-            />
-          </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Location</label>
-            <input
-              type="text"
-              name="location"
-              value={profileData.location}
-              onChange={handleChange}
-              disabled={!editMode}
-              style={styles.input}
-              required
-            />
-          </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Legal Needs</label>
-            <textarea
-              name="legalNeeds"
-              value={profileData.legalNeeds}
-              onChange={handleChange}
-              disabled={!editMode}
-              style={styles.textarea}
-            ></textarea>
-          </div>
-
-          {editMode ? (
-            <button onClick={handleSave} style={styles.saveButton}>
-              {profileData.id ? "Save Changes" : "Create Profile"}
-            </button>
-          ) : (
-            <button onClick={() => setEditMode(true)} style={styles.editButton}>
-              Edit Profile
-            </button>
-          )}
         </div>
       </div>
-    </div>
-    <Footer />
+      <Footer />
     </div>
   );
 };

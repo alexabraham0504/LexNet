@@ -27,7 +27,9 @@ const LawyerRegistration = () => {
   useEffect(() => {
     const fetchLawyerData = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/lawyers/me");
+        const response = await axios.get(
+          "https://lexnet-backend.onrender.com/api/lawyers/me"
+        );
         setLawyerData((prevData) => ({
           ...prevData,
           ...response.data,
@@ -75,7 +77,10 @@ const LawyerRegistration = () => {
       formData.append("lawDegreeCertificate", lawyerData.lawDegreeCertificate);
     }
     if (lawyerData.barCouncilCertificate) {
-      formData.append("barCouncilCertificate", lawyerData.barCouncilCertificate);
+      formData.append(
+        "barCouncilCertificate",
+        lawyerData.barCouncilCertificate
+      );
     }
     formData.append("visibleToClients", lawyerData.visibleToClients);
 
@@ -83,18 +88,28 @@ const LawyerRegistration = () => {
 
     try {
       if (!lawyerData.id) {
-        await axios.post("http://localhost:5000/api/lawyers/register", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        alert("Lawyer profile created successfully! Your profile is under review.");
+        await axios.post(
+          "https://lexnet-backend.onrender.com/api/lawyers/register",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        alert(
+          "Lawyer profile created successfully! Your profile is under review."
+        );
       } else {
-        await axios.put("http://localhost:5000/api/lawyers/register", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        await axios.put(
+          "https://lexnet-backend.onrender.com/api/lawyers/register",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
         alert("Lawyer profile updated successfully!");
       }
     } catch (error) {
@@ -136,7 +151,9 @@ const LawyerRegistration = () => {
             )}
           </div>
           <div style={styles.formGroup}>
-            <label style={styles.profilePictureLabel}>Choose Profile Picture</label>
+            <label style={styles.profilePictureLabel}>
+              Choose Profile Picture
+            </label>
             <input
               type="file"
               name="profilePicture"

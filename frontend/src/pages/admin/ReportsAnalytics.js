@@ -14,15 +14,19 @@ const ReportsAnalytics = () => {
   const fetchAnalyticsData = async () => {
     try {
       // Fetch user activity reports
-      const activityResponse = await axios.get("http://localhost:5000/api/auth/user-activity");
+      const activityResponse = await axios.get(
+        "https://lexnet-backend.onrender.com/api/auth/user-activity"
+      );
       console.log("User Activity Response:", activityResponse.data); // Debug log
       setUserActivity(activityResponse.data);
-  
+
       // Fetch performance metrics
-      const performanceResponse = await axios.get("http://localhost:5000/api/auth/performance-metrics");
+      const performanceResponse = await axios.get(
+        "https://lexnet-backend.onrender.com/api/auth/performance-metrics"
+      );
       console.log("Performance Metrics Response:", performanceResponse.data); // Debug log
       setPerformanceMetrics(performanceResponse.data);
-  
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching analytics data:", error);
@@ -35,9 +39,14 @@ const ReportsAnalytics = () => {
     heading: { marginBottom: "20px" },
     reportSection: { marginBottom: "40px" },
     table: { width: "100%", borderCollapse: "collapse", marginBottom: "20px" },
-    th: { padding: "12px", textAlign: "left", backgroundColor: "#f4f4f4", borderBottom: "1px solid #ddd" },
+    th: {
+      padding: "12px",
+      textAlign: "left",
+      backgroundColor: "#f4f4f4",
+      borderBottom: "1px solid #ddd",
+    },
     td: { padding: "12px", textAlign: "left", borderBottom: "1px solid #ddd" },
-    chartContainer: { width: "600px", margin: "0 auto" }
+    chartContainer: { width: "600px", margin: "0 auto" },
   };
 
   const renderUserActivityTable = () => (

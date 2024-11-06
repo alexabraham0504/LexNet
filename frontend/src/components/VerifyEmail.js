@@ -9,7 +9,9 @@ const VerifyEmail = () => {
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/auth/verify/${token}`);
+        const response = await axios.get(
+          `https://lexnet-backend.onrender.com/api/auth/verify/${token}`
+        );
         const data = await response.data;
         alert(data.message);
         if (data.message === "Email verified successfully.") {
