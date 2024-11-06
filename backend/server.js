@@ -27,7 +27,7 @@ mongoose.connect(process.env.uri, {
 
 // Middleware setup
 app.use(cors({
-    origin: ["https://lexnet.onrender.com"],
+    origin: ["http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 }));

@@ -19,10 +19,7 @@ const Login = () => {
   };
 
   const handleGoogleSignIn = () => {
-    window.open(
-      "https://lexnet-backend.onrender.com/auth/google/callback",
-      "_self"
-    );
+    window.open("http://localhost:5000/auth/google/callback", "_self");
   };
 
   const handleSubmit = async (e) => {
@@ -32,7 +29,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "https://lexnet-backend.onrender.com/api/auth/login",
+        "http://localhost:5000/api/auth/login",
         formData
       );
       const data = response.data;
