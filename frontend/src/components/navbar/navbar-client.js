@@ -1,11 +1,21 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 const Navbar = () => {
+  const location = useLocation();
+
   const links = [
     { path: "/clientdashboard", name: "Dashboard" },
-    { path: "/aboutus ", name: "Aboutus" },
-    { path: "/contact", name: "Contact" }, // Ensure this is lowercase if your route is lowercase
+    { 
+      path: "/aboutus", 
+      name: "Aboutus",
+      state: { from: 'client' }
+    },
+    { 
+      path: "/contact", 
+      name: "Contact",
+      state: { from: 'client' }
+    },
   ];
 
   return (
@@ -42,10 +52,11 @@ const Navbar = () => {
               id="main-nav"
             >
               <ul className="navbar-nav">
-                {links.map(({ path, name }, index) => (
+                {links.map(({ path, name, state }, index) => (
                   <li className="nav-item mx-3 mb-2" key={index}>
                     <NavLink
                       to={path}
+                      state={state}
                       style={({ isActive }) => ({
                         textDecoration: "none",
                         color: isActive ? "#c2b697" : "#fff",

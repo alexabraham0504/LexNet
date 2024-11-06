@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Footer from "../../components/footer/footer-admin";
-import Navbar from "../../components/navbar/navbar-admin";
+import Footer from "../../components/footer/footer-lawyer";
+import Navbar from "../../components/navbar/navbar-lawyer";
 
 const LawyerRegistration = () => {
   const [lawyerData, setLawyerData] = useState({

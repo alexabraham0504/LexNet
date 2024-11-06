@@ -4,8 +4,16 @@ import { NavLink } from "react-router-dom";
 const Navbar = () => {
   const links = [
     { path: "/", name: "Home" },
-    { path: "/aboutus", name: "Aboutus" },
-    { path: "/contact", name: "Contact" },
+    { 
+      path: "/aboutus", 
+      name: "Aboutus",
+      state: { from: 'home' }
+    },
+    { 
+      path: "/contact", 
+      name: "Contact",
+      state: { from: 'home' }
+    },
   ];
 
   return (
@@ -42,10 +50,11 @@ const Navbar = () => {
               id="main-nav"
             >
               <ul className="navbar-nav">
-                {links.map(({ path, name }, index) => (
+                {links.map(({ path, name, state }, index) => (
                   <li className="nav-item mx-3 mb-2" key={index}>
                     <NavLink
                       to={path}
+                      state={state}
                       style={({ isActive }) => ({
                         textDecoration: "none",
                         color: isActive ? "#c2b697" : "#fff",

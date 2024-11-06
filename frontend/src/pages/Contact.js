@@ -1,9 +1,29 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import Footer from '../components/footer/footer-admin';
-import Navbar from '../components/navbar/navbar-admin';
-import Header from '../components/header/header-admin';
+import NavbarAdmin from '../components/navbar/navbar-admin';
+import NavbarClient from '../components/navbar/navbar-client';
+import NavbarLawyer from '../components/navbar/navbar-lawyer';
+import Navbar from '../components/navbar/home-navbar';
+// import Header from '../components/header/header-admin';
 
 const Contact = () => {
+    const location = useLocation();
+    
+    // Modified navbar selection logic
+    const getNavbar = () => {
+        // Check if we came from a specific user type page
+        if (location.state?.from === 'lawyer') {
+            return <NavbarLawyer />;
+        } else if (location.state?.from === 'client') {
+            return <NavbarClient />;
+        } else if (location.state?.from === 'admin') {
+            return <NavbarAdmin />;
+        }
+        // Default to home navbar if no specific user type
+        return <Navbar />; // Import and use the home navbar
+    };
+
     const styles = {
         mainContainer: {
             background: `
@@ -101,8 +121,8 @@ const Contact = () => {
 
     return (
         <div style={styles.mainContainer}>
-            <Header />
-            <Navbar />
+            {getNavbar()}
+            {/* <Header /> */}
             <div style={styles.container}>
                 <h1 style={styles.heading}>Contact Us</h1>
                 

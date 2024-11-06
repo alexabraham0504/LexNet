@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Footer from "../../components/footer/footer-admin";
 // import Header from "../../components/header/header-admin";
-import Navbar from "../../components/navbar/navbar-admin";
+import Navbar from "../../components/navbar/navbar-client";
 
 const Profile = () => {
   const [profileData, setProfileData] = useState({

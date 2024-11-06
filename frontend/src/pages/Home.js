@@ -9,7 +9,7 @@ import {
   // faGavel,
 } from "@fortawesome/free-solid-svg-icons";
 import Footer from "../components/footer/home-footer";
-import Navbar from "../components/navbar/navbar-admin";
+import Navbar from "../components/navbar/home-navbar";
 import Header from "../components/header/home-header";
 // import "./Home.css"; // Ensure this path is correct
 
@@ -46,7 +46,7 @@ const Home = () => {
                 </div>
               </div>
               {/* horizontal buttons */}
-              <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
+              {/* <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 <div className="col flex-grow-1">
                   <Link to="/contact">
                     <button
@@ -87,11 +87,11 @@ const Home = () => {
                     </button>
                   </Link>
                 </div>
-              </div>
+              </div> */}
             </div>
             {/* small screens buttons */}
             <div className="mobile-btn d-md-none d-flex justify-content-between pt-2">
-              <Link to="/contact">
+              {/* <Link to="/contact">
                 <button
                   id="small"
                   className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1"
@@ -102,7 +102,7 @@ const Home = () => {
                   </span>
                   Schedule Appointment
                 </button>
-              </Link>
+              </Link> */}
               <Link to="/contact">
                 <button
                   className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1"
@@ -163,40 +163,43 @@ const Home = () => {
         <div className="">
           <div className="row">
             <div className="col">
-              <div className="services-section ">
-                <div className="services-overlay "></div>
+              <div className="services-section">
+                <div className="services-overlay"></div>
                 <div className="services-content container mt-3">
-                  <h6 className=" guide-text">SERVICES</h6>
-                  <h5 className="lh-base text-center pb-3">Functions</h5>
-                  <div className="row mt-3 gx-3 flex-column flex-md-row ">
-                    <div className="col-md-6">
-                      <h5 className="color text-center pb-4"></h5>
-                      <p className="pt-4 px-2"></p>
-                      <div className="py-3 text-center">
-                        <Link to="/law-office">
-                          <button
-                            type="button"
-                            className="btn btn-outline-dark mb-4"
-                            aria-label="Learn More"
-                          >
-                            View More...
-                          </button>
-                        </Link>
+                  <h6 className="guide-text" style={{ marginBottom: "10rem" }}>
+                    SERVICES
+                  </h6>
+                  <div className="row mt-5 gx-5 flex-column flex-md-row">
+                    <div className="col-md-3">
+                      <div className="service-card">
+                        <div className="service-header">
+                          <span className="service-icon">§</span>
+                          <h5 className="service-title">Look IPC Sections</h5>
+                        </div>
                       </div>
                     </div>
-                    <div className="col-md-6">
-                      <h5 className="color text-center pb-4"></h5>
-                      <p className="pt-4 px-2"></p>
-                      <div className="py-3 text-center">
-                        <Link to="/SearchLawyers">
-                          <button
-                            type="button"
-                            className="btn btn-outline-dark mb-4"
-                            aria-label="Learn More"
-                          >
-                            View More...
-                          </button>
-                        </Link>
+                    <div className="col-md-3">
+                      <div className="service-card">
+                        <div className="service-header">
+                          <span className="service-icon">️</span>
+                          <h5 className="service-title">Legal Services</h5>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <div className="service-card">
+                        <div className="service-header">
+                          <span className="service-icon">👨‍⚖️</span>
+                          <h5 className="service-title">Look for Lawyer</h5>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <div className="service-card">
+                        <div className="service-header">
+                          <span className="service-icon">📋</span>
+                          <h5 className="service-title">Case Study</h5>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -204,6 +207,104 @@ const Home = () => {
               </div>
             </div>
           </div>
+
+          <style>
+            {`
+            .service-card {
+              background: rgba(255, 255, 255, 0.25);
+              padding: 10px;
+              border-radius: 8px;
+              backdrop-filter: blur(8px);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+              margin-bottom: 15px;
+              transition: all 0.3s ease;
+              max-width: 200px;
+              margin-left: auto;
+              margin-right: auto;
+            }
+
+            .service-card:hover {
+              background: rgba(255, 255, 255, 0.35);
+              transform: translateY(-3px);
+            }
+
+            .service-header {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              margin-bottom: 8px;
+            }
+
+            .service-icon {
+              font-size: 0.9rem;
+              color: #e8bd86;
+              background: rgba(255, 255, 255, 0.4);
+              width: 25px;
+              height: 25px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 50%;
+              backdrop-filter: blur(4px);
+            }
+
+            .service-title {
+              color: #fff;
+              font-size: 0.8rem;
+              margin: 0;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            }
+
+            .service-details {
+              color: #fff;
+              font-size: 0.8rem;
+            }
+
+            .section-list {
+              list-style: none;
+              padding-left: 0;
+            }
+
+            .section-list li {
+              padding: 10px 0;
+              border-bottom: 1px solid #eee;
+              transition: all 0.3s ease;
+            }
+
+            .section-list li:last-child {
+              border-bottom: none;
+            }
+
+            .section-list li:hover {
+              padding-left: 10px;
+              color: #e8bd86;
+            }
+
+            @media (max-width: 768px) {
+              .service-card {
+                margin: 8px auto;
+                max-width: 180px;
+              }
+              
+              .service-title {
+                font-size: 0.75rem;
+              }
+
+              /* Improved mobile layout */
+              .row {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                padding: 0 15px;
+              }
+            }
+          `}
+          </style>
         </div>
 
         {/* WHO WE ARE */}

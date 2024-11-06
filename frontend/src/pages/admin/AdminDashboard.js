@@ -72,7 +72,7 @@ const AdminDashboard = () => {
                   </Link>
                 </div>
                 <div className="col flex-grow-1">
-                  <Link to="/Platform"id="platform-section">
+                  <Link to="/Platform" id="platform-section">
                     <button
                       className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
                       aria-label="Platform"
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
                   </Link>
                 </div>
                 <div className="col flex-grow-1">
-                  <Link to="/UserManagement"id="user-management-section">
+                  <Link to="/UserManagement" id="user-management-section">
                     <button
                       className="btn btn-outline-dark btn-lg type-button p-4 w-100 fw-bold"
                       aria-label="User Management"
@@ -190,16 +190,7 @@ const AdminDashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="col-lg-5 d-flex align-items-center justify-content-center">
-              <div>
-                <img
-                  src="/assets/admin-dashboard.webp"
-                  className="intro-img img-fluid d-block rounded-2"
-                  alt="Admin dashboard"
-                  style={{ maxHeight: "300px" }}
-                />
-              </div>
-            </div>
+     
           </div>
         </section>
 

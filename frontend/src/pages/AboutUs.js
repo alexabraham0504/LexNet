@@ -1,8 +1,27 @@
 import React from "react";
+import { useLocation } from 'react-router-dom';
 import Footer from "../components/footer/footer-admin";
-import Navbar from "../components/navbar/navbar-admin";
+import NavbarAdmin from '../components/navbar/navbar-admin';
+import NavbarClient from '../components/navbar/navbar-client';
+import NavbarLawyer from '../components/navbar/navbar-lawyer';
+import Navbar from '../components/navbar/home-navbar';
 
 const AboutUs = () => {
+  const location = useLocation();
+  
+  // Modified navbar selection logic
+  const getNavbar = () => {
+    const path = window.location.pathname;
+    if (path.includes('lawyer') || location.state?.from?.includes('lawyer')) {
+      return <NavbarLawyer />;
+    } else if (path.includes('client') || location.state?.from?.includes('client')) {
+      return <NavbarClient />;
+    } else if (path.includes('admin') || location.state?.from?.includes('admin')) {
+      return <NavbarAdmin />;
+    }
+    return <Navbar />;
+  };
+
   const aboutUsContent = {
     title: "About Lex Net",
     welcomeMessage: "Revolutionizing Legal Services",
@@ -162,7 +181,7 @@ const AboutUs = () => {
 
   return (
     <div style={styles.mainContainer}>
-      <Navbar />
+      {getNavbar()}
       
       <div style={styles.contentContainer}>
         <div style={styles.header}>

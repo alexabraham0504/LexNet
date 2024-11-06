@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Footer from "../../components/footer/footer-admin";
 // import Header from "../../components/header/header-admin";
-import Navbar from "../../components/navbar/navbar-admin";
+import Navbar from "../../components/navbar/navbar-client";
 const IPC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);

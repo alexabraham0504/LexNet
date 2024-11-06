@@ -216,12 +216,6 @@ router.put("/toggle-visibility/:lawyerId", async (req, res) => {
 });
 
 
-// const express = require("express");
-// const Lawyer = require("../models/lawyerModel");
-
-// const router = express.Router();
-
-// Route to get verified and active lawyers for client view with optional search
 router.get("/verified", async (req, res) => {
   try {
     const { search } = req.query;

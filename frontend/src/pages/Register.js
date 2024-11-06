@@ -88,78 +88,27 @@ const Register = () => {
     validateField(name, value);
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   const newErrors = {};
-  //   Object.keys(formData).forEach((field) => {
-  //     const error = validateField(field, formData[field]);
-  //     if (error) {
-  //       newErrors[field] = error;
-  //     }
-  //   });
-
-  //   if (Object.keys(newErrors).length > 0) {
-  //     setErrors(newErrors);
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     const response = await axios.post(
-  //       "http://localhost:5000/api/auth/register",
-  //       formData
-  //     );
-  //     const data = await response.data;
-
-  //     if (data.message === "User registered successfully.") {
-  //       alert("User registered successfully.");
-  //       navigate("/login");
-  //     } else {
-  //       alert("Registration failed", data.message);
-  //       navigate("/register");
-  //     }
-  //   } catch (err) {
-  //     setErrors({ submit: err.message });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = {};
-    Object.keys(formData).forEach((field) => {
-      const error = validateField(field, formData[field]);
-      if (error) {
-        newErrors[field] = error;
-      }
-    });
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
+    console.log('Form submission started', formData);
+    
     setLoading(true);
     try {
       const response = await axios.post(
         "http://localhost:5000/api/auth/register",
         formData
       );
-      const data = await response.data;
-
-      if (
-        data.message ===
-        "Registration successful. Please check your email to verify your account."
-      ) {
-        alert(data.message);
-        navigate("/verifyemail");
-      } else {
-        alert("Registration failed", data.message);
-        navigate("/register");
-      }
+      
+      // Show success message
+      alert(response.data.message);
+      
+      // Redirect to verify email page instead of login
+      navigate("/verifyemail");
     } catch (err) {
-      setErrors({ submit: err.message });
+      console.error('Registration error:', err);
+      const errorMessage = err.response?.data?.message || "Registration failed. Please try again.";
+      alert(errorMessage);
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -348,7 +297,6 @@ const Register = () => {
             type="submit"
             style={styles.btnRegister}
             disabled={loading}
-            onClick={handleSubmit}
           >
             {loading ? "Registering..." : "Register"}
           </button>

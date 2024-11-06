@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Helmet } from "react-helmet";
 
 // General Pages
@@ -41,53 +41,52 @@ import LawyerCaseManagement from "./pages/lawyer/LawyerCaseManagement";
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Helmet>
-          <title>Lex Net</title>
-          <meta
-            name="description"
-            content="Lex Net | Legal Consulting | Services"
-          />
-        </Helmet>
+    <Router>
+      <Helmet>
+        <title>Lex Net</title>
+        <meta
+          name="description"
+          content="Lex Net | Legal Consulting | Services"
+        />
+      </Helmet>
 
-        <Routes>
-          {/* General Pages */}
-          <Route path="/" element={<Home />} />
-         
-          <Route path="*" element={<ErrorPage />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgotpassword" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/verify/:token" element={<VerifyEmail />} />
-          <Route path="/verifyemail" element={<VerifyYourEmail />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/aboutus" element={<AboutUs />} />
-          {/* Admin Pages */}
-          <Route path="/admindashboard" element={<AdminDashboard />} />
-          <Route path="/contentmoderation" element={<ContentModeration />} />
-          <Route path="/lawyerverification" element={<LawyerVerification />} />
-          <Route path="/platform" element={<Platform />} />
-          <Route path="/reportsanalytics" element={<ReportsAnalytics />} />
-          <Route path="/usermanagement" element={<UserManagement />} />
+      <Routes>
+        {/* General Pages */}
+        <Route path="/" element={<Home />} />
+       
+        <Route path="*" element={<ErrorPage />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgotpassword" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verifyemail" element={<VerifyYourEmail />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/aboutus" element={<AboutUs />} />
+        {/* Admin Pages */}
+        <Route path="/admindashboard" element={<AdminDashboard />} />
+        <Route path="/contentmoderation" element={<ContentModeration />} />
+        <Route path="/lawyerverification" element={<LawyerVerification />} />
+        <Route path="/platform" element={<Platform />} />
+        <Route path="/reportsanalytics" element={<ReportsAnalytics />} />
+        <Route path="/usermanagement" element={<UserManagement />} />
 
-          {/* Client Pages */}
-          <Route path="/clientdashboard" element={<ClientDashboard />} />
-          <Route path="/ipc" element={<IPC />} />
-          <Route path="/lawyersearch" element={<LawyerSearch />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/clientcasemanagement" element={<ClientCaseManagement />} />
-      
-          {/* Lawyer Pages */}
-          <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
-          <Route path="/lawyerregistration" element={<LawyerRegistration />} />
-          <Route path="/lawyercasemanagement"element={<LawyerCaseManagement />}/>
-          
-          
-        </Routes>
-      </BrowserRouter>
-    </div>
+        {/* Client Pages */}
+        <Route path="/clientdashboard" element={<ClientDashboard />} />
+        <Route path="/aboutus" element={<AboutUs />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/ipc" element={<IPC />} />
+        <Route path="/lawyersearch" element={<LawyerSearch />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/clientcasemanagement" element={<ClientCaseManagement />} />
+    
+        {/* Lawyer Pages */}
+        <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
+        <Route path="/lawyerregistration" element={<LawyerRegistration />} />
+        <Route path="/lawyercasemanagement"element={<LawyerCaseManagement />}/>
+        
+        <Route path="/verify/:token" element={<VerifyEmail />} />
+      </Routes>
+    </Router>
   );
 }
 

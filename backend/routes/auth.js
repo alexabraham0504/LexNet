@@ -57,16 +57,26 @@ router.post("/register", async (req, res) => {
       from: process.env.EMAIL,
       to: newUser.email,
       subject: "Email Verification - Lex Net",
-      html: `<p>Hi ${newUser.fullName},</p><p>Please verify your email by clicking the link below:</p><a href="${verificationLink}">Verify Email</a>`,
+      html: `
+        <p>Hi ${newUser.fullName},</p>
+        <p>Please verify your email by clicking the link below:</p>
+        <a href="${verificationLink}">Verify Email</a>
+        <p>This link will expire in 1 hour.</p>
+      `,
     });
 
+    // Send success response
     res.status(201).json({
-      message:
-        "Registration successful. Please check your email to verify your account.",
+      success: true,
+      message: "Registration successful! Please check your email to verify your account."
     });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error." }); // Changed to a valid status code (500)
+    console.error('Server error during registration:', error);
+    res.status(500).json({ 
+      success: false,
+      message: "Registration failed. Please try again later." 
+    });
   }
 });
 
