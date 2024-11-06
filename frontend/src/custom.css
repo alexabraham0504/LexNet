@@ -1,0 +1,116 @@
+* {
+  font-family: "Open Sans", sans-serif;
+  line-height: 1.5rem;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.subtitle {
+  color: #a79c83;
+}
+
+/* BUTTONS */
+.horizontal-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+#horizontal1 {
+  background-color: #042b4e;
+  color: #ebe2d6ff;
+}
+
+#horizontal1:hover {
+  background-color: #c2b697;
+  color: #042b4e;
+}
+#small {
+  background-color: #042b4e;
+  color: #ebe2d6ff;
+}
+
+#small:hover {
+  background-color: #c2b697;
+  color: #042b4e;
+}
+
+.horizontal-btn .btn {
+  background-color: #c2b697;
+  color: #053661;
+}
+
+.horizontal-btn .btn:hover {
+  background-color: #042b4e;
+  color: #ebe2d6ff;
+}
+
+.mobile-btn .btn {
+  background-color: #c2b697;
+  color: #053661;
+}
+
+.mobile-btn .btn:hover {
+  background-color: #042b4e;
+  color: #ebe2d6ff;
+}
+
+/* INTRO */
+.guide-text {
+  color: #a07613;
+  font-family: "Montserrat", sans-serif;
+  border-left: 2px solid #a07613;
+  padding-left: 5px;
+  font-weight: bold;
+}
+
+/* SERVICES */
+.services-section {
+  background-image: url("/public/assets/column-services.webp");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+}
+
+.services-section img {
+  object-fit: cover;
+  width: 150px;
+}
+
+.services-overlay {
+  background-color: rgba(1, 13, 37, 0.8);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.services-content {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+}
+
+.services-content p {
+  text-indent: 1rem;
+}
+
+.color {
+  color: #c2b697;
+}
+
+.services-section .btn {
+  background-color: #c2b697;
+
+  color: #000;
+}
+
+.services-section .btn:hover {
+  background-color: #2d6da5;
+  color: #fff;
+}
+
