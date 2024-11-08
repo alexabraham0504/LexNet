@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Footer from "../../components/footer/footer-admin";
+import Navbar from "../../components/navbar/navbar-admin";
 
 const AdminUserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -99,71 +101,87 @@ const AdminUserManagement = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>User Account Management</h2>
-      {loading ? (
-        <p>Loading users...</p>
-      ) : (
-        <>
-          <p>Total users displayed: {users.length}</p>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Email</th>
-                <th style={styles.th}>Role</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.actionsTh}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user._id}>
-                  <td style={styles.td}>{user.fullName}</td>
-                  <td style={styles.td}>{user.email}</td>
-                  <td style={styles.td}>{user.role}</td>
-                  <td style={styles.td}>{user.status}</td>
-                  <td style={styles.actionsTd}>
-                    <div style={styles.actionGroup}>
-                      {user.role === "lawyer" && user.status === "pending" && (
-                        <>
-                          <button
-                            onClick={() => handleApproval(user._id, "approve")}
-                            style={{ ...styles.button, ...styles.approveBtn }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleApproval(user._id, "reject")}
-                            style={{ ...styles.button, ...styles.rejectBtn }}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    <div style={styles.suspendGroup}>
-                      <button
-                        onClick={() =>
-                          handleToggleSuspend(user._id, user.status)
-                        }
-                        style={{
-                          ...styles.button,
-                          ...(user.status === "suspended"
-                            ? styles.activateBtn
-                            : styles.suspendBtn),
-                        }}
-                      >
-                        {user.status === "suspended" ? "Activate" : "Suspend"}
-                      </button>
-                    </div>
-                  </td>
+    <div>
+      <Navbar />
+
+      <div style={styles.container}>
+        <h2 style={styles.heading}>User Account Management</h2>
+        {loading ? (
+          <p>Loading users...</p>
+        ) : (
+          <>
+            <p>Total users displayed: {users.length}</p>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Name</th>
+                  <th style={styles.th}>Email</th>
+                  <th style={styles.th}>Role</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.actionsTh}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user._id}>
+                    <td style={styles.td}>{user.fullName}</td>
+                    <td style={styles.td}>{user.email}</td>
+                    <td style={styles.td}>{user.role}</td>
+                    <td style={styles.td}>{user.status}</td>
+                    <td style={styles.actionsTd}>
+                      <div style={styles.actionGroup}>
+                        {user.role === "lawyer" &&
+                          user.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleApproval(user._id, "approve")
+                                }
+                                style={{
+                                  ...styles.button,
+                                  ...styles.approveBtn,
+                                }}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleApproval(user._id, "reject")
+                                }
+                                style={{
+                                  ...styles.button,
+                                  ...styles.rejectBtn,
+                                }}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                      </div>
+                      <div style={styles.suspendGroup}>
+                        <button
+                          onClick={() =>
+                            handleToggleSuspend(user._id, user.status)
+                          }
+                          style={{
+                            ...styles.button,
+                            ...(user.status === "suspended"
+                              ? styles.activateBtn
+                              : styles.suspendBtn),
+                          }}
+                        >
+                          {user.status === "suspended" ? "Activate" : "Suspend"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
+      <Footer />
     </div>
   );
 };

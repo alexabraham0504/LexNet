@@ -1,13 +1,26 @@
 const mongoose = require('mongoose');
 
 const caseSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    status: { type: String, default: 'Open' },
-    clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
-    lawyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lawyer', required: true }, // Make sure this is correct
-    createdAt: { type: Date, default: Date.now },
+  lawyerId: mongoose.Schema.Types.ObjectId,
+  clientId: mongoose.Schema.Types.ObjectId,
+  caseType: String,
+  description: String,
+  status: { type: String, default: "In Progress" },
+  hearingDates: [Date],
+  notes: [
+    {
+      date: { type: Date, default: Date.now },
+      content: String
+    }
+  ],
+  documents: [
+    {
+      fileName: String,
+      url: String
+    }
+  ],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: Date
 });
 
-const Case = mongoose.model('Case', caseSchema);
-module.exports = Case;
+module.exports = mongoose.model('Case', caseSchema);

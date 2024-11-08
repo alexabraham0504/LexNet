@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Chart from "chart.js/auto";
+import Footer from "../../components/footer/footer-admin";
+import Navbar from "../../components/navbar/navbar-admin";
 
 const ReportsAnalytics = () => {
   const [userActivity, setUserActivity] = useState([]);
@@ -110,31 +112,36 @@ const ReportsAnalytics = () => {
   }, [performanceMetrics]);
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Analytics and Reporting</h2>
-      {loading ? (
-        <p>Loading analytics data...</p>
-      ) : (
-        <>
-          <div style={styles.reportSection}>
-            <h3>User Activity Reports</h3>
-            {userActivity.length > 0 ? (
-              renderUserActivityTable()
-            ) : (
-              <p>No user activity data available.</p>
-            )}
-          </div>
+    <div>
+      <Navbar />
 
-          <div style={styles.reportSection}>
-            <h3>Performance Metrics</h3>
-            {performanceMetrics.length > 0 ? (
-              renderPerformanceMetrics()
-            ) : (
-              <p>No performance metrics data available.</p>
-            )}
-          </div>
-        </>
-      )}
+      <div style={styles.container}>
+        <h2 style={styles.heading}>Analytics and Reporting</h2>
+        {loading ? (
+          <p>Loading analytics data...</p>
+        ) : (
+          <>
+            <div style={styles.reportSection}>
+              <h3>User Activity Reports</h3>
+              {userActivity.length > 0 ? (
+                renderUserActivityTable()
+              ) : (
+                <p>No user activity data available.</p>
+              )}
+            </div>
+
+            <div style={styles.reportSection}>
+              <h3>Performance Metrics</h3>
+              {performanceMetrics.length > 0 ? (
+                renderPerformanceMetrics()
+              ) : (
+                <p>No performance metrics data available.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      <Footer />
     </div>
   );
 };

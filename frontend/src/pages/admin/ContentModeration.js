@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import Footer from "../../components/footer/footer-admin";
+import Navbar from "../../components/navbar/navbar-admin";
 
 const ContentModeration = () => {
   const [feedback, setFeedback] = useState([]);
@@ -51,6 +53,9 @@ const ContentModeration = () => {
   );
 
   return (
+    <div>
+      <Navbar />
+    
     <div className="content-moderation">
       <h1>Content Moderation</h1>
       <input
@@ -90,6 +95,8 @@ const ContentModeration = () => {
           ))}
         </tbody>
       </table>
+    </div>
+      <Footer />
     </div>
   );
 };

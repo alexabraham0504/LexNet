@@ -9,7 +9,6 @@ import {
   faChartLine,
   faUserCog,
 } from "@fortawesome/free-solid-svg-icons";
-// import Header from "../../components/header/header-admin";
 import Navbar from "../../components/navbar/navbar-admin";
 import Footer from "../../components/footer/footer-admin";
 
@@ -17,7 +16,6 @@ const AdminDashboard = () => {
   return (
     <>
       <div className="admin-dashboard-page">
-        {/* <Header/> */}
         <Navbar />
         <Helmet>
           <title>Admin Dashboard - Lex Net</title>

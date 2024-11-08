@@ -6,15 +6,15 @@ const Navbar = () => {
 
   const links = [
     { path: "/clientdashboard", name: "Dashboard" },
-    { 
-      path: "/aboutus", 
+    {
+      path: "/aboutus",
       name: "Aboutus",
-      state: { from: 'client' }
+      state: { from: "client" },
     },
-    { 
-      path: "/contact", 
+    {
+      path: "/contact",
       name: "Contact",
-      state: { from: 'client' }
+      state: { from: "client" },
     },
   ];
 
