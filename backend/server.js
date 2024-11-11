@@ -28,7 +28,7 @@ mongoose
 // Middleware setup
 app.use(
   cors({
-    origin: ["*"],
+    origin: ['*'],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
