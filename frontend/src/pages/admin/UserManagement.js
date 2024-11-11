@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
-import { FaCheck, FaTimes, FaUserShield } from 'react-icons/fa';
-import styled from 'styled-components';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+} from "@mui/material";
+import { FaCheck, FaTimes, FaUserShield } from "react-icons/fa";
+import styled from "styled-components";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
 
@@ -33,8 +43,12 @@ const AdminUserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/auth/users");
-      const filteredUsers = response.data.filter((user) => user.role && user.role.toLowerCase() !== "admin");
+      const response = await axios.get(
+        "https://lexnet-backend.onrender.com/api/auth/users"
+      );
+      const filteredUsers = response.data.filter(
+        (user) => user.role && user.role.toLowerCase() !== "admin"
+      );
       setUsers(filteredUsers);
       setLoading(false);
     } catch (error) {
@@ -45,7 +59,10 @@ const AdminUserManagement = () => {
 
   const handleApproval = async (userId, action) => {
     try {
-      await axios.post(`http://localhost:5000/api/auth/users/${userId}/approve`, { action });
+      await axios.post(
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/approve`,
+        { action }
+      );
       fetchUsers();
       toast.success(`User has been ${action}d successfully!`);
     } catch (error) {
@@ -57,7 +74,9 @@ const AdminUserManagement = () => {
   const handleToggleSuspend = async (userId, currentStatus) => {
     const action = currentStatus === "suspended" ? "activate" : "suspend";
     try {
-      await axios.post(`http://localhost:5000/api/auth/users/${userId}/${action}`);
+      await axios.post(
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/${action}`
+      );
       fetchUsers();
       toast.success(`User has been ${action}d successfully!`);
     } catch (error) {
@@ -93,19 +112,36 @@ const AdminUserManagement = () => {
                   <TableCell>{user.role}</TableCell>
                   <TableCell>{user.status}</TableCell>
                   <TableCell>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: "flex", gap: "10px" }}>
                       {user.role === "lawyer" && user.status === "pending" && (
                         <>
-                          <ActionButton variant="contained" color="primary" onClick={() => handleApproval(user._id, "approve")}>
+                          <ActionButton
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleApproval(user._id, "approve")}
+                          >
                             <FaCheck /> Approve
                           </ActionButton>
-                          <ActionButton variant="contained" color="secondary" onClick={() => handleApproval(user._id, "reject")}>
+                          <ActionButton
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => handleApproval(user._id, "reject")}
+                          >
                             <FaTimes /> Reject
                           </ActionButton>
                         </>
                       )}
-                      <ActionButton variant="contained" color={user.status === "suspended" ? "success" : "warning"} onClick={() => handleToggleSuspend(user._id, user.status)}>
-                        {user.status === "suspended" ? "Activate" : "Suspend"} <FaUserShield />
+                      <ActionButton
+                        variant="contained"
+                        color={
+                          user.status === "suspended" ? "success" : "warning"
+                        }
+                        onClick={() =>
+                          handleToggleSuspend(user._id, user.status)
+                        }
+                      >
+                        {user.status === "suspended" ? "Activate" : "Suspend"}{" "}
+                        <FaUserShield />
                       </ActionButton>
                     </div>
                   </TableCell>

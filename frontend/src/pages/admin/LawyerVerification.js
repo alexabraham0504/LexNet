@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LawyerVerification = () => {
   const [unverifiedLawyers, setUnverifiedLawyers] = useState([]);
@@ -18,7 +18,7 @@ const LawyerVerification = () => {
   const fetchUnverifiedLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/unverified"
+        "https://lexnet-backend.onrender.com/api/lawyers/unverified"
       );
       setUnverifiedLawyers(response.data);
     } catch (error) {
@@ -29,7 +29,7 @@ const LawyerVerification = () => {
   const fetchVerifiedLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/verified"
+        "https://lexnet-backend.onrender.com/api/lawyers/verified"
       );
       setVerifiedLawyers(response.data);
     } catch (error) {
@@ -39,74 +39,80 @@ const LawyerVerification = () => {
 
   const handleApprove = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/lawyers/approve/${id}`);
+      await axios.put(
+        `https://lexnet-backend.onrender.com/api/lawyers/approve/${id}`
+      );
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
-      toast.success('Lawyer approved successfully!', {
+      toast.success("Lawyer approved successfully!", {
         position: "top-right",
         style: {
-          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-          color: '#333333',
-        }
+          background: "linear-gradient(45deg, #ffffff, #f5f5f5)",
+          color: "#333333",
+        },
       });
       fetchVerifiedLawyers();
     } catch (error) {
       console.error("Error approving lawyer:", error);
-      toast.error('Failed to approve lawyer.', {
+      toast.error("Failed to approve lawyer.", {
         position: "top-right",
         style: {
-          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-          color: '#333333',
-        }
+          background: "linear-gradient(45deg, #ffffff, #f5f5f5)",
+          color: "#333333",
+        },
       });
     }
   };
 
   const handleReject = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/lawyers/reject/${id}`);
+      await axios.delete(
+        `https://lexnet-backend.onrender.com/api/lawyers/reject/${id}`
+      );
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
-      toast.info('Lawyer rejected successfully!', {
+      toast.info("Lawyer rejected successfully!", {
         position: "top-right",
         style: {
-          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-          color: '#333333',
-        }
+          background: "linear-gradient(45deg, #ffffff, #f5f5f5)",
+          color: "#333333",
+        },
       });
     } catch (error) {
       console.error("Error rejecting lawyer:", error);
-      toast.error('Failed to reject lawyer.', {
+      toast.error("Failed to reject lawyer.", {
         position: "top-right",
         style: {
-          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-          color: '#333333',
-        }
+          background: "linear-gradient(45deg, #ffffff, #f5f5f5)",
+          color: "#333333",
+        },
       });
     }
   };
 
   const handleToggleVisibility = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/lawyers/toggle-visibility/${id}`);
-      toast.success('Visibility status updated successfully!', {
+      await axios.put(
+        `https://lexnet-backend.onrender.com/api/lawyers/toggle-visibility/${id}`
+      );
+      toast.success("Visibility status updated successfully!", {
         position: "top-right",
         style: {
-          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-          color: '#333333',
-        }
+          background: "linear-gradient(45deg, #ffffff, #f5f5f5)",
+          color: "#333333",
+        },
       });
       fetchVerifiedLawyers();
     } catch (error) {
       console.error("Error toggling lawyer visibility:", error);
-      toast.error('Failed to update visibility status.', {
+      toast.error("Failed to update visibility status.", {
         position: "top-right",
         style: {
-          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-          color: '#333333',
-        }
+          background: "linear-gradient(45deg, #ffffff, #f5f5f5)",
+          color: "#333333",
+        },
       });
     }
   };
@@ -195,7 +201,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.profilePicture ? (
                       <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                         alt="Profile"
                         style={{
                           width: "50px",
@@ -216,7 +222,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.lawDegreeCertificate ? (
                       <a
-                        href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
+                        href={`https://lexnet-backend.onrender.com/uploads/${lawyer.lawDegreeCertificate}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -229,7 +235,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.barCouncilCertificate ? (
                       <a
-                        href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
+                        href={`https://lexnet-backend.onrender.com/uploads/${lawyer.barCouncilCertificate}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -273,7 +279,7 @@ const LawyerVerification = () => {
                   <td>
                     {lawyer.profilePicture ? (
                       <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                         alt="Profile"
                         style={{
                           width: "50px",
@@ -291,8 +297,14 @@ const LawyerVerification = () => {
                   <td>{lawyer.specialization}</td>
                   <td>{lawyer.location}</td>
                   <td>
-                    <span className={`status-indicator ${lawyer.visibleToClients ? 'status-visible' : 'status-hidden'}`}>
-                      {lawyer.visibleToClients ? 'Visible' : 'Not Visible'}
+                    <span
+                      className={`status-indicator ${
+                        lawyer.visibleToClients
+                          ? "status-visible"
+                          : "status-hidden"
+                      }`}
+                    >
+                      {lawyer.visibleToClients ? "Visible" : "Not Visible"}
                     </span>
                   </td>
                   <td>
@@ -318,11 +330,11 @@ const LawyerVerification = () => {
             border-radius: 25px;
             font-size: 14px;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
           }
           input:focus {
             outline: none;
-            border-color: #2196F3;
+            border-color: #2196f3;
             box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
           }
           .lawyer-table {
@@ -351,13 +363,13 @@ const LawyerVerification = () => {
             position: relative;
           }
           .lawyer-table th:after {
-            content: '';
+            content: "";
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             height: 3px;
-            background: linear-gradient(to right, #2196F3, transparent);
+            background: linear-gradient(to right, #2196f3, transparent);
             transform: scaleX(0);
             transition: transform 0.3s ease;
           }
@@ -403,13 +415,13 @@ const LawyerVerification = () => {
             transform: scale(1.1);
           }
           .lawyer-table td a {
-            color: #2196F3;
+            color: #2196f3;
             text-decoration: none;
             font-weight: 500;
             transition: all 0.3s ease;
           }
           .lawyer-table td a:hover {
-            color: #1565C0;
+            color: #1565c0;
             text-decoration: underline;
           }
           @media (max-width: 1024px) {
@@ -460,38 +472,38 @@ const LawyerVerification = () => {
             align-items: center;
             justify-content: center;
             min-width: 120px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           }
           /* Approve button */
           button:nth-child(1) {
             background: #ffffff;
-            color: #00875A;
-            border: 2px solid #00875A;
+            color: #00875a;
+            border: 2px solid #00875a;
           }
           button:nth-child(1):hover {
-            background: #00875A;
+            background: #00875a;
             color: white;
             box-shadow: 0 5px 15px rgba(0, 135, 90, 0.3);
           }
           /* Reject button */
           button:nth-child(2) {
             background: #ffffff;
-            color: #E34935;
-            border: 2px solid #E34935;
+            color: #e34935;
+            border: 2px solid #e34935;
           }
           button:nth-child(2):hover {
-            background: #E34935;
+            background: #e34935;
             color: white;
             box-shadow: 0 5px 15px rgba(227, 73, 53, 0.3);
           }
           /* Toggle visibility button (for verified lawyers) */
           button:only-child {
             background: #ffffff;
-            color: #0052CC;
-            border: 2px solid #0052CC;
+            color: #0052cc;
+            border: 2px solid #0052cc;
           }
           button:only-child:hover {
-            background: #0052CC;
+            background: #0052cc;
             color: white;
             box-shadow: 0 5px 15px rgba(0, 82, 204, 0.3);
           }
@@ -504,14 +516,18 @@ const LawyerVerification = () => {
           }
           /* Add ripple effect */
           button::after {
-            content: '';
+            content: "";
             position: absolute;
             width: 100%;
             height: 100%;
             top: 0;
             left: 0;
             pointer-events: none;
-            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+            background-image: radial-gradient(
+              circle,
+              rgba(255, 255, 255, 0.3) 10%,
+              transparent 10.01%
+            );
             background-repeat: no-repeat;
             background-position: 50%;
             transform: scale(10, 10);
@@ -545,10 +561,12 @@ const LawyerVerification = () => {
           }
           .header-container {
             background: linear-gradient(
-              rgba(26, 35, 126, 0.95), /* Dark blue with opacity */
-              rgba(13, 71, 161, 0.95)  /* Lighter blue with opacity */
-            ),
-            url('https://images.unsplash.com/photo-1575505586569-646b2ca898fc') center/cover;
+                rgba(26, 35, 126, 0.95),
+                /* Dark blue with opacity */ rgba(13, 71, 161, 0.95)
+                  /* Lighter blue with opacity */
+              ),
+              url("https://images.unsplash.com/photo-1575505586569-646b2ca898fc")
+                center/cover;
             padding: 60px 0;
             margin-bottom: 40px;
             position: relative;
@@ -558,10 +576,11 @@ const LawyerVerification = () => {
           /* For the main content area */
           .lawyer-verification {
             background: linear-gradient(
-              rgba(255, 255, 255, 0.95),
-              rgba(255, 255, 255, 0.95)
-            ),
-            url('https://images.unsplash.com/photo-1575505586569-646b2ca898fc') fixed center/cover;
+                rgba(255, 255, 255, 0.95),
+                rgba(255, 255, 255, 0.95)
+              ),
+              url("https://images.unsplash.com/photo-1575505586569-646b2ca898fc")
+                fixed center/cover;
             padding: 2rem;
             min-height: 100vh;
           }
@@ -592,7 +611,7 @@ const LawyerVerification = () => {
             font-weight: 700;
             margin: 0;
             padding: 0;
-            font-family: 'Poppins', sans-serif;
+            font-family: "Poppins", sans-serif;
             letter-spacing: 1px;
             text-transform: uppercase;
             position: relative;
@@ -600,13 +619,13 @@ const LawyerVerification = () => {
           }
 
           h1::after {
-            content: '';
+            content: "";
             position: absolute;
             bottom: -10px;
             left: 0;
             width: 80px;
             height: 4px;
-            background: #2196F3;
+            background: #2196f3;
             border-radius: 2px;
             box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
           }
@@ -646,7 +665,7 @@ const LawyerVerification = () => {
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 5px;
-            font-family: 'Poppins', sans-serif;
+            font-family: "Poppins", sans-serif;
           }
 
           .stat-label {
@@ -685,7 +704,7 @@ const LawyerVerification = () => {
           }
         `}</style>
       </div>
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -704,5 +723,3 @@ const LawyerVerification = () => {
 };
 
 export default LawyerVerification;
-
-  

@@ -90,23 +90,24 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submission started', formData);
-    
+    console.log("Form submission started", formData);
+
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "https://lexnet-backend.onrender.com/api/auth/register",
         formData
       );
-      
+
       // Show success message
       alert(response.data.message);
-      
+
       // Redirect to verify email page instead of login
       navigate("/verifyemail");
     } catch (err) {
-      console.error('Registration error:', err);
-      const errorMessage = err.response?.data?.message || "Registration failed. Please try again.";
+      console.error("Registration error:", err);
+      const errorMessage =
+        err.response?.data?.message || "Registration failed. Please try again.";
       alert(errorMessage);
       setErrors({ submit: errorMessage });
     } finally {
@@ -148,8 +149,6 @@ const Register = () => {
               <p style={styles.errorMessage}>{errors.firstName}</p>
             )}
           </div>
-
-    
 
           {/* Email */}
           <div style={styles.formGroup}>
@@ -273,11 +272,7 @@ const Register = () => {
 
           {errors.submit && <p style={styles.errorMessage}>{errors.submit}</p>}
 
-          <button
-            type="submit"
-            style={styles.btnRegister}
-            disabled={loading}
-          >
+          <button type="submit" style={styles.btnRegister} disabled={loading}>
             {loading ? "Registering..." : "Register"}
           </button>
 
@@ -340,7 +335,6 @@ const styles = {
     fontWeight: "500",
     marginBottom: "0rem",
     color: "#02182b",
- 
   },
   formInput: {
     width: "100%",

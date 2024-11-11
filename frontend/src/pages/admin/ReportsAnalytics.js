@@ -17,14 +17,14 @@ const ReportsAnalytics = () => {
     try {
       // Fetch user activity reports
       const activityResponse = await axios.get(
-        "http://localhost:5000/api/auth/user-activity"
+        "https://lexnet-backend.onrender.com/api/auth/user-activity"
       );
       console.log("User Activity Response:", activityResponse.data); // Debug log
       setUserActivity(activityResponse.data);
 
       // Fetch performance metrics
       const performanceResponse = await axios.get(
-        "http://localhost:5000/api/auth/performance-metrics"
+        "https://lexnet-backend.onrender.com/api/auth/performance-metrics"
       );
       console.log("Performance Metrics Response:", performanceResponse.data); // Debug log
       setPerformanceMetrics(performanceResponse.data);
