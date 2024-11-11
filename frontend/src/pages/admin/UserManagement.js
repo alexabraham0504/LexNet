@@ -1,7 +1,27 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
+import { FaCheck, FaTimes, FaUserShield } from 'react-icons/fa';
+import styled from 'styled-components';
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
+
+const Container = styled.div`
+  padding: 20px;
+  background-color: #f9f9f9;
+`;
+
+const Title = styled(Typography)`
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+`;
+
+const ActionButton = styled(Button)`
+  margin-right: 5px;
+`;
 
 const AdminUserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -14,12 +34,7 @@ const AdminUserManagement = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get("http://localhost:5000/api/auth/users");
-      console.log("All fetched users:", response.data);
-      const filteredUsers = response.data.filter((user) => {
-        console.log(`User ${user.fullName}, Role: ${user.role}`);
-        return user.role && user.role.toLowerCase() !== "admin";
-      });
-      console.log("Filtered users:", filteredUsers);
+      const filteredUsers = response.data.filter((user) => user.role && user.role.toLowerCase() !== "admin");
       setUsers(filteredUsers);
       setLoading(false);
     } catch (error) {
@@ -30,159 +45,78 @@ const AdminUserManagement = () => {
 
   const handleApproval = async (userId, action) => {
     try {
-      await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/approve`,
-        { action }
-      );
+      await axios.post(`http://localhost:5000/api/auth/users/${userId}/approve`, { action });
       fetchUsers();
+      toast.success(`User has been ${action}d successfully!`);
     } catch (error) {
       console.error("Error handling approval:", error);
+      toast.error("Error handling approval!");
     }
   };
 
   const handleToggleSuspend = async (userId, currentStatus) => {
     const action = currentStatus === "suspended" ? "activate" : "suspend";
     try {
-      await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/${action}`
-      );
+      await axios.post(`http://localhost:5000/api/auth/users/${userId}/${action}`);
       fetchUsers();
+      toast.success(`User has been ${action}d successfully!`);
     } catch (error) {
       console.error(`Error trying to ${action} user:`, error);
+      toast.error(`Error trying to ${action} user!`);
     }
   };
 
-  const styles = {
-    container: { padding: "20px" },
-    heading: { marginBottom: "20px" },
-    table: { width: "100%", borderCollapse: "collapse" },
-    th: {
-      padding: "12px",
-      textAlign: "left",
-      backgroundColor: "#f4f4f4",
-      borderBottom: "1px solid #ddd",
-    },
-    td: { padding: "12px", textAlign: "left", borderBottom: "1px solid #ddd" },
-    button: {
-      padding: "8px 12px",
-      border: "none",
-      color: "white",
-      cursor: "pointer",
-      marginRight: "5px",
-    },
-    approveBtn: { backgroundColor: "#4caf50" }, // Green for approve
-    rejectBtn: { backgroundColor: "#f44336" }, // Red for reject
-    suspendBtn: { backgroundColor: "#ff9800" }, // Orange for suspend
-    activateBtn: { backgroundColor: "#4caf50" }, // Green for activate
-    actionsTh: {
-      padding: "12px",
-      textAlign: "center",
-      backgroundColor: "#f4f4f4",
-      borderBottom: "1px solid #ddd",
-    },
-    actionsTd: {
-      padding: "12px",
-      textAlign: "center",
-      borderBottom: "1px solid #ddd",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: "10px",
-    },
-    actionGroup: {
-      display: "flex",
-      gap: "5px",
-    },
-    suspendGroup: {
-      display: "flex",
-      justifyContent: "center",
-      width: "100%",
-    },
-  };
-
   return (
-    <div>
+    <Container>
+      <ToastContainer />
       <Navbar />
-
-      <div style={styles.container}>
-        <h2 style={styles.heading}>User Account Management</h2>
-        {loading ? (
-          <p>Loading users...</p>
-        ) : (
-          <>
-            <p>Total users displayed: {users.length}</p>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Name</th>
-                  <th style={styles.th}>Email</th>
-                  <th style={styles.th}>Role</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.actionsTh}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user._id}>
-                    <td style={styles.td}>{user.fullName}</td>
-                    <td style={styles.td}>{user.email}</td>
-                    <td style={styles.td}>{user.role}</td>
-                    <td style={styles.td}>{user.status}</td>
-                    <td style={styles.actionsTd}>
-                      <div style={styles.actionGroup}>
-                        {user.role === "lawyer" &&
-                          user.status === "pending" && (
-                            <>
-                              <button
-                                onClick={() =>
-                                  handleApproval(user._id, "approve")
-                                }
-                                style={{
-                                  ...styles.button,
-                                  ...styles.approveBtn,
-                                }}
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleApproval(user._id, "reject")
-                                }
-                                style={{
-                                  ...styles.button,
-                                  ...styles.rejectBtn,
-                                }}
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                      </div>
-                      <div style={styles.suspendGroup}>
-                        <button
-                          onClick={() =>
-                            handleToggleSuspend(user._id, user.status)
-                          }
-                          style={{
-                            ...styles.button,
-                            ...(user.status === "suspended"
-                              ? styles.activateBtn
-                              : styles.suspendBtn),
-                          }}
-                        >
-                          {user.status === "suspended" ? "Activate" : "Suspend"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
+      <Title variant="h4">User Account Management</Title>
+      {loading ? (
+        <Typography>Loading users...</Typography>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user.fullName}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{user.status}</TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {user.role === "lawyer" && user.status === "pending" && (
+                        <>
+                          <ActionButton variant="contained" color="primary" onClick={() => handleApproval(user._id, "approve")}>
+                            <FaCheck /> Approve
+                          </ActionButton>
+                          <ActionButton variant="contained" color="secondary" onClick={() => handleApproval(user._id, "reject")}>
+                            <FaTimes /> Reject
+                          </ActionButton>
+                        </>
+                      )}
+                      <ActionButton variant="contained" color={user.status === "suspended" ? "success" : "warning"} onClick={() => handleToggleSuspend(user._id, user.status)}>
+                        {user.status === "suspended" ? "Activate" : "Suspend"} <FaUserShield />
+                      </ActionButton>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
       <Footer />
-    </div>
+    </Container>
   );
 };
 

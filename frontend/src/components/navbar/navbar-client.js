@@ -1,20 +1,30 @@
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate("/");
+  };
 
   const links = [
-    { path: "/clientdashboard", name: "Dashboard" },
+    { path: "/admindashboard", name: "Dashboard" },
     {
       path: "/aboutus",
       name: "Aboutus",
-      state: { from: "client" },
+      state: { from: "admin" },
     },
     {
       path: "/contact",
       name: "Contact",
-      state: { from: "client" },
+      state: { from: "admin" },
+    },
+    {
+      path: "/",
+      name: "Logout",
+      onClick: handleLogout,
     },
   ];
 
@@ -52,11 +62,12 @@ const Navbar = () => {
               id="main-nav"
             >
               <ul className="navbar-nav">
-                {links.map(({ path, name, state }, index) => (
+                {links.map(({ path, name, state, onClick }, index) => (
                   <li className="nav-item mx-3 mb-2" key={index}>
                     <NavLink
                       to={path}
                       state={state}
+                      onClick={onClick}
                       style={({ isActive }) => ({
                         textDecoration: "none",
                         color: isActive ? "#c2b697" : "#fff",

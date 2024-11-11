@@ -36,7 +36,7 @@ const ClientCaseManagement = () => {
   const fetchLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/verified"
+        "http://localhost:5000/api/lawyers/is_verified"
       );
       console.log("All lawyers:", response.data); // Log the complete response
       const activeVerifiedLawyers = response.data.filter(

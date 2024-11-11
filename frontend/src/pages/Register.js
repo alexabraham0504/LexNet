@@ -149,27 +149,7 @@ const Register = () => {
             )}
           </div>
 
-          {/* Last Name
-          <div style={styles.formGroup}>
-            <label htmlFor="lastName" style={styles.formLabel}>
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              required
-              style={{
-                ...styles.formInput,
-                borderColor: errors.lastName ? "red" : "#c2b697",
-              }}
-            />
-            {errors.lastName && (
-              <p style={styles.errorMessage}>{errors.lastName}</p>
-            )}
-          </div> */}
+    
 
           {/* Email */}
           <div style={styles.formGroup}>
@@ -360,7 +340,7 @@ const styles = {
     fontWeight: "500",
     marginBottom: "0rem",
     color: "#02182b",
-    // fontWeight: "bold",
+ 
   },
   formInput: {
     width: "100%",

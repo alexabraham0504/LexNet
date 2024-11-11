@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { auth, googleProvider } from './firebaseConfig.js';
+import { signInWithPopup } from 'firebase/auth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -10,6 +12,7 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -18,8 +21,43 @@ const Login = () => {
     });
   };
 
-  const handleGoogleSignIn = () => {
-    window.open("http://localhost:5000/auth/google/callback", "_self");
+  // Handle role selection and save to session
+  const handleRoleSelection = (role) => {
+    sessionStorage.setItem("selectedRole", role); // Save role in session storage
+    setIsRoleModalOpen(false); // Close the modal
+    handleGoogleSignIn(role); // Proceed to Google sign-in
+  };
+
+  // Trigger Google Sign-In with the selected role
+  const handleGoogleSignIn = async (role) => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const userData = {
+        displayName: user.displayName,
+        Uid: user.uid,
+        email: user.email,
+        role, // Use the selected role
+      };
+
+      // Send user data to the backend
+      const response = await axios.post("http://localhost:5000/api/auth/google-login", userData);
+      const data = response.data.user;
+
+      localStorage.setItem("name", data.displayName); // Store user's name
+
+      // Navigate based on role
+      if (data.role === "Admin") {
+        navigate("/AdminDashboard");
+      } else if (data.role === "Lawyer") {
+        navigate("/LawyerDashboard");
+      } else if (data.role === "Client") {
+        navigate("/ClientDashboard");
+      }
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -28,19 +66,16 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        formData
-      );
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        ...formData,
+        role: sessionStorage.getItem("selectedRole"), // Use the role stored in session storage
+      });
       const data = response.data;
 
       if (data.message === "Login successful.") {
-        // alert("Login success");
-        console.log(data);
-        localStorage.setItem("token", data.token); // Store the JWT token
-        localStorage.setItem("name", data.firstName); // Store the user's first name
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("name", data.firstName);
 
-        // Navigate based on the role
         if (data.role === "Admin") {
           navigate("/AdminDashboard");
         } else if (data.role === "Lawyer") {
@@ -52,9 +87,7 @@ const Login = () => {
         alert(`Login failed: ${data.message}`);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message || "An error occurred. Please try again."
-      );
+      setError(err.response?.data?.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -71,9 +104,7 @@ const Login = () => {
           <h2 style={styles.loginTitle}>Welcome Back</h2>
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
-              <label htmlFor="email" style={styles.formLabel}>
-                Email Address
-              </label>
+              <label htmlFor="email" style={styles.formLabel}>Email Address</label>
               <input
                 type="email"
                 id="email"
@@ -86,9 +117,7 @@ const Login = () => {
               />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="password" style={styles.formLabel}>
-                Password
-              </label>
+              <label htmlFor="password" style={styles.formLabel}>Password</label>
               <input
                 type="password"
                 id="password"
@@ -102,30 +131,91 @@ const Login = () => {
             </div>
             <div style={styles.rememberMe}>
               <input type="checkbox" id="rememberMe" />
-              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>
-                Remember Me
-              </label>
+              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>Remember Me</label>
             </div>
-            <button
-              id="login"
-              type="submit"
-              style={styles.btnLogin}
-              disabled={loading}
-            >
+            <button id="login" type="submit" style={styles.btnLogin} disabled={loading} className="btn w-100">
               {loading ? "Signing in..." : "Login"}
             </button>
+
+            <button
+              onClick={() => setIsRoleModalOpen(true)}
+              style={styles.googleButton}
+              disabled={loading}
+            >
+              {loading ? "Signing in with Google..." : "Sign in with Google"}
+            </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
-            <Link to="/forgotpassword" style={styles.forgotPassword}>
-              Lost your password?
-            </Link>
+
+            <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
           </form>
         </div>
       </div>
+
+      {/* Role Selection Modal */}
+      {isRoleModalOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3>Select Your Role</h3>
+            <button style={styles.roleButton} onClick={() => handleRoleSelection("Lawyer")}>Lawyer</button>
+            <button style={styles.roleButton} onClick={() => handleRoleSelection("Client")}>Client</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const styles = {
+  // ... existing styles
+
+  googleButton: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#db4437",
+    color: "#fff",
+    fontWeight: "bold",
+    borderRadius: "8px",
+    padding: "0.8rem",
+    marginTop: "15px",
+    cursor: "pointer",
+    fontSize: "1rem",
+    transition: "background-color 0.3s ease",
+    width: "100%", // Matches the width of the login button
+  },
+  
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: "20px",
+    borderRadius: "8px",
+    textAlign: "center",
+  },
+
+  roleButton: {
+    display: "block",
+    width: "100%",
+    padding: "10px",
+    marginTop: "10px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+
   loginPage: {
     position: "relative",
     display: "flex",
@@ -137,6 +227,7 @@ const styles = {
     backgroundPosition: "center",
     fontFamily: "'Open Sans', sans-serif",
   },
+
   overlay: {
     position: "absolute",
     top: 0,
@@ -148,6 +239,7 @@ const styles = {
     justifyContent: "flex-end",
     alignItems: "center",
   },
+
   loginContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.3)",
     padding: "2rem",
@@ -158,6 +250,7 @@ const styles = {
     textAlign: "center",
     marginRight: "15rem",
   },
+
   // Logo and App Name styles
   logoContainer: {
     position: "absolute",
@@ -166,87 +259,77 @@ const styles = {
     display: "flex",
     alignItems: "center",
   },
+
   logo: {
     width: "100px",
-    marginRight: "10px", // Add space between logo and app name
+    marginRight: "10px",
   },
+
   appName: {
     fontSize: "1.8rem",
     color: "#fff",
     fontWeight: "bold",
   },
+
   loginTitle: {
     color: "#fff",
     fontSize: "1.5rem",
     marginBottom: "1rem",
     fontWeight: "bold",
   },
+
   formGroup: {
     marginBottom: "1rem",
     textAlign: "left",
-    fontWeight: "bold",
   },
+
   formLabel: {
     display: "block",
-    fontSize: "0.9rem",
-    marginBottom: "0.5rem",
-    color: "#333",
-    fontWeight: "bold",
+    fontSize: "1rem",
+    color: "#fff",
+    fontWeight: "600",
   },
+
   formInput: {
     width: "100%",
-    padding: "0.6rem",
-    border: "1px solid #ccc",
-    borderRadius: "13px",
-    fontSize: "0.9rem",
-    color: "#333",
-    marginBottom: "1rem",
+    padding: "0.8rem",
+    borderRadius: "8px",
+    border: "none",
+    boxShadow: "0 0 5px rgba(0, 0, 0, 0.2)",
+    fontSize: "1rem",
   },
+
   rememberMe: {
     display: "flex",
     alignItems: "center",
     marginBottom: "1rem",
-    fontWeight: "bold",
   },
+
   rememberMeLabel: {
+    fontSize: "0.9rem",
+    color: "#fff",
     marginLeft: "0.5rem",
-    fontSize: "0.9rem",
-    color: "#333",
   },
-  btnLogin: {
-    display: "block",
-    width: "100%",
-    padding: "0.8rem",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    fontSize: "1rem",
-    cursor: "pointer",
-    transition: "background-color 0.3s ease",
-    marginTop: "1rem",
-    fontWeight: "bold",
-  },
-  btnSignUp: {
-    display: "block",
-    width: "100%",
-    padding: "0.8rem",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    fontSize: "1rem",
-    cursor: "pointer",
-    transition: "background-color 0.3s ease",
-    marginTop: "1rem",
-    fontWeight: "bold",
-  },
+
   forgotPassword: {
-    display: "block",
-    color: "#fff",
     fontSize: "0.9rem",
+    color: "#fff",
+    textDecoration: "none",
+    display: "block",
     marginTop: "1rem",
+  },
+
+  btnLogin: {
+    padding: "0.8rem",
+    backgroundColor: "#007bff", // Changed to blue
+    color: "#fff",
     fontWeight: "bold",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+    transition: "background-color 0.3s ease",
+    fontSize: "1rem",
+    width: "100%", // Full width to match Google button
   },
 };
 

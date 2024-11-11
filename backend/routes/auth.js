@@ -7,6 +7,7 @@ const router = express.Router();
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const User1 = require("../models/Guser");
 
 
 // Nodemailer setup (using Gmail as an example)
@@ -40,7 +41,7 @@ router.post("/register", async (req, res) => {
       password: hashedPassword,
       role,
       isVerified: false,
-      status: "pending"
+      status: "pending",
     });
 
     // Save the user to the database
@@ -68,14 +69,14 @@ router.post("/register", async (req, res) => {
     // Send success response
     res.status(201).json({
       success: true,
-      message: "Registration successful! Please check your email to verify your account."
+      message:
+        "Registration successful! Please check your email to verify your account.",
     });
-
   } catch (error) {
-    console.error('Server error during registration:', error);
-    res.status(500).json({ 
+    console.error("Server error during registration:", error);
+    res.status(500).json({
       success: false,
-      message: "Registration failed. Please try again later." 
+      message: "Registration failed. Please try again later.",
     });
   }
 });
@@ -276,7 +277,32 @@ router.post("/users/:userId/:action", async (req, res) => {
   }
 });
 
+//gmail account
+//Google
 
+router.post("/google-login", async (req, res) => {
+  const { displayName, Uid, email, role } = req.body;
 
+  try {
+    // Check if the user already exists in the database
+    let user = await User1.findOne({ Uid });
+    
+    if (!user) {
+      // If user does not exist, create a new one
+      user = new User1({
+        displayName,
+        email,
+        Uid,
+        role,
+      });
+      await user.save();
+    }
+
+    res.status(200).json({ message: "User authenticated and saved", user });
+  } catch (error) {
+    console.error("Error verifying user data:", error);
+    res.status(500).json({ message: "Authentication failed" });
+  }
+});
 
 module.exports = router;

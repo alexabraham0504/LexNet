@@ -4,6 +4,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Footer from "../../components/footer/footer-admin";
 // import Header from "../../components/header/header-admin";
 import Navbar from "../../components/navbar/navbar-admin";
+import Modal from "react-modal"; // Import Modal
+import { ThreeDots } from "react-loader-spinner"; // Import ThreeDots loader
 
 const Platform = () => {
   const [ipcSections, setIpcSections] = useState([]);
@@ -11,6 +13,8 @@ const Platform = () => {
   const [newDescription, setNewDescription] = useState("");
   const [newCaseStudy, setNewCaseStudy] = useState(""); // Added for case study
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false); // Loading state
+  const [modalIsOpen, setModalIsOpen] = useState(false); // Modal state
 
   // Fetch IPC sections from the backend when the component loads
   useEffect(() => {
@@ -18,6 +22,7 @@ const Platform = () => {
   }, []);
 
   const fetchIpcSections = async () => {
+    setLoading(true); // Start loading
     try {
       const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
       const data = await response.json();
@@ -37,6 +42,8 @@ const Platform = () => {
         position: "top-right",
         autoClose: 3000,
       });
+    } finally {
+      setLoading(false); // End loading
     }
   };
 
@@ -86,6 +93,7 @@ const Platform = () => {
         autoClose: 3000,
       });
     }
+    setModalIsOpen(false); // Close modal after adding
   };
 
   // Handle removing an IPC section
@@ -108,10 +116,18 @@ const Platform = () => {
     section.section.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Open modal
+  const openModal = () => setModalIsOpen(true);
+  const closeModal = () => setModalIsOpen(false);
+
   return (
     <div style={styles.pageWrapper}>
       <Navbar />
       <ToastContainer position="top-right" autoClose={3000} />
+      {loading && (
+        <ThreeDots height="80" width="80" color="#1a237e" ariaLabel="loading" />
+      )}{" "}
+      {/* Loader */}
       <div style={styles.container}>
         <h2 style={styles.title}>IPC Section Management</h2>
 
@@ -126,50 +142,32 @@ const Platform = () => {
               placeholder="Search IPC sections..."
               style={styles.searchInput}
             />
+            <button
+              onClick={() => setSearchTerm("")}
+              style={styles.clearButton}
+            >
+              Clear
+            </button>{" "}
+            {/* Clear button */}
           </div>
         </div>
 
-        {/* Add New Section Card */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>Add New Section</h3>
-          <div style={styles.sectionInputContainer}>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>IPC Section</label>
-              <input
-                type="text"
-                value={newSection}
-                onChange={(e) => setNewSection(e.target.value)}
-                placeholder="Enter section number"
-                style={styles.input}
-              />
-            </div>
+        {/* Add New Section Button */}
+        <button onClick={openModal} style={styles.addButton}>
+          <i className="fas fa-plus" style={styles.buttonIcon}></i>
+          Add New Section
+        </button>
 
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Description</label>
-              <textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Enter detailed description"
-                style={styles.textarea}
-              />
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Case Study</label>
-              <textarea
-                value={newCaseStudy}
-                onChange={(e) => setNewCaseStudy(e.target.value)}
-                placeholder="Enter relevant case study"
-                style={styles.textarea}
-              />
-            </div>
-
-            <button onClick={handleAddSection} style={styles.addButton}>
-              <i className="fas fa-plus" style={styles.buttonIcon}></i>
-              Add Section
-            </button>
-          </div>
-        </div>
+        {/* Modal for Adding New Section */}
+        <Modal
+          isOpen={modalIsOpen}
+          onRequestClose={closeModal}
+          style={modalStyles}
+        >
+          <h3>Add New Section</h3>
+          {/* Form inputs for new section */}
+          <button onClick={handleAddSection}>Submit</button>
+        </Modal>
 
         {/* Sections List Card */}
         <div style={styles.card}>
@@ -212,12 +210,36 @@ const Platform = () => {
 const styles = {
   pageWrapper: {
     minHeight: "100vh",
-    backgroundColor: "#f0f2f5",
+    backgroundImage: "url('/path/to/your/image.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    position: "relative",
+    animation: "backgroundAnimation 15s infinite alternate", // Background animation
+  },
+  '@keyframes backgroundAnimation': {
+    '0%': { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+    '100%': { backgroundColor: 'rgba(0, 0, 0, 0.7)' },
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 1,
   },
   container: {
     maxWidth: "1200px",
     margin: "2rem auto",
     padding: "0 20px",
+    position: "relative",
+    zIndex: 2,
+    animation: "fadeIn 1s ease-in", // Fade-in animation for the container
+  },
+  '@keyframes fadeIn': {
+    '0%': { opacity: 0 },
+    '100%': { opacity: 1 },
   },
   title: {
     fontSize: "2.5rem",
@@ -228,11 +250,16 @@ const styles = {
     textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
   },
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-    padding: "2rem",
-    marginBottom: "2rem",
+    backgroundColor: "white",
+    borderRadius: "10px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+    padding: "20px",
+    margin: "20px 0",
+    transition: "transform 0.3s, box-shadow 0.3s",
+    '&:hover': {
+      transform: "translateY(-5px)",
+      boxShadow: "0 8px 16px rgba(0, 0, 0, 0.3)",
+    },
   },
   cardTitle: {
     fontSize: "1.5rem",
@@ -242,23 +269,25 @@ const styles = {
     paddingBottom: "0.5rem",
   },
   searchContainer: {
-    marginBottom: "2rem",
+    marginBottom: "7rem",
+    display: "flex",
+    justifyContent: "center",
   },
   searchWrapper: {
     position: "relative",
     maxWidth: "400px",
-    margin: "0 auto",
+    width: "100%",
   },
   searchIcon: {
     position: "absolute",
     left: "12px",
-    top: "50%",
+    top: "28%",
     transform: "translateY(-50%)",
     color: "#666",
   },
   searchInput: {
     width: "100%",
-    padding: "12px 40px",
+    padding: "12px 40px 12px 40px",
     fontSize: "1rem",
     border: "2px solid #e0e0e0",
     borderRadius: "25px",
@@ -307,9 +336,10 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     transition: "all 0.3s ease",
-    "&:hover": {
+    '&:hover': {
       backgroundColor: "#283593",
       transform: "translateY(-2px)",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
     },
   },
   buttonIcon: {
@@ -376,6 +406,25 @@ const styles = {
     padding: "2rem",
     color: "#666",
     fontSize: "1.1rem",
+  },
+  clearButton: {
+    marginLeft: "150px",
+    backgroundColor: "#ffcc00",
+    color: "#333",
+    border: "none",
+    borderRadius: "5px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    transition: "background-color 0.3s",
+    "&:hover": {
+      backgroundColor: "#ffb300",
+    },
+  },
+};
+
+const modalStyles = {
+  content: {
+    // Add your modal styles here
   },
 };
 
