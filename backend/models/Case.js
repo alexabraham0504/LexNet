@@ -1,26 +1,14 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const caseSchema = new mongoose.Schema({
-  lawyerId: mongoose.Schema.Types.ObjectId,
-  clientId: mongoose.Schema.Types.ObjectId,
-  caseType: String,
-  description: String,
-  status: { type: String, default: "In Progress" },
-  hearingDates: [Date],
-  notes: [
-    {
-      date: { type: Date, default: Date.now },
-      content: String
-    }
-  ],
-  documents: [
-    {
-      fileName: String,
-      url: String
-    }
-  ],
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Assuming clients are stored in User model
+  lawyerId: { type: mongoose.Schema.Types.ObjectId, ref: "Lawyer", required: false }, // Lawyer is optional during case creation
+  status: { type: String, default: "Open" }, // Status could be "Open", "In Progress", "Closed", etc.
+  documents: [{ type: String }], // Array to store paths to uploaded documents
   createdAt: { type: Date, default: Date.now },
-  updatedAt: Date
+  updatedAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('Case', caseSchema);
+module.exports = mongoose.model("Case", caseSchema);

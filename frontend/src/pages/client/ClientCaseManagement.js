@@ -10,84 +10,81 @@ const ClientCaseManagement = () => {
   const [cases, setCases] = useState([]);
   const [lawyers, setLawyers] = useState([]);
   const [file, setFile] = useState(null);
-  const [selectedCaseId, setSelectedCaseId] = useState("");
   const [newCase, setNewCase] = useState({
     title: "",
     description: "",
     lawyerId: "",
   });
 
+  const clientId = "YOUR_CLIENT_ID"; // You can get the client ID from context or authentication state.
+
   useEffect(() => {
-    fetchCases();
-    fetchLawyers(); // Fetch available lawyers
+    fetchLawyers();
   }, []);
 
-  const fetchCases = async () => {
-    try {
-      const clientId = "yourClientId"; // Replace with actual client ID
-      const response = await axios.get(`/api/cases/client/${clientId}`);
-      setCases(response.data);
-    } catch (error) {
-      toast.error("Error fetching cases");
-      console.error("Error fetching cases:", error);
-    }
-  };
-
+  // Fetching verified lawyers from the backend
   const fetchLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/is_verified"
+        "http://localhost:5000/api/lawyers/verified"
       );
-      console.log("All lawyers:", response.data); // Log the complete response
+      console.log("All lawyers:", response.data); // Log complete response
+
       const activeVerifiedLawyers = response.data.filter(
         (lawyer) => lawyer.isVerified && lawyer.visibleToClients
       );
-      console.log("Verified Lawyers:", activeVerifiedLawyers); // Log the filtered lawyers
+
+      console.log("Verified Lawyers:", activeVerifiedLawyers); // Log filtered lawyers
       setLawyers(activeVerifiedLawyers);
     } catch (error) {
+      toast.error("Error fetching verified lawyers");
       console.error("Error fetching verified lawyers:", error);
     }
   };
 
-  const handleCreateCase = async (e) => {
+  const handleCreateCaseAndUploadDocument = async (e) => {
     e.preventDefault();
+
+    if (!newCase.title || !newCase.description || !newCase.lawyerId) {
+      toast.error("Please fill out all fields for the case.");
+      return;
+    }
+
     try {
-      const response = await axios.post("/api/cases", {
-        ...newCase,
-        clientId: "yourClientId", // Replace with actual client ID
-      });
-      setCases([...cases, response.data]);
+      // Prepare the form data
+      const formData = new FormData();
+      formData.append("title", newCase.title);
+      formData.append("description", newCase.description);
+      formData.append("lawyerId", newCase.lawyerId); // Send the selected lawyerId
+      formData.append("clientId", clientId); // Send the client ID from authenticated session
+
+      // If a file is selected, append it to the form data
+      if (file) {
+        formData.append("documents", file); // Match field name on backend
+      }
+
+      // Send the form data to the backend to create the case and upload the document
+      const caseResponse = await axios.post(
+        "http://localhost:5000/api/cases",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const createdCase = caseResponse.data;
+      console.log("Created case:", createdCase);
+
+      // Add the newly created case to the case list
+      setCases([...cases, createdCase]);
       setNewCase({ title: "", description: "", lawyerId: "" }); // Reset form
+      setFile(null); // Reset file input
       toast.success("Case created successfully!");
     } catch (error) {
-      toast.error("Error creating case");
-      console.error("Error creating case:", error);
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    e.preventDefault();
-    try {
-      const formData = new FormData();
-      formData.append("document", file);
-
-      await axios.post(`/api/cases/${selectedCaseId}/upload`, formData);
-      toast.success("Document uploaded!");
-      setFile(null); // Reset file input after upload
-    } catch (error) {
-      toast.error("Error uploading document");
-      console.error("Error uploading document:", error);
-    }
-  };
-
-  const handleDeleteCase = async (caseId) => {
-    try {
-      await axios.delete(`/api/cases/${caseId}`);
-      setCases(cases.filter((caseItem) => caseItem._id !== caseId));
-      toast.success("Case deleted!");
-    } catch (error) {
-      toast.error("Error deleting case");
-      console.error("Error deleting case:", error);
+      toast.error("Error creating case or uploading document.");
+      console.error("Error creating case or uploading document:", error);
     }
   };
 
@@ -110,15 +107,12 @@ const ClientCaseManagement = () => {
                   ? caseItem.lawyerId.fullName
                   : "Not Assigned"}
               </LawyerName>
-              <DeleteButton onClick={() => handleDeleteCase(caseItem._id)}>
-                Delete
-              </DeleteButton>
             </CaseItem>
           ))}
         </CaseList>
 
         <SubHeading>Create New Case</SubHeading>
-        <Form onSubmit={handleCreateCase}>
+        <Form onSubmit={handleCreateCaseAndUploadDocument}>
           <InputField
             type="text"
             placeholder="Title"
@@ -139,30 +133,21 @@ const ClientCaseManagement = () => {
             }
           >
             <option value="">Select Lawyer</option>
-            {lawyers.map((lawyer) => (
-              <option key={lawyer._id} value={lawyer._id}>
-                {lawyer.fullName} {/* Ensure fullName is correct */}
-              </option>
-            ))}
+            {lawyers.length > 0 ? (
+              lawyers.map((lawyer) => (
+                <option key={lawyer._id} value={lawyer._id}>
+                  {lawyer.fullname}
+                </option>
+              ))
+            ) : (
+              <option disabled>No verified lawyers available</option>
+            )}
           </Dropdown>
-          <CreateButton type="submit">Create Case</CreateButton>
-        </Form>
 
-        <SubHeading>Upload Document</SubHeading>
-        <Form onSubmit={handleFileUpload}>
-          <Dropdown
-            onChange={(e) => setSelectedCaseId(e.target.value)}
-            value={selectedCaseId}
-          >
-            <option value="">Select Case</option>
-            {cases.map((caseItem) => (
-              <option key={caseItem._id} value={caseItem._id}>
-                {caseItem.title}
-              </option>
-            ))}
-          </Dropdown>
           <FileInput type="file" onChange={(e) => setFile(e.target.files[0])} />
-          <CreateButton type="submit">Upload</CreateButton>
+          <CreateButton type="submit">
+            Create Case & Upload Document
+          </CreateButton>
         </Form>
       </Container>
       <Footer />
@@ -196,9 +181,9 @@ const CaseList = styled.ul`
 
 const CaseItem = styled.li`
   display: flex;
-  flex-direction: column; /* Changed to column to accommodate lawyer name */
+  flex-direction: column;
   justify-content: space-between;
-  align-items: flex-start; /* Align items to start */
+  align-items: flex-start;
   padding: 10px;
   background-color: #f9f9f9;
   border: 1px solid #ddd;
@@ -214,21 +199,7 @@ const CaseTitle = styled.span`
 const LawyerName = styled.span`
   font-weight: 400;
   color: #34495e;
-  margin-top: 5px; /* Add some space between title and lawyer name */
-`;
-
-const DeleteButton = styled.button`
-  background-color: #e74c3c;
-  color: #fff;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #c0392b;
-  }
+  margin-top: 5px;
 `;
 
 const Form = styled.form`
