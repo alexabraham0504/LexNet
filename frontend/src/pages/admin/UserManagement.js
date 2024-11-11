@@ -44,7 +44,7 @@ const AdminUserManagement = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000https://lexnet-backend.onrender.com/api/auth/users"
+        "https://lexnet-backend.onrender.com/api/auth/users"
       );
       const filteredUsers = response.data.filter(
         (user) => user.role && user.role.toLowerCase() !== "admin"
@@ -60,7 +60,7 @@ const AdminUserManagement = () => {
   const handleApproval = async (userId, action) => {
     try {
       await axios.post(
-        `http://localhost:5000https://lexnet-backend.onrender.com/api/auth/users/${userId}/approve`,
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/approve`,
         { action }
       );
       fetchUsers();
@@ -75,7 +75,7 @@ const AdminUserManagement = () => {
     const action = currentStatus === "suspended" ? "activate" : "suspend";
     try {
       await axios.post(
-        `http://localhost:5000https://lexnet-backend.onrender.com/api/auth/users/${userId}/${action}`
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/${action}`
       );
       fetchUsers();
       toast.success(`User has been ${action}d successfully!`);

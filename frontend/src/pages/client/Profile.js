@@ -20,7 +20,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/profile"
+          "https://lexnet-backend.onrender.com/api/profile"
         );
         const data = response.data || {
           id: null, // If no profile exists, id will remain null
@@ -77,7 +77,7 @@ const Profile = () => {
     try {
       if (!profileData.id) {
         const response = await axios.post(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/profile",
+          "https://lexnet-backend.onrender.com/api/profile",
           formData,
           {
             headers: {
@@ -92,7 +92,7 @@ const Profile = () => {
         }));
       } else {
         await axios.put(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/profile",
+          "https://lexnet-backend.onrender.com/api/profile",
           formData,
           {
             headers: {

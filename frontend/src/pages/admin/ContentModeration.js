@@ -10,7 +10,7 @@ const ContentModeration = () => {
     const fetchFeedback = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/feedback"
+          "https://lexnet-backend.onrender.com/api/feedback"
         );
         const data = await response.json();
         setFeedback(data);
@@ -25,7 +25,7 @@ const ContentModeration = () => {
   const handleResolve = async (id) => {
     try {
       await fetch(
-        `http://localhost:5000https://lexnet-backend.onrender.com/api/feedback/${id}/resolve`,
+        `https://lexnet-backend.onrender.com/api/feedback/${id}/resolve`,
         {
           method: "PUT",
         }
@@ -42,12 +42,9 @@ const ContentModeration = () => {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(
-        `http://localhost:5000https://lexnet-backend.onrender.com/api/feedback/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      await fetch(`https://lexnet-backend.onrender.com/api/feedback/${id}`, {
+        method: "DELETE",
+      });
       setFeedback(feedback.filter((item) => item.id !== id));
     } catch (error) {
       console.error("Error deleting feedback:", error);

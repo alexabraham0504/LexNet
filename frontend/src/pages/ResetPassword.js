@@ -24,7 +24,7 @@ const ResetPassword = () => {
     try {
       // Use backticks for template literals in the API URL
       const { data } = await axios.post(
-        `http://localhost:5000https://lexnet-backend.onrender.com/api/auth/resetpassword/${token}`,
+        `https://lexnet-backend.onrender.com/api/auth/resetpassword/${token}`,
         { password }
       );
       setMessage(data.message);

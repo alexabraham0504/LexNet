@@ -28,7 +28,7 @@ const LawyerRegistration = () => {
     const fetchLawyerData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/lawyers/me"
+          "https://lexnet-backend.onrender.com/api/lawyers/me"
         );
         setLawyerData((prevData) => ({
           ...prevData,
@@ -89,7 +89,7 @@ const LawyerRegistration = () => {
     try {
       if (!lawyerData.id) {
         await axios.post(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/lawyers/register",
+          "https://lexnet-backend.onrender.com/api/lawyers/register",
           formData,
           {
             headers: {
@@ -102,7 +102,7 @@ const LawyerRegistration = () => {
         );
       } else {
         await axios.put(
-          "http://localhost:5000https://lexnet-backend.onrender.com/api/lawyers/register",
+          "https://lexnet-backend.onrender.com/api/lawyers/register",
           formData,
           {
             headers: {

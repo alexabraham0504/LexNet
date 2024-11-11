@@ -25,7 +25,7 @@ const Platform = () => {
     setLoading(true); // Start loading
     try {
       const response = await fetch(
-        "http://localhost:5000https://lexnet-backend.onrender.com/api/ipc"
+        "https://lexnet-backend.onrender.com/api/ipc"
       ); // API endpoint to get IPC sections
       const data = await response.json();
       setIpcSections(data);
@@ -61,7 +61,7 @@ const Platform = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:5000https://lexnet-backend.onrender.com/api/ipc",
+        "https://lexnet-backend.onrender.com/api/ipc",
         {
           method: "POST",
           headers: {
@@ -105,7 +105,7 @@ const Platform = () => {
   const handleRemoveSection = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:5000https://lexnet-backend.onrender.com/api/ipc/${id}`,
+        `https://lexnet-backend.onrender.com/api/ipc/${id}`,
         {
           method: "DELETE",
         }
