@@ -14,7 +14,9 @@ const IPC = () => {
 
   const fetchIpcSections = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
+      const response = await fetch(
+        "http://localhost:5000https://lexnet-backend.onrender.com/api/ipc"
+      ); // API endpoint to get IPC sections
       const data = await response.json();
       setResults(data);
     } catch (error) {
