@@ -26,7 +26,7 @@ const ClientCaseManagement = () => {
   const fetchLawyers = async () => {
     try {
       const response = await axios.get(
-        "https://lexnet-backend.onrender.com/api/lawyers/verified"
+        "http://localhost:5000/api/lawyers/verified"
       );
       console.log("All lawyers:", response.data); // Log complete response
 
@@ -65,7 +65,7 @@ const ClientCaseManagement = () => {
 
       // Send the form data to the backend to create the case and upload the document
       const caseResponse = await axios.post(
-        "https://lexnet-backend.onrender.com/api/cases",
+        "http://localhost:5000/api/cases",
         formData,
         {
           headers: {

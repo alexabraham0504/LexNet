@@ -9,9 +9,7 @@ const ContentModeration = () => {
   useEffect(() => {
     const fetchFeedback = async () => {
       try {
-        const response = await fetch(
-          "https://lexnet-backend.onrender.com/api/feedback"
-        );
+        const response = await fetch("http://localhost:5000/api/feedback");
         const data = await response.json();
         setFeedback(data);
       } catch (error) {
@@ -24,12 +22,9 @@ const ContentModeration = () => {
 
   const handleResolve = async (id) => {
     try {
-      await fetch(
-        `https://lexnet-backend.onrender.com/api/feedback/${id}/resolve`,
-        {
-          method: "PUT",
-        }
-      );
+      await fetch(`http://localhost:5000/api/feedback/${id}/resolve`, {
+        method: "PUT",
+      });
       setFeedback(
         feedback.map((item) =>
           item.id === id ? { ...item, flagged: false } : item
@@ -42,7 +37,7 @@ const ContentModeration = () => {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`https://lexnet-backend.onrender.com/api/feedback/${id}`, {
+      await fetch(`http://localhost:5000/api/feedback/${id}`, {
         method: "DELETE",
       });
       setFeedback(feedback.filter((item) => item.id !== id));

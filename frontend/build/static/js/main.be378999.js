@@ -19744,7 +19744,7 @@
                               (t.prev = 7),
                               (t.next = 10),
                               Kl.post(
-                                "https://lexnet-backend.onrender.com/api/auth/register",
+                                "http://localhost:5000/api/auth/register",
                                 n
                               )
                             );
@@ -20157,10 +20157,7 @@
                               s(""),
                               (t.prev = 3),
                               (t.next = 6),
-                              Kl.post(
-                                "https://lexnet-backend.onrender.com/api/auth/login",
-                                n
-                              )
+                              Kl.post("http://localhost:5000/api/auth/login", n)
                             );
                           case 6:
                             (a = t.sent),
@@ -20391,7 +20388,7 @@
                               (e.prev = 2),
                               (e.next = 5),
                               Kl.post(
-                                "https://lexnet-backend.onrender.com/api/auth/forgot-password",
+                                "http://localhost:5000/api/auth/forgot-password",
                                 { email: t }
                               )
                             );
@@ -20505,7 +20502,7 @@
                               (n.prev = 5),
                               (n.next = 8),
                               Kl.post(
-                                "https://lexnet-backend.onrender.com/api/auth/resetpassword/".concat(
+                                "http://localhost:5000/api/auth/resetpassword/".concat(
                                   e
                                 ),
                                 { password: a }
@@ -20616,7 +20613,7 @@
                                   (n.prev = 0),
                                   (n.next = 3),
                                   Kl.get(
-                                    "https://lexnet-backend.onrender.com/api/auth/verify/".concat(
+                                    "http://localhost:5000/api/auth/verify/".concat(
                                       e
                                     )
                                   )
@@ -21648,9 +21645,7 @@
                             return (
                               (e.prev = 0),
                               (e.next = 3),
-                              fetch(
-                                "https://lexnet-backend.onrender.com/api/feedback"
-                              )
+                              fetch("http://localhost:5000/api/feedback")
                             );
                           case 3:
                             return (t = e.sent), (e.next = 6), t.json();
@@ -21690,7 +21685,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               fetch(
-                                "https://lexnet-backend.onrender.com/api/feedback/".concat(
+                                "http://localhost:5000/api/feedback/".concat(
                                   r,
                                   "/resolve"
                                 ),
@@ -21738,9 +21733,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               fetch(
-                                "https://lexnet-backend.onrender.com/api/feedback/".concat(
-                                  r
-                                ),
+                                "http://localhost:5000/api/feedback/".concat(r),
                                 { method: "DELETE" }
                               )
                             );
@@ -21870,7 +21863,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.get(
-                                "https://lexnet-backend.onrender.com/api/lawyers/unverified"
+                                "http://localhost:5000/api/lawyers/unverified"
                               )
                             );
                           case 3:
@@ -21911,7 +21904,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.get(
-                                "https://lexnet-backend.onrender.com/api/lawyers/verified"
+                                "http://localhost:5000/api/lawyers/verified"
                               )
                             );
                           case 3:
@@ -21951,7 +21944,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.put(
-                                "https://lexnet-backend.onrender.com/api/lawyers/approve/".concat(
+                                "http://localhost:5000/api/lawyers/approve/".concat(
                                   t
                                 )
                               )
@@ -21998,7 +21991,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.delete(
-                                "https://lexnet-backend.onrender.com/api/lawyers/reject/".concat(
+                                "http://localhost:5000/api/lawyers/reject/".concat(
                                   t
                                 )
                               )
@@ -22044,7 +22037,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.put(
-                                "https://lexnet-backend.onrender.com/api/lawyers/toggle-visibility/".concat(
+                                "http://localhost:5000/api/lawyers/toggle-visibility/".concat(
                                   t
                                 )
                               )
@@ -22139,7 +22132,7 @@
                                     (0, no.jsx)("td", {
                                       children: e.profilePicture
                                         ? (0, no.jsx)("img", {
-                                            src: "https://lexnet-backend.onrender.com/uploads/".concat(
+                                            src: "http://localhost:5000/uploads/".concat(
                                               e.profilePicture
                                             ),
                                             alt: "Profile",
@@ -22161,7 +22154,7 @@
                                     (0, no.jsx)("td", {
                                       children: e.lawDegreeCertificate
                                         ? (0, no.jsx)("a", {
-                                            href: "https://lexnet-backend.onrender.com/uploads/".concat(
+                                            href: "http://localhost:5000/uploads/".concat(
                                               e.lawDegreeCertificate
                                             ),
                                             target: "_blank",
@@ -22173,7 +22166,7 @@
                                     (0, no.jsx)("td", {
                                       children: e.barCouncilCertificate
                                         ? (0, no.jsx)("a", {
-                                            href: "https://lexnet-backend.onrender.com/uploads/".concat(
+                                            href: "http://localhost:5000/uploads/".concat(
                                               e.barCouncilCertificate
                                             ),
                                             target: "_blank",
@@ -22239,7 +22232,7 @@
                                     (0, no.jsx)("td", {
                                       children: e.profilePicture
                                         ? (0, no.jsx)("img", {
-                                            src: "https://lexnet-backend.onrender.com/uploads/".concat(
+                                            src: "http://localhost:5000/uploads/".concat(
                                               e.profilePicture
                                             ),
                                             alt: "Profile",
@@ -22411,9 +22404,7 @@
                             return (
                               (e.prev = 0),
                               (e.next = 3),
-                              fetch(
-                                "https://lexnet-backend.onrender.com/api/ipc"
-                              )
+                              fetch("http://localhost:5000/api/ipc")
                             );
                           case 3:
                             return (t = e.sent), (e.next = 6), t.json();
@@ -22457,20 +22448,17 @@
                             return (
                               (e.prev = 1),
                               (e.next = 4),
-                              fetch(
-                                "https://lexnet-backend.onrender.com/api/ipc",
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                  body: JSON.stringify({
-                                    section: i.trim(),
-                                    description: l.trim(),
-                                    caseStudy: d.trim(),
-                                  }),
-                                }
-                              )
+                              fetch("http://localhost:5000/api/ipc", {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                  section: i.trim(),
+                                  description: l.trim(),
+                                  caseStudy: d.trim(),
+                                }),
+                              })
                             );
                           case 4:
                             e.sent.ok && (o(""), c(""), h(""), g()),
@@ -22507,9 +22495,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               fetch(
-                                "https://lexnet-backend.onrender.com/api/ipc/".concat(
-                                  t
-                                ),
+                                "http://localhost:5000/api/ipc/".concat(t),
                                 { method: "DELETE" }
                               )
                             );
@@ -38355,7 +38341,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.get(
-                                "https://lexnet-backend.onrender.com/api/auth/user-activity"
+                                "http://localhost:5000/api/auth/user-activity"
                               )
                             );
                           case 3:
@@ -38365,7 +38351,7 @@
                               n(t.data),
                               (e.next = 8),
                               Kl.get(
-                                "https://lexnet-backend.onrender.com/api/auth/performance-metrics"
+                                "http://localhost:5000/api/auth/performance-metrics"
                               )
                             );
                           case 8:
@@ -38548,9 +38534,7 @@
                             return (
                               (e.prev = 0),
                               (e.next = 3),
-                              Kl.get(
-                                "https://lexnet-backend.onrender.com/api/auth/users"
-                              )
+                              Kl.get("http://localhost:5000/api/auth/users")
                             );
                           case 3:
                             (t = e.sent),
@@ -38602,7 +38586,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.post(
-                                "https://lexnet-backend.onrender.com/api/auth/users/".concat(
+                                "http://localhost:5000/api/auth/users/".concat(
                                   t,
                                   "/approve"
                                 ),
@@ -38645,7 +38629,7 @@
                               (e.prev = 1),
                               (e.next = 4),
                               Kl.post(
-                                "https://lexnet-backend.onrender.com/api/auth/users/"
+                                "http://localhost:5000/api/auth/users/"
                                   .concat(t, "/")
                                   .concat(r)
                               )
@@ -39342,7 +39326,7 @@
                           return (
                             (e.prev = 0),
                             (e.next = 3),
-                            fetch("https://lexnet-backend.onrender.com/api/ipc")
+                            fetch("http://localhost:5000/api/ipc")
                           );
                         case 3:
                           return (t = e.sent), (e.next = 6), t.json();
@@ -39453,7 +39437,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.get(
-                                "https://lexnet-backend.onrender.com/api/lawyers/verified"
+                                "http://localhost:5000/api/lawyers/verified"
                               )
                             );
                           case 3:
@@ -39488,9 +39472,7 @@
             })(),
             l = t.filter(function (e) {
               var t = i.toLowerCase(
-                "https://lexnet-backend.onrender.com/api/lawyers/verified?search=".concat(
-                  i
-                )
+                "http://localhost:5000/api/lawyers/verified?search=".concat(i)
               );
               return (
                 (e.fullname && e.fullname.toLowerCase().includes(t)) ||
@@ -39525,7 +39507,7 @@
                         className: "lawyer-list",
                         children: l.map(function (e) {
                           return (0,
-                          no.jsxs)("div", { className: "lawyer-card", children: [(0, no.jsx)("div", { className: "profile-section", children: e.profilePicture ? (0, no.jsx)("img", { src: "https://lexnet-backend.onrender.com/uploads/".concat(e.profilePicture), alt: "".concat(e.fullname, "'s profile"), className: "profile-picture" }) : (0, no.jsx)("div", { className: "no-profile-picture", children: "No Image" }) }), (0, no.jsxs)("div", { className: "info-section", children: [(0, no.jsx)("h3", { children: e.fullname }), (0, no.jsxs)("p", { children: [(0, no.jsx)("strong", { children: "Specialization:" }), " ", e.specialization] }), (0, no.jsxs)("p", { children: [(0, no.jsx)("strong", { children: "Location:" }), " ", e.location] }), (0, no.jsxs)("p", { children: [(0, no.jsx)("strong", { children: "Email:" }), " ", e.email] })] })] }, e._id);
+                          no.jsxs)("div", { className: "lawyer-card", children: [(0, no.jsx)("div", { className: "profile-section", children: e.profilePicture ? (0, no.jsx)("img", { src: "http://localhost:5000/uploads/".concat(e.profilePicture), alt: "".concat(e.fullname, "'s profile"), className: "profile-picture" }) : (0, no.jsx)("div", { className: "no-profile-picture", children: "No Image" }) }), (0, no.jsxs)("div", { className: "info-section", children: [(0, no.jsx)("h3", { children: e.fullname }), (0, no.jsxs)("p", { children: [(0, no.jsx)("strong", { children: "Specialization:" }), " ", e.specialization] }), (0, no.jsxs)("p", { children: [(0, no.jsx)("strong", { children: "Location:" }), " ", e.location] }), (0, no.jsxs)("p", { children: [(0, no.jsx)("strong", { children: "Email:" }), " ", e.email] })] })] }, e._id);
                         }),
                       })
                     : (0, no.jsx)("p", {
@@ -39648,9 +39630,7 @@
                             return (
                               (e.prev = 0),
                               (e.next = 3),
-                              Kl.get(
-                                "https://lexnet-backend.onrender.com/api/profile"
-                              )
+                              Kl.get("http://localhost:5000/api/profile")
                             );
                           case 3:
                             (t = e.sent),
@@ -39724,15 +39704,11 @@
                             }
                             return (
                               (e.next = 10),
-                              Kl.post(
-                                "https://lexnet-backend.onrender.com/api/profile",
-                                r,
-                                {
-                                  headers: {
-                                    "Content-Type": "multipart/form-data",
-                                  },
-                                }
-                              )
+                              Kl.post("http://localhost:5000/api/profile", r, {
+                                headers: {
+                                  "Content-Type": "multipart/form-data",
+                                },
+                              })
                             );
                           case 10:
                             (a = e.sent),
@@ -39749,15 +39725,11 @@
                           case 15:
                             return (
                               (e.next = 17),
-                              Kl.put(
-                                "https://lexnet-backend.onrender.com/api/profile",
-                                r,
-                                {
-                                  headers: {
-                                    "Content-Type": "multipart/form-data",
-                                  },
-                                }
-                              )
+                              Kl.put("http://localhost:5000/api/profile", r, {
+                                headers: {
+                                  "Content-Type": "multipart/form-data",
+                                },
+                              })
                             );
                           case 17:
                             alert("Profile updated successfully!");
@@ -43329,7 +43301,7 @@
                               (e.prev = 0),
                               (e.next = 3),
                               Kl.get(
-                                "https://lexnet-backend.onrender.com/api/lawyers/verified"
+                                "http://localhost:5000/api/lawyers/verified"
                               )
                             );
                           case 3:
@@ -44074,9 +44046,7 @@
                             return (
                               (e.prev = 0),
                               (e.next = 3),
-                              Kl.get(
-                                "https://lexnet-backend.onrender.com/api/lawyers/me"
-                              )
+                              Kl.get("http://localhost:5000/api/lawyers/me")
                             );
                           case 3:
                             (t = e.sent),
@@ -44178,7 +44148,7 @@
                             return (
                               (e.next = 18),
                               Kl.post(
-                                "https://lexnet-backend.onrender.com/api/lawyers/register",
+                                "http://localhost:5000/api/lawyers/register",
                                 n,
                                 {
                                   headers: {
@@ -44197,7 +44167,7 @@
                             return (
                               (e.next = 23),
                               Kl.put(
-                                "https://lexnet-backend.onrender.com/api/lawyers/register",
+                                "http://localhost:5000/api/lawyers/register",
                                 n,
                                 {
                                   headers: {
