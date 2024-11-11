@@ -43,7 +43,7 @@ const Login = () => {
 
       // Send user data to the backend
       const response = await axios.post(
-        "https://lexnet-backend.onrender.com/api/auth/google-login",
+        "http://localhost:3000/api/auth/google-login",
         userData
       );
       const data = response.data.user;
@@ -70,7 +70,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "https://lexnet-backend.onrender.com/api/auth/login",
+        "http://localhost:3000/api/auth/login",
         {
           ...formData,
           role: sessionStorage.getItem("selectedRole"), // Use the role stored in session storage

@@ -95,7 +95,7 @@ const Register = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "https://lexnet-backend.onrender.com/api/auth/register",
+        "http://localhost:3000/api/auth/register",
         formData
       );
 
