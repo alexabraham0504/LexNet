@@ -24,7 +24,7 @@ const Platform = () => {
   const fetchIpcSections = async () => {
     setLoading(true); // Start loading
     try {
-      const response = await fetch("http://localhost:3000/api/ipc"); // API endpoint to get IPC sections
+      const response = await fetch("http://localhost:5000/api/ipc"); // API endpoint to get IPC sections
       const data = await response.json();
       setIpcSections(data);
       toast.success("📚 IPC Sections loaded successfully!", {
@@ -58,7 +58,7 @@ const Platform = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/api/ipc", {
+      const response = await fetch("http://localhost:5000/api/ipc", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +99,7 @@ const Platform = () => {
   // Handle removing an IPC section
   const handleRemoveSection = async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/ipc/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/ipc/${id}`, {
         method: "DELETE",
       });
 
@@ -216,9 +216,9 @@ const styles = {
     position: "relative",
     animation: "backgroundAnimation 15s infinite alternate", // Background animation
   },
-  "@keyframes backgroundAnimation": {
-    "0%": { backgroundColor: "rgba(0, 0, 0, 0.5)" },
-    "100%": { backgroundColor: "rgba(0, 0, 0, 0.7)" },
+  '@keyframes backgroundAnimation': {
+    '0%': { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+    '100%': { backgroundColor: 'rgba(0, 0, 0, 0.7)' },
   },
   overlay: {
     position: "absolute",
@@ -237,9 +237,9 @@ const styles = {
     zIndex: 2,
     animation: "fadeIn 1s ease-in", // Fade-in animation for the container
   },
-  "@keyframes fadeIn": {
-    "0%": { opacity: 0 },
-    "100%": { opacity: 1 },
+  '@keyframes fadeIn': {
+    '0%': { opacity: 0 },
+    '100%': { opacity: 1 },
   },
   title: {
     fontSize: "2.5rem",
@@ -256,7 +256,7 @@ const styles = {
     padding: "20px",
     margin: "20px 0",
     transition: "transform 0.3s, box-shadow 0.3s",
-    "&:hover": {
+    '&:hover': {
       transform: "translateY(-5px)",
       boxShadow: "0 8px 16px rgba(0, 0, 0, 0.3)",
     },
@@ -336,7 +336,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     transition: "all 0.3s ease",
-    "&:hover": {
+    '&:hover': {
       backgroundColor: "#283593",
       transform: "translateY(-2px)",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",

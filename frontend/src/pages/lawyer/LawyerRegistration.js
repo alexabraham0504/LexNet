@@ -28,7 +28,7 @@ const LawyerRegistration = () => {
     const fetchLawyerData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3000/api/lawyers/me"
+          "http://localhost:5000/api/lawyers/me"
         );
         setLawyerData((prevData) => ({
           ...prevData,
@@ -89,7 +89,7 @@ const LawyerRegistration = () => {
     try {
       if (!lawyerData.id) {
         await axios.post(
-          "http://localhost:3000/api/lawyers/register",
+          "http://localhost:5000/api/lawyers/register",
           formData,
           {
             headers: {
@@ -102,7 +102,7 @@ const LawyerRegistration = () => {
         );
       } else {
         await axios.put(
-          "http://localhost:3000/api/lawyers/register",
+          "http://localhost:5000/api/lawyers/register",
           formData,
           {
             headers: {

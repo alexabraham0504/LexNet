@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { auth, googleProvider } from "./firebaseConfig.js";
-import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from './firebaseConfig.js';
+import { signInWithPopup } from 'firebase/auth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -42,10 +42,7 @@ const Login = () => {
       };
 
       // Send user data to the backend
-      const response = await axios.post(
-        "http://localhost:3000/api/auth/google-login",
-        userData
-      );
+      const response = await axios.post("http://localhost:5000/api/auth/google-login", userData);
       const data = response.data.user;
 
       localStorage.setItem("name", data.displayName); // Store user's name
@@ -69,13 +66,10 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/auth/login",
-        {
-          ...formData,
-          role: sessionStorage.getItem("selectedRole"), // Use the role stored in session storage
-        }
-      );
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        ...formData,
+        role: sessionStorage.getItem("selectedRole"), // Use the role stored in session storage
+      });
       const data = response.data;
 
       if (data.message === "Login successful.") {
@@ -93,9 +87,7 @@ const Login = () => {
         alert(`Login failed: ${data.message}`);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message || "An error occurred. Please try again."
-      );
+      setError(err.response?.data?.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -112,9 +104,7 @@ const Login = () => {
           <h2 style={styles.loginTitle}>Welcome Back</h2>
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
-              <label htmlFor="email" style={styles.formLabel}>
-                Email Address
-              </label>
+              <label htmlFor="email" style={styles.formLabel}>Email Address</label>
               <input
                 type="email"
                 id="email"
@@ -127,9 +117,7 @@ const Login = () => {
               />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="password" style={styles.formLabel}>
-                Password
-              </label>
+              <label htmlFor="password" style={styles.formLabel}>Password</label>
               <input
                 type="password"
                 id="password"
@@ -143,17 +131,9 @@ const Login = () => {
             </div>
             <div style={styles.rememberMe}>
               <input type="checkbox" id="rememberMe" />
-              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>
-                Remember Me
-              </label>
+              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>Remember Me</label>
             </div>
-            <button
-              id="login"
-              type="submit"
-              style={styles.btnLogin}
-              disabled={loading}
-              className="btn w-100"
-            >
+            <button id="login" type="submit" style={styles.btnLogin} disabled={loading} className="btn w-100">
               {loading ? "Signing in..." : "Login"}
             </button>
 
@@ -166,9 +146,7 @@ const Login = () => {
             </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <Link to="/forgotpassword" style={styles.forgotPassword}>
-              Lost your password?
-            </Link>
+            <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
           </form>
         </div>
       </div>
@@ -178,18 +156,8 @@ const Login = () => {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <h3>Select Your Role</h3>
-            <button
-              style={styles.roleButton}
-              onClick={() => handleRoleSelection("Lawyer")}
-            >
-              Lawyer
-            </button>
-            <button
-              style={styles.roleButton}
-              onClick={() => handleRoleSelection("Client")}
-            >
-              Client
-            </button>
+            <button style={styles.roleButton} onClick={() => handleRoleSelection("Lawyer")}>Lawyer</button>
+            <button style={styles.roleButton} onClick={() => handleRoleSelection("Client")}>Client</button>
           </div>
         </div>
       )}
@@ -215,7 +183,7 @@ const styles = {
     transition: "background-color 0.3s ease",
     width: "100%", // Matches the width of the login button
   },
-
+  
   modalOverlay: {
     position: "fixed",
     top: 0,

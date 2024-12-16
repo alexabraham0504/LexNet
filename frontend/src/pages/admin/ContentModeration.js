@@ -9,7 +9,7 @@ const ContentModeration = () => {
   useEffect(() => {
     const fetchFeedback = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/feedback");
+        const response = await fetch("http://localhost:5000/api/feedback");
         const data = await response.json();
         setFeedback(data);
       } catch (error) {
@@ -22,7 +22,7 @@ const ContentModeration = () => {
 
   const handleResolve = async (id) => {
     try {
-      await fetch(`http://localhost:3000/api/feedback/${id}/resolve`, {
+      await fetch(`http://localhost:5000/api/feedback/${id}/resolve`, {
         method: "PUT",
       });
       setFeedback(
@@ -37,7 +37,7 @@ const ContentModeration = () => {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:3000/api/feedback/${id}`, {
+      await fetch(`http://localhost:5000/api/feedback/${id}`, {
         method: "DELETE",
       });
       setFeedback(feedback.filter((item) => item.id !== id));
@@ -55,47 +55,47 @@ const ContentModeration = () => {
   return (
     <div>
       <Navbar />
-
-      <div className="content-moderation">
-        <h1>Content Moderation</h1>
-        <input
-          type="text"
-          placeholder="Search Feedback..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <table className="feedback-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Feedback</th>
-              <th>Status</th>
-              <th>Actions</th>
+    
+    <div className="content-moderation">
+      <h1>Content Moderation</h1>
+      <input
+        type="text"
+        placeholder="Search Feedback..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <table className="feedback-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Feedback</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredFeedback.map((item) => (
+            <tr key={item.id}>
+              <td>{item.user}</td>
+              <td>{item.content}</td>
+              <td>{item.flagged ? "Flagged" : "Resolved"}</td>
+              <td>
+                {item.flagged && (
+                  <>
+                    <button onClick={() => handleResolve(item.id)}>
+                      Resolve
+                    </button>
+                    <button onClick={() => handleDelete(item.id)}>
+                      Delete
+                    </button>
+                  </>
+                )}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {filteredFeedback.map((item) => (
-              <tr key={item.id}>
-                <td>{item.user}</td>
-                <td>{item.content}</td>
-                <td>{item.flagged ? "Flagged" : "Resolved"}</td>
-                <td>
-                  {item.flagged && (
-                    <>
-                      <button onClick={() => handleResolve(item.id)}>
-                        Resolve
-                      </button>
-                      <button onClick={() => handleDelete(item.id)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+    </div>
       <Footer />
     </div>
   );

@@ -10,7 +10,7 @@ const VerifyEmail = () => {
     const verifyToken = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3000/api/auth/verify/${token}`
+          `http://localhost:5000/api/auth/verify/${token}`
         );
         const data = await response.data;
         alert(data.message);

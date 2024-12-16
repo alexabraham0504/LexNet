@@ -19,7 +19,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/profile");
+        const response = await axios.get("http://localhost:5000/api/profile");
         const data = response.data || {
           id: null, // If no profile exists, id will remain null
           fullname: "",
@@ -75,7 +75,7 @@ const Profile = () => {
     try {
       if (!profileData.id) {
         const response = await axios.post(
-          "http://localhost:3000/api/profile",
+          "http://localhost:5000/api/profile",
           formData,
           {
             headers: {
@@ -89,7 +89,7 @@ const Profile = () => {
           id: response.data.profile._id,
         }));
       } else {
-        await axios.put("http://localhost:3000/api/profile", formData, {
+        await axios.put("http://localhost:5000/api/profile", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },

@@ -24,7 +24,7 @@ const ResetPassword = () => {
     try {
       // Use backticks for template literals in the API URL
       const { data } = await axios.post(
-        `http://localhost:3000/api/auth/resetpassword/${token}`,
+        `http://localhost:5000/api/auth/resetpassword/${token}`,
         { password }
       );
       setMessage(data.message);
