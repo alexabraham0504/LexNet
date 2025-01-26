@@ -6,12 +6,16 @@ const userSchema = new mongoose.Schema({
 
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
-  password: { type: String },  // Not required for Google Sign-In
-  googleId: { type: String },  // Field for storing Google ID
-  profilePicture: { type: String },  // Field for storing Google profile picture URL
-  resetPasswordToken: { type: String },  // For password reset
-  resetPasswordExpires: { type: Date },  // Plain text password
-  role: { type: String, enum: ['Client', 'Lawyer'], default: 'Client' },
+  password: { type: String }, // Not required for Google Sign-In
+  googleId: { type: String }, // Field for storing Google ID
+  profilePicture: { type: String }, // Field for storing Google profile picture URL
+  resetPasswordToken: { type: String }, // For password reset
+  resetPasswordExpires: { type: Date }, // Plain text password
+  role: {
+    type: String,
+    enum: ["admin", "lawyer", "client", "user"],
+    default: "client", // Set default role to client for regular users
+  },
   isVerified: { type: Boolean, default: false }, // Add this field
   status: {
     type: String,

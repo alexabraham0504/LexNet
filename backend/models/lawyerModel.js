@@ -50,6 +50,10 @@ const lawyerSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   deactivationReason: { type: String },
   deactivationMessage: { type: String, default: null },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 // Enable getters
