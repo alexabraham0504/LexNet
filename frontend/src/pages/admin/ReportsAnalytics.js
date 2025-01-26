@@ -17,7 +17,7 @@ import styled from "styled-components";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
 import io from "socket.io-client";
-import Modal from 'react-modal';
+import Modal from "react-modal";
 
 ChartJS.register(
   CategoryScale,
@@ -172,7 +172,7 @@ const TablesContainer = styled.div`
 
 const ModalContent = styled.div`
   padding: 20px;
-  
+
   h2 {
     color: #2c3e50;
     margin-bottom: 20px;
@@ -183,13 +183,13 @@ const ModalContent = styled.div`
   .detail-row {
     display: flex;
     margin-bottom: 15px;
-    
+
     .label {
       font-weight: bold;
       width: 150px;
       color: #34495e;
     }
-    
+
     .value {
       color: #2c3e50;
     }
@@ -205,7 +205,7 @@ const CloseButton = styled.button`
   font-size: 24px;
   cursor: pointer;
   color: #7f8c8d;
-  
+
   &:hover {
     color: #34495e;
   }
@@ -221,7 +221,7 @@ const ChartSection = styled.div`
 const PieChartContainer = styled(ChartContainer)`
   cursor: pointer;
   transition: transform 0.2s;
-  
+
   &:hover {
     transform: translateY(-5px);
   }
@@ -379,16 +379,21 @@ const ReportsAnalytics = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "N/A";
-      
+
       return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
       });
     } catch (error) {
-      console.error('Error formatting date:', error, 'Date string:', dateString);
+      console.error(
+        "Error formatting date:",
+        error,
+        "Date string:",
+        dateString
+      );
       return "N/A";
     }
   };
@@ -508,7 +513,11 @@ const ReportsAnalytics = () => {
         </thead>
         <tbody>
           {lawyers.map((lawyer) => (
-            <tr key={lawyer._id} onClick={() => handleItemClick(lawyer, 'lawyer')} style={{ cursor: 'pointer' }}>
+            <tr
+              key={lawyer._id}
+              onClick={() => handleItemClick(lawyer, "lawyer")}
+              style={{ cursor: "pointer" }}
+            >
               <td>{lawyer.fullname || "N/A"}</td>
               <td>{lawyer.email || "N/A"}</td>
               <td>{lawyer.phone || "N/A"}</td>
@@ -558,7 +567,11 @@ const ReportsAnalytics = () => {
         </thead>
         <tbody>
           {clients.map((client) => (
-            <tr key={client._id} onClick={() => handleItemClick(client, 'client')} style={{ cursor: 'pointer' }}>
+            <tr
+              key={client._id}
+              onClick={() => handleItemClick(client, "client")}
+              style={{ cursor: "pointer" }}
+            >
               <td>{client.fullname || "N/A"}</td>
               <td>{client.email || "N/A"}</td>
               <td>{client.phone || "N/A"}</td>
@@ -587,30 +600,34 @@ const ReportsAnalytics = () => {
 
   // Add these functions for chart data
   const getLawyerChartData = () => {
-    const verifiedCount = lawyers.filter(l => l.isVerified).length;
+    const verifiedCount = lawyers.filter((l) => l.isVerified).length;
     const pendingCount = lawyers.length - verifiedCount;
-    
+
     return {
-      labels: ['Verified Lawyers', 'Pending Verification'],
-      datasets: [{
-        data: [verifiedCount, pendingCount],
-        backgroundColor: ['#2ecc71', '#e74c3c'],
-        borderWidth: 0
-      }]
+      labels: ["Verified Lawyers", "Pending Verification"],
+      datasets: [
+        {
+          data: [verifiedCount, pendingCount],
+          backgroundColor: ["#2ecc71", "#e74c3c"],
+          borderWidth: 0,
+        },
+      ],
     };
   };
 
   const getClientChartData = () => {
-    const activeCount = clients.filter(c => c.isActive).length;
+    const activeCount = clients.filter((c) => c.isActive).length;
     const inactiveCount = clients.length - activeCount;
-    
+
     return {
-      labels: ['Active Clients', 'Inactive Clients'],
-      datasets: [{
-        data: [activeCount, inactiveCount],
-        backgroundColor: ['#3498db', '#95a5a6'],
-        borderWidth: 0
-      }]
+      labels: ["Active Clients", "Inactive Clients"],
+      datasets: [
+        {
+          data: [activeCount, inactiveCount],
+          backgroundColor: ["#3498db", "#95a5a6"],
+          borderWidth: 0,
+        },
+      ],
     };
   };
 
@@ -630,7 +647,7 @@ const ReportsAnalytics = () => {
   const renderModalContent = () => {
     if (!selectedItem) return null;
 
-    if (modalType === 'lawyer') {
+    if (modalType === "lawyer") {
       return (
         <ModalContent>
           <h2>Lawyer Details</h2>
@@ -653,12 +670,19 @@ const ReportsAnalytics = () => {
           </div>
           <div className="detail-row">
             <span className="label">Rating:</span>
-            <span className="value">{selectedItem.rating ? `${selectedItem.rating.toFixed(1)}⭐` : 'N/A'}</span>
+            <span className="value">
+              {selectedItem.rating
+                ? `${selectedItem.rating.toFixed(1)}⭐`
+                : "N/A"}
+            </span>
           </div>
           <div className="detail-row">
             <span className="label">Status:</span>
-            <span className="value" style={{ color: selectedItem.isVerified ? '#2ecc71' : '#e74c3c' }}>
-              {selectedItem.isVerified ? 'Verified' : 'Pending'}
+            <span
+              className="value"
+              style={{ color: selectedItem.isVerified ? "#2ecc71" : "#e74c3c" }}
+            >
+              {selectedItem.isVerified ? "Verified" : "Pending"}
             </span>
           </div>
           <div className="detail-row">
@@ -669,7 +693,7 @@ const ReportsAnalytics = () => {
       );
     }
 
-    if (modalType === 'client') {
+    if (modalType === "client") {
       return (
         <ModalContent>
           <h2>Client Details</h2>
@@ -688,8 +712,11 @@ const ReportsAnalytics = () => {
           </div>
           <div className="detail-row">
             <span className="label">Status:</span>
-            <span className="value" style={{ color: selectedItem.isActive ? '#2ecc71' : '#e74c3c' }}>
-              {selectedItem.isActive ? 'Active' : 'Inactive'}
+            <span
+              className="value"
+              style={{ color: selectedItem.isActive ? "#2ecc71" : "#e74c3c" }}
+            >
+              {selectedItem.isActive ? "Active" : "Inactive"}
             </span>
           </div>
           <div className="detail-row">
@@ -794,21 +821,21 @@ const ReportsAnalytics = () => {
         onRequestClose={closeModal}
         style={{
           content: {
-            top: '50%',
-            left: '50%',
-            right: 'auto',
-            bottom: 'auto',
-            marginRight: '-50%',
-            transform: 'translate(-50%, -50%)',
-            width: '500px',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            borderRadius: '8px',
-            padding: '20px',
+            top: "50%",
+            left: "50%",
+            right: "auto",
+            bottom: "auto",
+            marginRight: "-50%",
+            transform: "translate(-50%, -50%)",
+            width: "500px",
+            maxHeight: "80vh",
+            overflow: "auto",
+            borderRadius: "8px",
+            padding: "20px",
           },
           overlay: {
-            backgroundColor: 'rgba(0, 0, 0, 0.75)'
-          }
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+          },
         }}
       >
         {renderModalContent()}
