@@ -45,7 +45,7 @@ const AdminUserManagement = () => {
     try {
       const response = await axios.get("http://localhost:5000/api/auth/users");
       const filteredUsers = response.data.filter(
-        (user) => user.role && user.role.toLowerCase() !== "admin"
+        (user) => user.role && user.role !== "Admin"
       );
       setUsers(filteredUsers);
       setLoading(false);
@@ -71,15 +71,27 @@ const AdminUserManagement = () => {
 
   const handleToggleSuspend = async (userId, currentStatus) => {
     const action = currentStatus === "suspended" ? "activate" : "suspend";
+
     try {
-      await axios.post(
+      const response = await axios.post(
         `http://localhost:5000/api/auth/users/${userId}/${action}`
       );
-      fetchUsers();
-      toast.success(`User has been ${action}d successfully!`);
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        await fetchUsers(); // Refresh the user list
+      } else {
+        toast.error(response.data.message || `Failed to ${action} user`);
+      }
     } catch (error) {
       console.error(`Error trying to ${action} user:`, error);
-      toast.error(`Error trying to ${action} user!`);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        `Failed to ${action} user. Please try again.`;
+
+      toast.error(errorMessage);
     }
   };
 
@@ -137,9 +149,18 @@ const AdminUserManagement = () => {
                         onClick={() =>
                           handleToggleSuspend(user._id, user.status)
                         }
+                        disabled={loading}
                       >
-                        {user.status === "suspended" ? "Activate" : "Suspend"}{" "}
-                        <FaUserShield />
+                        {user.status === "suspended" ? (
+                          <>
+                            <FaCheck style={{ marginRight: "5px" }} /> Activate
+                          </>
+                        ) : (
+                          <>
+                            <FaUserShield style={{ marginRight: "5px" }} />{" "}
+                            Suspend
+                          </>
+                        )}
                       </ActionButton>
                     </div>
                   </TableCell>

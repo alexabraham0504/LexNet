@@ -73,11 +73,10 @@ router.get("/financial", async (req, res) => {
 // Get lawyer performance metrics
 router.get("/lawyers", async (req, res) => {
   try {
-    // Fetch lawyers with user data joined
     const lawyers = await Lawyer.aggregate([
       {
         $lookup: {
-          from: "users", // Collection name is lowercase and plural
+          from: "users",
           localField: "userid",
           foreignField: "_id",
           as: "userDetails",
@@ -98,19 +97,25 @@ router.get("/lawyers", async (req, res) => {
           rating: 1,
           appointments: 1,
           isVerified: 1,
-          createdAt: { $ifNull: ["$userDetails.createdAt", "$createdAt"] }, // Use user's createdAt if available
+          createdAt: { $ifNull: ["$userDetails.createdAt", "$createdAt"] },
           userCreatedAt: "$userDetails.createdAt",
         },
       },
-      {
-        $sort: { rating: -1 },
-      },
     ]).exec();
 
-    console.log("Fetched lawyers with user details:", lawyers);
+    console.log("Fetched lawyers count:", lawyers.length);
+
+    const metrics = {
+      totalLawyers: lawyers.length,
+      verifiedLawyers: lawyers.filter((l) => l.isVerified).length,
+      averageRating:
+        lawyers.reduce((sum, lawyer) => sum + (lawyer.rating || 0), 0) /
+          lawyers.length || 0,
+    };
 
     res.json({
       topLawyers: lawyers,
+      metrics,
       specializations: lawyers.reduce((acc, lawyer) => {
         if (lawyer.specialization) {
           acc[lawyer.specialization] = (acc[lawyer.specialization] || 0) + 1;
@@ -123,6 +128,11 @@ router.get("/lawyers", async (req, res) => {
     res.status(500).json({
       error: error.message,
       topLawyers: [],
+      metrics: {
+        totalLawyers: 0,
+        verifiedLawyers: 0,
+        averageRating: 0,
+      },
       specializations: {},
     });
   }

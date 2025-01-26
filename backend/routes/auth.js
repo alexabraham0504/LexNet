@@ -281,27 +281,45 @@ router.post("/users/:userId/:action", async (req, res) => {
   const { userId, action } = req.params;
 
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    // Validate action
+    if (!["suspend", "activate"].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action. Must be either 'suspend' or 'activate'",
+      });
     }
 
-    if (action === "suspend") {
-      user.status = "suspended";
-      await user.save();
-      res.status(200).json({ message: "User suspended successfully" });
-    } else if (action === "activate") {
-      user.status = "approved"; // Or whatever active status you use
-      await user.save();
-      res.status(200).json({ message: "User activated successfully" });
-    } else if (action === "delete") {
-      await User.findByIdAndDelete(userId);
-      res.status(200).json({ message: "User deleted successfully" });
-    } else {
-      res.status(400).json({ error: "Invalid action" });
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
+
+    // Update status based on action
+    user.status = action === "suspend" ? "suspended" : "approved";
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User has been ${action}d successfully`,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to perform account action" });
+    console.error(`Error in ${action} user:`, error);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to ${action} user`,
+      error: error.message,
+    });
   }
 });
 

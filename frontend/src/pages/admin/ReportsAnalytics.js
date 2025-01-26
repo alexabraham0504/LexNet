@@ -319,8 +319,10 @@ const ReportsAnalytics = () => {
         const response = await axios.get(
           "http://localhost:5000/api/admin/analytics/lawyers"
         );
-        console.log("Lawyers response:", response.data);
-        setLawyers(response.data.topLawyers || []);
+        console.log("Lawyers data:", response.data);
+        if (response.data && response.data.topLawyers) {
+          setLawyers(response.data.topLawyers);
+        }
       } catch (error) {
         console.error("Error fetching lawyers:", error);
         setLawyers([]);
@@ -600,6 +602,18 @@ const ReportsAnalytics = () => {
 
   // Add these functions for chart data
   const getLawyerChartData = () => {
+    if (!lawyers)
+      return {
+        labels: ["No Data"],
+        datasets: [
+          {
+            data: [1],
+            backgroundColor: ["#95a5a6"],
+            borderWidth: 0,
+          },
+        ],
+      };
+
     const verifiedCount = lawyers.filter((l) => l.isVerified).length;
     const pendingCount = lawyers.length - verifiedCount;
 
@@ -728,6 +742,16 @@ const ReportsAnalytics = () => {
     }
   };
 
+  // Add this helper function at the component level
+  const calculateAverageRating = (lawyers) => {
+    if (!lawyers || lawyers.length === 0) return 0;
+    const totalRating = lawyers.reduce(
+      (sum, lawyer) => sum + (lawyer.rating || 0),
+      0
+    );
+    return (totalRating / lawyers.length).toFixed(1);
+  };
+
   return (
     <PageContainer>
       <Navbar />
@@ -772,11 +796,14 @@ const ReportsAnalytics = () => {
             <StatsCard>
               <h3>Lawyer Metrics</h3>
               <div className="stat-value">
-                <AnimatedValue value={lawyerMetrics?.totalLawyers || 0} />
+                <AnimatedValue value={lawyers?.length || 0} />
               </div>
               <div className="stat-label">Total Lawyers</div>
               <div className="trend-up">
-                Avg Rating: {(lawyerMetrics?.averageRating || 0).toFixed(1)}⭐
+                Verified: {lawyers?.filter((l) => l.isVerified)?.length || 0}
+              </div>
+              <div className="trend-up">
+                Avg Rating: {calculateAverageRating(lawyers)}⭐
               </div>
             </StatsCard>
           </MetricsGrid>

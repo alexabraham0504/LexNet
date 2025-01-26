@@ -1,52 +1,82 @@
 const mongoose = require("mongoose");
 
-const analyticsSchema = new mongoose.Schema(
-  {
-    date: { type: Date, required: true },
-    userMetrics: {
-      totalUsers: Number,
-      activeUsers: Number,
-      newRegistrations: Number,
-      userTypes: {
-        clients: Number,
-        lawyers: Number,
-        admins: Number,
-      },
+const analyticsSchema = new mongoose.Schema({
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+  appointmentMetrics: {
+    totalAppointments: {
+      type: Number,
+      default: 0,
     },
-    appointmentMetrics: {
-      totalAppointments: Number,
-      completedAppointments: Number,
-      canceledAppointments: Number,
+    completedAppointments: {
+      type: Number,
+      default: 0,
     },
-    financialMetrics: {
-      totalRevenue: Number,
-      lawyerEarnings: Number,
+    canceledAppointments: {
+      type: Number,
+      default: 0,
     },
-    searchMetrics: {
-      keywords: [
-        {
-          term: String,
-          count: Number,
-        },
-      ],
-    },
-    lawyerMetrics: {
-      topPerformers: [
-        {
-          lawyerId: { type: mongoose.Schema.Types.ObjectId, ref: "Lawyer" },
-          appointments: Number,
-          rating: Number,
-        },
-      ],
-      specializations: [
-        {
-          name: String,
-          count: Number,
-        },
-      ],
+    pendingAppointments: {
+      type: Number,
+      default: 0,
     },
   },
-  { timestamps: true }
-);
+  userMetrics: {
+    totalUsers: {
+      type: Number,
+      default: 0,
+    },
+    activeUsers: {
+      type: Number,
+      default: 0,
+    },
+    newUsers: {
+      type: Number,
+      default: 0,
+    },
+    userTypes: {
+      clients: {
+        type: Number,
+        default: 0,
+      },
+      lawyers: {
+        type: Number,
+        default: 0,
+      },
+      admins: {
+        type: Number,
+        default: 0,
+      },
+    },
+  },
+  lawyerMetrics: {
+    totalLawyers: {
+      type: Number,
+      default: 0,
+    },
+    verifiedLawyers: {
+      type: Number,
+      default: 0,
+    },
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+  },
+  financialMetrics: {
+    totalRevenue: Number,
+    lawyerEarnings: Number,
+  },
+  searchMetrics: {
+    keywords: [
+      {
+        term: String,
+        count: Number,
+      },
+    ],
+  },
+});
 
 module.exports = mongoose.model("Analytics", analyticsSchema);

@@ -13,13 +13,14 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date }, // Plain text password
   role: {
     type: String,
-    enum: ["admin", "lawyer", "client", "user"],
-    default: "client", // Set default role to client for regular users
+    enum: ["Admin", "Lawyer", "Client", "User"],
+    default: "Client",
   },
   isVerified: { type: Boolean, default: false }, // Add this field
   status: {
     type: String,
     enum: ["pending", "approved", "rejected", "suspended"],
+    default: "pending",
   },
   createdAt: {
     type: Date,

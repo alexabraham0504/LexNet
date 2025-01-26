@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Helmet } from "react-helmet";
 
 // General Pages
-
 import Home from "./pages/Home";
 import ErrorPage from "./pages/ErrorPage";
 import Register from "./pages/Register";
@@ -27,13 +26,11 @@ import UserManagement from "./pages/admin/UserManagement";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import IPC from "./pages/client/IPC";
 import LawyerSearch from "./pages/client/LawyerSearch";
-
-
+import Profile from "./pages/client/Profile";
 
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
-
 import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 
 function App() {
@@ -50,7 +47,6 @@ function App() {
       <Routes>
         {/* General Pages */}
         <Route path="/" element={<Home />} />
-
         <Route path="*" element={<ErrorPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
@@ -71,17 +67,13 @@ function App() {
 
         {/* Client Pages */}
         <Route path="/clientdashboard" element={<ClientDashboard />} />
-        <Route path="/aboutus" element={<AboutUs />} />
-        <Route path="/contact" element={<Contact />} />
         <Route path="/ipc" element={<IPC />} />
         <Route path="/lawyersearch" element={<LawyerSearch />} />
-        
-        
+        <Route path="/profile" element={<Profile />} />
 
         {/* Lawyer Pages */}
         <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
         <Route path="/lawyerregistration" element={<LawyerRegistration />} />
-
         <Route path="/lawyeravailability" element={<LawyerAvailability />} />
       </Routes>
     </Router>

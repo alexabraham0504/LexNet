@@ -6,6 +6,7 @@ const passport = require("passport");
 const http = require("http");
 require("dotenv").config();
 const { initializeSocket } = require("./services/analyticsSocket");
+const { updateAnalytics } = require("./services/analyticsService");
 
 // Import your routes
 const authRoutes = require("./routes/auth");
@@ -75,7 +76,13 @@ app.get("/", (req, res) => {
 // Initialize socket.io
 initializeSocket(server);
 
-// Start the server
-server.listen(PORT, () => {
+// Initial analytics update when server starts
+server.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+  try {
+    await updateAnalytics();
+    console.log("Initial analytics updated");
+  } catch (error) {
+    console.error("Error updating initial analytics:", error);
+  }
 });
