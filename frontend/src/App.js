@@ -4,7 +4,6 @@ import { Helmet } from "react-helmet";
 
 // General Pages
 
-
 import Home from "./pages/Home";
 import ErrorPage from "./pages/ErrorPage";
 import Register from "./pages/Register";
@@ -16,7 +15,6 @@ import VerifyYourEmail from "./pages/VerifyYourEmail";
 import Contact from "./pages/Contact";
 import AboutUs from "./pages/AboutUs";
 
-
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ContentModeration from "./pages/admin/ContentModeration";
@@ -25,19 +23,18 @@ import Platform from "./pages/admin/Platform";
 import ReportsAnalytics from "./pages/admin/ReportsAnalytics";
 import UserManagement from "./pages/admin/UserManagement";
 
-
 // Client pages
 import ClientDashboard from "./pages/client/ClientDashboard";
 import IPC from "./pages/client/IPC";
 import LawyerSearch from "./pages/client/LawyerSearch";
-import Profile from "./pages/client/Profile";
-import ClientCaseManagement from "./pages/client/ClientCaseManagement";
+
 
 
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
-import LawyerCaseManagement from "./pages/lawyer/LawyerCaseManagement";
+
+import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 
 function App() {
   return (
@@ -53,7 +50,7 @@ function App() {
       <Routes>
         {/* General Pages */}
         <Route path="/" element={<Home />} />
-       
+
         <Route path="*" element={<ErrorPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
@@ -62,6 +59,8 @@ function App() {
         <Route path="/verifyemail" element={<VerifyYourEmail />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/aboutus" element={<AboutUs />} />
+        <Route path="/verify/:token" element={<VerifyEmail />} />
+
         {/* Admin Pages */}
         <Route path="/admindashboard" element={<AdminDashboard />} />
         <Route path="/contentmoderation" element={<ContentModeration />} />
@@ -76,15 +75,14 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/ipc" element={<IPC />} />
         <Route path="/lawyersearch" element={<LawyerSearch />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/clientcasemanagement" element={<ClientCaseManagement />} />
-    
+        
+        
+
         {/* Lawyer Pages */}
         <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
         <Route path="/lawyerregistration" element={<LawyerRegistration />} />
-        <Route path="/lawyercasemanagement"element={<LawyerCaseManagement />}/>
-        
-        <Route path="/verify/:token" element={<VerifyEmail />} />
+
+        <Route path="/lawyeravailability" element={<LawyerAvailability />} />
       </Routes>
     </Router>
   );

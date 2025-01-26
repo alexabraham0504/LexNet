@@ -1,4 +1,5 @@
 const Lawyer = require("../models/lawyerModel");
+const User = require("../models/User");
 const multer = require("multer");
 const path = require("path");
 
@@ -21,7 +22,56 @@ exports.uploadFiles = upload.fields([
   { name: "barCouncilCertificate", maxCount: 1 },
 ]);
 
-// Register a new lawyer
+// Get user details by email for pre-filling lawyer registration
+exports.getUserDetails = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    // Find user by email in User schema
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if user role is Lawyer
+    if (user.role !== "Lawyer") {
+      return res
+        .status(403)
+        .json({ message: "User is not registered as a lawyer" });
+    }
+
+    // Return relevant user details
+    const userDetails = {
+      fullname: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      profilePicture: user.profilePicture,
+    };
+
+    // Check if lawyer profile already exists
+    const existingLawyer = await Lawyer.findOne({ email });
+    if (existingLawyer) {
+      return res.status(200).json({
+        ...userDetails,
+        ...existingLawyer.toObject(),
+        isExisting: true,
+      });
+    }
+
+    res.status(200).json({
+      ...userDetails,
+      isExisting: false,
+    });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching user details", error: error.message });
+  }
+};
+
+// Register lawyer with pre-filled data
 exports.registerLawyer = async (req, res) => {
   try {
     const {
@@ -33,33 +83,18 @@ exports.registerLawyer = async (req, res) => {
       location,
       availability,
       fees,
-      visibleToClients, // Passed as string from frontend
+      visibleToClients,
+      certificateDescriptions,
     } = req.body;
 
-    const isVisibleToClients = visibleToClients === "true";
-
-    // Check for missing fields
-    if (
-      !fullname ||
-      !email ||
-      !phone ||
-      !AEN ||
-      !specialization ||
-      !location ||
-      !availability ||
-      !fees
-    ) {
-      return res.status(400).json({ message: "Please provide all required fields." });
+    // Verify user exists in User schema
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found in system" });
     }
 
-    // Check if a lawyer with this email already exists
-    const existingLawyer = await Lawyer.findOne({ email });
-    if (existingLawyer) {
-      return res.status(409).json({ message: "Email already exists. Please use a different email." });
-    }
-
-    // Create a new lawyer document
-    const newLawyer = new Lawyer({
+    // Create or update lawyer profile
+    const lawyerData = {
       fullname,
       email,
       phone,
@@ -68,25 +103,136 @@ exports.registerLawyer = async (req, res) => {
       location,
       availability,
       fees,
-      profilePicture: req.files?.["profilePicture"]?.[0]?.filename || null,
-      lawDegreeCertificate: req.files?.["lawDegreeCertificate"]?.[0]?.filename || null,
-      barCouncilCertificate: req.files?.["barCouncilCertificate"]?.[0]?.filename || null,
-      visibleToClients: isVisibleToClients, // Correctly set boolean
-      isVerified: false, // Default to unverified
-    });
+      visibleToClients: visibleToClients === "true",
+      userid: user._id,
+    };
 
-    // Save the lawyer to the database
-    await newLawyer.save();
-    return res.status(201).json({ message: "Lawyer registered successfully." });
-  } catch (error) {
-    console.error("Error registering lawyer:", error);
-    if (error.code === 11000) {
-      return res.status(409).json({ message: "Duplicate entry detected." });
+    // Handle file uploads
+    if (req.files) {
+      if (req.files["profilePicture"]?.[0]) {
+        lawyerData.profilePicture = req.files["profilePicture"][0].filename;
+      }
+      if (req.files["lawDegreeCertificate"]?.[0]) {
+        lawyerData.lawDegreeCertificate =
+          req.files["lawDegreeCertificate"][0].filename;
+      }
+      if (req.files["barCouncilCertificate"]?.[0]) {
+        lawyerData.barCouncilCertificate =
+          req.files["barCouncilCertificate"][0].filename;
+      }
+      // Handle additional certificates
+      if (req.files["additionalCertificates"]) {
+        const additionalCerts = req.files["additionalCertificates"].map(
+          (file, index) => ({
+            name: file.originalname,
+            file: file.filename,
+            description: certificateDescriptions
+              ? JSON.parse(certificateDescriptions)[index]
+              : "",
+          })
+        );
+        lawyerData.additionalCertificates = additionalCerts;
+      }
     }
-    return res.status(500).json({ error: "Failed to register lawyer." });
+
+    const existingLawyer = await Lawyer.findOne({ email });
+    let lawyer;
+
+    if (existingLawyer) {
+      // Update existing lawyer profile while preserving isVerified status and existing certificates
+      lawyer = await Lawyer.findOneAndUpdate(
+        { email },
+        {
+          ...lawyerData,
+          isVerified: existingLawyer.isVerified,
+          additionalCertificates: [
+            ...(existingLawyer.additionalCertificates || []),
+            ...(lawyerData.additionalCertificates || []),
+          ],
+        },
+        { new: true }
+      );
+    } else {
+      lawyer = new Lawyer(lawyerData);
+      await lawyer.save();
+    }
+
+    res.status(200).json({
+      message: existingLawyer
+        ? "Profile updated successfully"
+        : "Lawyer registered successfully",
+      lawyer,
+    });
+  } catch (error) {
+    console.error("Error in lawyer registration:", error);
+    res
+      .status(500)
+      .json({ message: "Error in lawyer registration", error: error.message });
   }
 };
 
+// Add new controller method for adding additional certificates
+exports.addAdditionalCertificate = async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
+    const { description } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No certificate file provided" });
+    }
+
+    const newCertificate = {
+      name: req.file.originalname,
+      file: req.file.filename,
+      description,
+    };
+
+    const lawyer = await Lawyer.findById(lawyerId);
+    if (!lawyer) {
+      return res.status(404).json({ message: "Lawyer not found" });
+    }
+
+    lawyer.additionalCertificates.push(newCertificate);
+    await lawyer.save();
+
+    res.status(200).json({
+      message: "Certificate added successfully",
+      certificate: newCertificate,
+    });
+  } catch (error) {
+    console.error("Error adding certificate:", error);
+    res
+      .status(500)
+      .json({ message: "Error adding certificate", error: error.message });
+  }
+};
+
+// Add new controller method for removing additional certificates
+exports.removeAdditionalCertificate = async (req, res) => {
+  try {
+    const { lawyerId, certificateId } = req.params;
+
+    const lawyer = await Lawyer.findById(lawyerId);
+    if (!lawyer) {
+      return res.status(404).json({ message: "Lawyer not found" });
+    }
+
+    lawyer.additionalCertificates = lawyer.additionalCertificates.filter(
+      (cert) => cert._id.toString() !== certificateId
+    );
+
+    await lawyer.save();
+
+    res.status(200).json({
+      message: "Certificate removed successfully",
+    });
+  } catch (error) {
+    console.error("Error removing certificate:", error);
+    res
+      .status(500)
+      .json({ message: "Error removing certificate", error: error.message });
+  }
+};
 
 // Fetch unverified lawyers (For Admin Dashboard)
 exports.getUnverifiedLawyers = async (req, res) => {

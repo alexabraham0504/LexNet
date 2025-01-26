@@ -56,7 +56,7 @@ const ClientDashboard = () => {
   }, []);
 
   const handleCaseDetails = () => {
-    navigate("/clientcasemanagement");
+    // navigate("/lawyeravailabilityclient");
   };
 
   return (
@@ -85,7 +85,7 @@ const ClientDashboard = () => {
 
               <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 {[
-                  { to: "/Profile", icon: faUser, label: "Me" },
+                  // { to: "/Profile", icon: faUser, label: "Me" }, 
                   { to: "/LawyerSearch", icon: faSearch, label: "Search" },
                   { to: "/IPC", icon: faGavel, label: "IPC" },
                   {

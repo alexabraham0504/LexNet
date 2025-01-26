@@ -1,6 +1,10 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPhone, faEnvelope, faLocationDot } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPhone,
+  faEnvelope,
+  faLocationDot,
+} from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 
 const Header = () => {
@@ -61,6 +65,9 @@ const Header = () => {
               transform: scale(1) rotate(0deg);
             }
           }
+          .banner-link:hover span {
+            color: black !important;
+          }
         `}
       </style>
       <div className="container">
@@ -87,14 +94,40 @@ const Header = () => {
               className="banner-icon phone-icon pe-2"
               size="1x"
             />
-           +91 7034374393
+            +91 7034374393
           </div>
           <div className="col col-md-3 col-sm-12 text-center ms-auto">
             <Link to="/login">
-              <button className="btn btn-outline-light mx-2">Login</button>
+              <button
+                style={{
+                  backgroundColor: "transparent !important",
+                  border: "1px solid black !important",
+                  color: "black !important",
+                  padding: "6px 12px",
+                  margin: "0 8px",
+                  cursor: "pointer",
+                  fontWeight: "400",
+                  borderRadius: "4px",
+                }}
+              >
+                Login
+              </button>
             </Link>
             <Link to="/register">
-              <button className="btn btn-outline-light mx-2">Register</button>
+              <button
+                style={{
+                  backgroundColor: "transparent !important",
+                  border: "1px solid black !important",
+                  color: "black !important",
+                  padding: "6px 12px",
+                  margin: "0 8px",
+                  cursor: "pointer",
+                  fontWeight: "400",
+                  borderRadius: "4px",
+                }}
+              >
+                Register
+              </button>
             </Link>
           </div>
         </div>

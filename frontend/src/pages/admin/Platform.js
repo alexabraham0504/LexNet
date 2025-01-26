@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Footer from "../../components/footer/footer-admin";
-// import Header from "../../components/header/header-admin";
 import Navbar from "../../components/navbar/navbar-admin";
 import Modal from "react-modal"; // Import Modal
 import { ThreeDots } from "react-loader-spinner"; // Import ThreeDots loader
@@ -112,9 +111,11 @@ const Platform = () => {
   };
 
   // Filter IPC sections based on the search term
-  const filteredSections = ipcSections.filter((section) =>
-    section.section.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSections = searchTerm.trim() === "" 
+    ? [] // Return empty array when no search term
+    : ipcSections.filter((section) =>
+        section.section.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
   // Open modal
   const openModal = () => setModalIsOpen(true);
@@ -173,7 +174,9 @@ const Platform = () => {
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>IPC Sections</h3>
           <div style={styles.sectionListContainer}>
-            {filteredSections.length > 0 ? (
+            {searchTerm.trim() === "" ? (
+              <div style={styles.noResults}>Enter a search term to find IPC sections</div>
+            ) : filteredSections.length > 0 ? (
               filteredSections.map((section) => (
                 <div key={section._id} style={styles.sectionItem}>
                   <div style={styles.sectionContent}>
@@ -197,7 +200,7 @@ const Platform = () => {
                 </div>
               ))
             ) : (
-              <div style={styles.noResults}>No sections found</div>
+              <div style={styles.noResults}>No sections found matching your search</div>
             )}
           </div>
         </div>

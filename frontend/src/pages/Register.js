@@ -8,7 +8,6 @@ const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: "",
-    // lastName: "",
     email: "",
     phone: "",
     password: "",

@@ -4,12 +4,16 @@
     "animated-backgrounds": "^1.0.11",
     "axios": "^1.7.7",
     "body-parser": "^1.20.3",
+    "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "cors": "^2.8.5",
     "express": "^4.21.1",
+    "framer-motion": "^11.18.0",
+    "react-bootstrap": "^2.10.7",
+    "react-icons": "^5.4.0",
     "react-spring": "^9.7.4",
     "react-toastify": "^10.0.6",
-    "styled-components": "^6.1.13"
+    "styled-components": "^6.1.14"
   },
   "name": "lexnet",
   "version": "1.0.0",

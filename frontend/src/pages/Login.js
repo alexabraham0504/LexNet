@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { auth, googleProvider } from './firebaseConfig.js';
-import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from "./firebaseConfig.js";
+import { signInWithPopup } from "firebase/auth";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -28,7 +28,6 @@ const Login = () => {
     handleGoogleSignIn(role); // Proceed to Google sign-in
   };
 
-  // Trigger Google Sign-In with the selected role
   const handleGoogleSignIn = async (role) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -38,16 +37,26 @@ const Login = () => {
         displayName: user.displayName,
         Uid: user.uid,
         email: user.email,
-        role, // Use the selected role
+        role,
       };
 
-      // Send user data to the backend
-      const response = await axios.post("http://localhost:5000/api/auth/google-login", userData);
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/google-login",
+        userData
+      );
       const data = response.data.user;
 
-      localStorage.setItem("name", data.displayName); // Store user's name
+      // Check if user is approved
+      if (data.status !== "approved") {
+        setError(
+          "Your account is pending approval or has been rejected/suspended. Please contact admin."
+        );
+        return;
+      }
 
-      // Navigate based on role
+      sessionStorage.setItem("name", data.displayName);
+      sessionStorage.setItem("email", user.email);
+
       if (data.role === "Admin") {
         navigate("/AdminDashboard");
       } else if (data.role === "Lawyer") {
@@ -66,28 +75,39 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
-        ...formData,
-        role: sessionStorage.getItem("selectedRole"), // Use the role stored in session storage
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        {
+          ...formData,
+          role: sessionStorage.getItem("selectedRole"),
+        }
+      );
+
       const data = response.data;
 
-      if (data.message === "Login successful.") {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("name", data.firstName);
+      // Display error message if account is not approved
+      if (data.message && data.message.includes("pending approval")) {
+        setError(data.message);
+        return;
+      }
 
-        if (data.role === "Admin") {
-          navigate("/AdminDashboard");
-        } else if (data.role === "Lawyer") {
-          navigate("/LawyerDashboard");
-        } else if (data.role === "Client") {
-          navigate("/ClientDashboard");
-        }
-      } else {
-        alert(`Login failed: ${data.message}`);
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("name", data.fullName);
+      sessionStorage.setItem("role", data.role);
+      sessionStorage.setItem("userid", data.id);
+      sessionStorage.setItem("email", formData.email); // Store email in sessionStorage
+
+      if (data.role === "Admin") {
+        navigate("/AdminDashboard");
+      } else if (data.role === "Lawyer") {
+        navigate("/LawyerDashboard");
+      } else if (data.role === "Client") {
+        navigate("/ClientDashboard");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "An error occurred. Please try again.");
+      setError(
+        err.response?.data?.message || "An error occurred. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -104,7 +124,9 @@ const Login = () => {
           <h2 style={styles.loginTitle}>Welcome Back</h2>
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
-              <label htmlFor="email" style={styles.formLabel}>Email Address</label>
+              <label htmlFor="email" style={styles.formLabel}>
+                Email Address
+              </label>
               <input
                 type="email"
                 id="email"
@@ -117,7 +139,9 @@ const Login = () => {
               />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="password" style={styles.formLabel}>Password</label>
+              <label htmlFor="password" style={styles.formLabel}>
+                Password
+              </label>
               <input
                 type="password"
                 id="password"
@@ -131,22 +155,33 @@ const Login = () => {
             </div>
             <div style={styles.rememberMe}>
               <input type="checkbox" id="rememberMe" />
-              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>Remember Me</label>
+              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>
+                Remember Me
+              </label>
             </div>
-            <button id="login" type="submit" style={styles.btnLogin} disabled={loading} className="btn w-100">
+            <button
+              id="login"
+              type="submit"
+              style={styles.btnLogin}
+              className="btn-login glass-button"
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Login"}
             </button>
 
             <button
               onClick={() => setIsRoleModalOpen(true)}
               style={styles.googleButton}
+              className="google-button glass-button"
               disabled={loading}
             >
               {loading ? "Signing in with Google..." : "Sign in with Google"}
             </button>
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <Link to="/forgotpassword" style={styles.forgotPassword}>Lost your password?</Link>
+            <Link to="/forgotpassword" style={styles.forgotPassword}>
+              Lost your password?
+            </Link>
           </form>
         </div>
       </div>
@@ -156,11 +191,78 @@ const Login = () => {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <h3>Select Your Role</h3>
-            <button style={styles.roleButton} onClick={() => handleRoleSelection("Lawyer")}>Lawyer</button>
-            <button style={styles.roleButton} onClick={() => handleRoleSelection("Client")}>Client</button>
+            <button
+              style={styles.roleButton}
+              onClick={() => handleRoleSelection("Lawyer")}
+            >
+              Lawyer
+            </button>
+            <button
+              style={styles.roleButton}
+              onClick={() => handleRoleSelection("Client")}
+            >
+              Client
+            </button>
           </div>
         </div>
       )}
+
+      <style>
+        {`
+          .glass-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+          }
+
+          .glass-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+          }
+
+          .glass-button:hover::before {
+            animation: reflectLight 1s;
+          }
+
+          .glass-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+              90deg,
+              transparent,
+              rgba(255, 255, 255, 0.4),
+              transparent
+            );
+          }
+
+          @keyframes reflectLight {
+            0% {
+              left: -100%;
+            }
+            100% {
+              left: 100%;
+            }
+          }
+
+          .btn-login {
+            background-color: rgba(0, 123, 255, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+          }
+
+          .google-button {
+            background-color: rgba(219, 68, 55, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(219, 68, 55, 0.2);
+          }
+        `}
+      </style>
     </div>
   );
 };
@@ -168,11 +270,44 @@ const Login = () => {
 const styles = {
   // ... existing styles
 
+  btnLogin: {
+    padding: "0.8rem",
+    backgroundColor: "rgba(0, 123, 255, 0.9)",
+    color: "#fff",
+    fontWeight: "bold",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1rem",
+    width: "100%",
+    position: "relative",
+    overflow: "hidden",
+    transition: "transform 0.3s ease",
+    backdropFilter: "blur(5px)",
+    WebkitBackdropFilter: "blur(5px)",
+    boxShadow: "0 4px 15px rgba(0, 123, 255, 0.2)",
+    "&:hover": {
+      transform: "scale(1.02)",
+    },
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      left: "-100%",
+      width: "100%",
+      height: "100%",
+      background:
+        "linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)",
+      transition: "0.5s",
+      animation: "reflectLight 1.5s infinite",
+    },
+  },
+
   googleButton: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#db4437",
+    backgroundColor: "rgba(219, 68, 55, 0.9)",
     color: "#fff",
     fontWeight: "bold",
     borderRadius: "8px",
@@ -180,10 +315,30 @@ const styles = {
     marginTop: "15px",
     cursor: "pointer",
     fontSize: "1rem",
-    transition: "background-color 0.3s ease",
-    width: "100%", // Matches the width of the login button
+    width: "100%",
+    position: "relative",
+    overflow: "hidden",
+    transition: "transform 0.3s ease",
+    backdropFilter: "blur(5px)",
+    WebkitBackdropFilter: "blur(5px)",
+    boxShadow: "0 4px 15px rgba(219, 68, 55, 0.2)",
+    "&:hover": {
+      transform: "scale(1.02)",
+    },
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      left: "-100%",
+      width: "100%",
+      height: "100%",
+      background:
+        "linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)",
+      transition: "0.5s",
+      animation: "reflectLight 1.5s infinite",
+    },
   },
-  
+
   modalOverlay: {
     position: "fixed",
     top: 0,
@@ -319,17 +474,13 @@ const styles = {
     marginTop: "1rem",
   },
 
-  btnLogin: {
-    padding: "0.8rem",
-    backgroundColor: "#007bff", // Changed to blue
-    color: "#fff",
-    fontWeight: "bold",
-    borderRadius: "8px",
-    border: "none",
-    cursor: "pointer",
-    transition: "background-color 0.3s ease",
-    fontSize: "1rem",
-    width: "100%", // Full width to match Google button
+  "@keyframes reflectLight": {
+    "0%": {
+      left: "-100%",
+    },
+    "100%": {
+      left: "100%",
+    },
   },
 };
 

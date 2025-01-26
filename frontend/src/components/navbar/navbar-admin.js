@@ -1,30 +1,78 @@
-import React from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { FaUser } from "react-icons/fa";
 
 const Navbar = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+  const userName = sessionStorage.getItem("name");
 
-  const handleLogout = () => {
-    navigate("/");
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    // First, clear all sessionStorage items
+    sessionStorage.clear();
+    // Or if you prefer to remove specific items:
+    // sessionStorage.removeItem("name");
+    // sessionStorage.removeItem("role");
+    // sessionStorage.removeItem("userid");
+    // sessionStorage.removeItem("token");
+
+    // Close the dropdown
+    setShowDropdown(false);
+
+    // Force navigation to home page
+    window.location.href = "/";
+    // Alternative approach:
+    // navigate("/", { replace: true });
   };
 
   const links = [
     { path: "/admindashboard", name: "Dashboard" },
+    { path: "/aboutus", name: "About Us", state: { from: "admin" } },
+    { path: "/contact", name: "Contact", state: { from: "admin" } },
     {
-      path: "/aboutus",
-      name: "Aboutus",
-      state: { from: "admin" },
-    },
-    {
-      path: "/contact",
-      name: "Contact",
-      state: { from: "admin" },
-    },
-    {
-      path: "/",
-      name: "Logout",
-      onClick: handleLogout,
+      path: "#",
+      name: (
+        <div className="user-menu-container">
+          <div
+            className="user-icon-wrapper"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowDropdown(!showDropdown);
+            }}
+            title={userName}
+          >
+            <FaUser className="user-icon" />
+          </div>
+          {showDropdown && (
+            <div className="dropdown-menu show" ref={dropdownRef}>
+              <div className="dropdown-header">
+                <FaUser className="dropdown-user-icon" />
+                <span>{userName}</span>
+              </div>
+
+              <div className="dropdown-divider"></div>
+              <div className="dropdown-item logout-item" onClick={handleLogout}>
+                <span>Logout</span>
+              </div>
+            </div>
+          )}
+        </div>
+      ),
     },
   ];
 
@@ -62,17 +110,17 @@ const Navbar = () => {
               id="main-nav"
             >
               <ul className="navbar-nav">
-                {links.map(({ path, name, state, onClick }, index) => (
+                {links.map(({ path, name, state }, index) => (
                   <li className="nav-item mx-3 mb-2" key={index}>
                     <NavLink
                       to={path}
                       state={state}
-                      onClick={onClick}
                       style={({ isActive }) => ({
                         textDecoration: "none",
                         color: isActive ? "#c2b697" : "#fff",
                         borderBottom: isActive ? "1px solid #c2b697" : "none",
-                        paddingBottom: isActive ? "5px" : "0",
+                        padding: "0 0 5px 0",
+                        fontWeight: "normal",
                       })}
                     >
                       {name}
@@ -100,34 +148,88 @@ const navbarStyles = `
   .nav {
     font-size: 1.1rem;
     font-weight: 500;
-    width: '100%', // Full width
+    width: 100%;
   }
 
   .nav .logo-image {
     max-width: 70px;
   }
 
-  .nav .slide-in {
-    backgroundColor: "#02182b", // Midnight blue
-    padding-top: 0;
-    animation: slide-in 0.8s ease-out;
-  }
-
-  @keyframes slide-in {
-    from {
-      transform: translateY(-70%);
-    }
-    to {
-      transform: translateY(0);
-    }
-  }
-
   .navbar-nav .nav-item .nav-link {
-    color: white; /* Button text color */
+    color: white;
   }
 
   .navbar-nav .nav-item .nav-link:hover {
-    color: #c2b697; /* Hover color for buttons */
+    color: #c2b697;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background-color: #02182b;
+    border: 1px solid #a69d82;
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 220px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1050;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .dropdown-menu.show {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .dropdown-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    color: #a69d82;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(166, 157, 130, 0.2);
+    margin-bottom: 8px;
+  }
+
+  .dropdown-header .dropdown-user-icon {
+    font-size: 16px;
+    margin-right: 10px;
+  }
+
+  .dropdown-item {
+    color: #fff !important;
+    padding: 10px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    background-color: transparent;
+  }
+
+  .dropdown-item:hover {
+    background-color: rgba(166, 157, 130, 0.1);
+    color: #c2b697 !important;
+  }
+
+  .dropdown-divider {
+    height: 1px;
+    background-color: rgba(166, 157, 130, 0.2);
+    margin: 8px 0;
+  }
+
+  .logout-item {
+    color: #ff6b6b !important;
+  }
+
+  .logout-item:hover {
+    background-color: rgba(255, 107, 107, 0.1);
   }
 `;
 

@@ -20163,8 +20163,8 @@
                             (a = t.sent),
                               "Login successful." === (i = a.data).message
                                 ? (console.log(i),
-                                  localStorage.setItem("token", i.token),
-                                  localStorage.setItem("name", i.firstName),
+                                  sessionStorage.setItem("token", i.token),
+                                  sessionStorage.setItem("name", i.firstName),
                                   "Admin" === i.role
                                     ? e("/AdminDashboard")
                                     : "Lawyer" === i.role

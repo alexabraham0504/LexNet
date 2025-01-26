@@ -10,7 +10,9 @@ const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profileRoutes");
 const lawyerRegistrationRoutes = require("./routes/lawyerRegistrationRoutes");
 const ipcRoutes = require("./routes/ipc");
-const caseRoutes = require("./routes/caseRoutes");
+const lawyerAvailabilityRoutes = require("./routes/lawyerAvailability");
+
+const lawyerRoutes = require("./routes/lawyers");
 
 // Initialize Express app
 const app = express();
@@ -55,7 +57,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/lawyers", lawyerRegistrationRoutes);
 app.use("/api/ipc", ipcRoutes);
-app.use("/api/cases", caseRoutes);
+app.use("/api/lawyer/availability", lawyerAvailabilityRoutes);
+
+app.use("/api/lawyers", lawyerRoutes);
+// app.use("/api/law", lawyerRoutes);
 
 // Root route
 app.get("/", (req, res) => {

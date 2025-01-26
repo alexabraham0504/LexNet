@@ -9,7 +9,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User1 = require("../models/Guser");
 
-
 // Nodemailer setup (using Gmail as an example)
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -24,6 +23,14 @@ router.post("/register", async (req, res) => {
   const { fullName, email, phone, password, role } = req.body;
 
   try {
+    // Validate required fields
+    if (!fullName || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields.",
+      });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -37,7 +44,7 @@ router.post("/register", async (req, res) => {
     const newUser = new User({
       fullName,
       email,
-      phone,
+      phone: phone || "", // Make phone optional
       password: hashedPassword,
       role,
       isVerified: false,
@@ -52,19 +59,31 @@ router.post("/register", async (req, res) => {
       expiresIn: "1h",
     });
 
-    // Send verification email
-    const verificationLink = `http://localhost:3000/verify/${token}`;
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: newUser.email,
-      subject: "Email Verification - Lex Net",
-      html: `
-        <p>Hi ${newUser.fullName},</p>
-        <p>Please verify your email by clicking the link below:</p>
-        <a href="${verificationLink}">Verify Email</a>
-        <p>This link will expire in 1 hour.</p>
-      `,
-    });
+    try {
+      console.log(process.env.EMAIL);
+      console.log(newUser.email);
+      // Send verification email
+      const verificationLink = `http://localhost:3000/verify/${token}`;
+      await transporter.sendMail({
+        from: process.env.EMAIL,
+        to: newUser.email,
+        subject: "Email Verification - Lex Net",
+        html: `
+          <p>Hi ${newUser.fullName},</p>
+          <p>Please verify your email by clicking the link below:</p>
+          <a href="${verificationLink}">Verify Email</a>
+          <p>This link will expire in 1 hour.</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Email sending error:", emailError);
+      // Even if email fails, user is registered
+      return res.status(201).json({
+        success: true,
+        message:
+          "Registration successful, but verification email could not be sent. Please contact support.",
+      });
+    }
 
     // Send success response
     res.status(201).json({
@@ -73,10 +92,10 @@ router.post("/register", async (req, res) => {
         "Registration successful! Please check your email to verify your account.",
     });
   } catch (error) {
-    console.error("Server error during registration:", error);
+    console.error("Detailed server error during registration:", error);
     res.status(500).json({
       success: false,
-      message: "Registration failed. Please try again later.",
+      message: error.message || "Registration failed. Please try again later.",
     });
   }
 });
@@ -121,6 +140,14 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials." });
     }
 
+    // Check if user is approved
+    if (user.status !== "approved") {
+      return res.status(403).json({
+        message:
+          "Your account is pending approval or has been rejected/suspended. Please contact admin.",
+      });
+    }
+
     // Compare plain text password with hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -129,7 +156,7 @@ router.post("/login", async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role, fullName: user.fullName },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -138,8 +165,9 @@ router.post("/login", async (req, res) => {
     res.status(200).json({
       message: "Login successful.",
       token, // Include the token in the response
+      id: user._id, // Include the user's ID
       role: user.role,
-      firstName: user.firstName,
+      fullName: user.fullName, // Include the fullName
     });
   } catch (error) {
     console.error(error);
@@ -286,7 +314,7 @@ router.post("/google-login", async (req, res) => {
   try {
     // Check if the user already exists in the database
     let user = await User1.findOne({ Uid });
-    
+
     if (!user) {
       // If user does not exist, create a new one
       user = new User1({
