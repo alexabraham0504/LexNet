@@ -96,82 +96,90 @@ const AdminUserManagement = () => {
   };
 
   return (
-    <Container>
-      <ToastContainer />
+    <>
       <Navbar />
-      <Title variant="h4">User Account Management</Title>
-      {loading ? (
-        <Typography>Loading users...</Typography>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell>{user.fullName}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>{user.status}</TableCell>
-                  <TableCell>
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      {user.role === "Lawyer" && user.status === "pending" && (
-                        <>
-                          <ActionButton
-                            variant="contained"
-                            color="success"
-                            onClick={() => handleApproval(user._id, "approve")}
-                          >
-                            <FaCheck /> Approve
-                          </ActionButton>
-                          <ActionButton
-                            variant="contained"
-                            color="error"
-                            onClick={() => handleApproval(user._id, "reject")}
-                          >
-                            <FaTimes /> Reject
-                          </ActionButton>
-                        </>
-                      )}
-                      <ActionButton
-                        variant="contained"
-                        color={
-                          user.status === "suspended" ? "success" : "warning"
-                        }
-                        onClick={() =>
-                          handleToggleSuspend(user._id, user.status)
-                        }
-                        disabled={loading}
-                      >
-                        {user.status === "suspended" ? (
-                          <>
-                            <FaCheck style={{ marginRight: "5px" }} /> Activate
-                          </>
-                        ) : (
-                          <>
-                            <FaUserShield style={{ marginRight: "5px" }} />{" "}
-                            Suspend
-                          </>
-                        )}
-                      </ActionButton>
-                    </div>
-                  </TableCell>
+      <Container>
+        <ToastContainer />
+        <Title variant="h4">User Account Management</Title>
+        {loading ? (
+          <Typography>Loading users...</Typography>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+              </TableHead>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user._id}>
+                    <TableCell>{user.fullName}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role}</TableCell>
+                    <TableCell>{user.status}</TableCell>
+                    <TableCell>
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        {user.role === "Lawyer" &&
+                          user.status === "pending" && (
+                            <>
+                              <ActionButton
+                                variant="contained"
+                                color="success"
+                                onClick={() =>
+                                  handleApproval(user._id, "approve")
+                                }
+                              >
+                                <FaCheck /> Approve
+                              </ActionButton>
+                              <ActionButton
+                                variant="contained"
+                                color="error"
+                                onClick={() =>
+                                  handleApproval(user._id, "reject")
+                                }
+                              >
+                                <FaTimes /> Reject
+                              </ActionButton>
+                            </>
+                          )}
+                        <ActionButton
+                          variant="contained"
+                          color={
+                            user.status === "suspended" ? "success" : "warning"
+                          }
+                          onClick={() =>
+                            handleToggleSuspend(user._id, user.status)
+                          }
+                          disabled={loading}
+                        >
+                          {user.status === "suspended" ? (
+                            <>
+                              <FaCheck style={{ marginRight: "5px" }} />{" "}
+                              Activate
+                            </>
+                          ) : (
+                            <>
+                              <FaUserShield style={{ marginRight: "5px" }} />{" "}
+                              Suspend
+                            </>
+                          )}
+                        </ActionButton>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Container>
       <Footer />
-    </Container>
+    </>
   );
 };
 
