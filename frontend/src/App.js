@@ -27,6 +27,7 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import IPC from "./pages/client/IPC";
 import LawyerSearch from "./pages/client/LawyerSearch";
 import Profile from "./pages/client/Profile";
+import LawyerAppointment from "./pages/client/LawyerAppointment";
 
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
@@ -70,6 +71,7 @@ function App() {
         <Route path="/ipc" element={<IPC />} />
         <Route path="/lawyersearch" element={<LawyerSearch />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/lawyer-appointment/:lawyerId" element={<LawyerAppointment />} />
 
         {/* Lawyer Pages */}
         <Route path="/lawyerdashboard" element={<LawyerDashboard />} />

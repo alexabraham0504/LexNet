@@ -8,6 +8,7 @@ require("dotenv").config();
 const { initializeSocket } = require("./services/analyticsSocket");
 const { updateAnalytics } = require("./services/analyticsService");
 
+
 // Import your routes
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profileRoutes");
@@ -15,6 +16,7 @@ const lawyerRegistrationRoutes = require("./routes/lawyerRegistrationRoutes");
 const ipcRoutes = require("./routes/ipc");
 const lawyerAvailabilityRoutes = require("./routes/lawyerAvailability");
 const adminAnalyticsRoutes = require("./routes/adminAnalytics");
+const appointmentRoutes = require("./routes/appointments");
 
 const lawyerRoutes = require("./routes/lawyers");
 
@@ -64,9 +66,12 @@ app.use("/api/lawyers", lawyerRegistrationRoutes);
 app.use("/api/ipc", ipcRoutes);
 app.use("/api/lawyer/availability", lawyerAvailabilityRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
-
+app.use("/api/appointments", appointmentRoutes);
 app.use("/api/lawyers", lawyerRoutes);
 // app.use("/api/law", lawyerRoutes);
+
+
+
 
 // Root route
 app.get("/", (req, res) => {

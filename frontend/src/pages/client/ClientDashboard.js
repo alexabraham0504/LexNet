@@ -21,38 +21,15 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const casesResponse = await axios.get(
-          "http://localhost:3000/api/cases"
-        );
-        setCases(casesResponse.data);
-
-        const appointmentsResponse = await axios.get(
-          "http://localhost:3000/api/appointments"
-        );
-        setAppointments(appointmentsResponse.data);
-
-        const messagesResponse = await axios.get(
-          "http://localhost:3000/api/messages"
-        );
-        setMessages(messagesResponse.data);
-
-        const documentsResponse = await axios.get(
-          "http://localhost:3000/api/documents"
-        );
-        setDocuments(documentsResponse.data);
-
-        const statusUpdatesResponse = await axios.get(
-          "http://localhost:3000/api/statusUpdates"
-        );
-        setStatusUpdates(statusUpdatesResponse.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
+    // Example mock data
+    setCases([
+      { id: 1, title: "Case 1" },
+      { id: 2, title: "Case 2" }
+    ]);
+    setAppointments([
+      { id: 1, date: "2024-03-20" }
+    ]);
+    // ... etc
   }, []);
 
   const handleCaseDetails = () => {
@@ -85,7 +62,7 @@ const ClientDashboard = () => {
 
               <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 {[
-                  // { to: "/Profile", icon: faUser, label: "Me" }, 
+                  // { to: "/Profile", icon: faUser, label: "Me" },
                   { to: "/LawyerSearch", icon: faSearch, label: "Search" },
                   { to: "/IPC", icon: faGavel, label: "IPC" },
                   {

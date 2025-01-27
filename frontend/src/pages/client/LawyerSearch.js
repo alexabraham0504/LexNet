@@ -263,7 +263,7 @@ const LawyerSearch = () => {
                 </div>
 
                 <div className="modal-actions">
-                  <Link to={`/lawyeravailabilityclient/${selectedLawyer._id}`}>
+                  <Link to={`/lawyer-appointment/${selectedLawyer._id}`}>
                     <button className="appointment-button">
                       Set Appointment
                     </button>
