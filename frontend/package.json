@@ -30,6 +30,7 @@
     "firebase": "^11.0.1",
     "framer-motion": "^11.18.0",
     "imagemin-webp-webpack-plugin": "^3.3.6",
+    "jsonwebtoken": "^9.0.2",
     "lottie-react": "^2.4.0",
     "react": "^18.2.0",
     "react-calendar": "^5.1.0",
@@ -47,6 +48,7 @@
     "react-table": "^7.8.0",
     "react-toastify": "^10.0.6",
     "react-whatsapp-chat-widget": "^1.1.6",
+    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "styled-components": "^6.1.14",
     "web-vitals": "^2.1.4"

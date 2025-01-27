@@ -8,7 +8,6 @@ require("dotenv").config();
 const { initializeSocket } = require("./services/analyticsSocket");
 const { updateAnalytics } = require("./services/analyticsService");
 
-
 // Import your routes
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profileRoutes");
@@ -69,9 +68,6 @@ app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/lawyers", lawyerRoutes);
 // app.use("/api/law", lawyerRoutes);
-
-
-
 
 // Root route
 app.get("/", (req, res) => {

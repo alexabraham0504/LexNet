@@ -4,7 +4,11 @@ import { Helmet } from "react-helmet";
 import Navbar from "../../components/navbar/navbar-lawyer";
 import Footer from "../../components/footer/footer-lawyer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFileAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faFileAlt,
+  faUserCog,
+  faMessage,
+} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
 const LawyerDashboard = () => {
@@ -97,8 +101,8 @@ const LawyerDashboard = () => {
               </div>
               {/* Horizontal Buttons */}
               <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
-                {/* <div className="col flex-grow-1">
-                  <Link to="/LawyerRegistration">
+                <div className="col flex-grow-1">
+                  <Link to="/Message">
                     <button
                       className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
                       aria-label="Profile"
@@ -109,7 +113,7 @@ const LawyerDashboard = () => {
                       Profile
                     </button>
                   </Link>
-                </div> */}
+                </div>
 
                 <div className="col flex-grow-1">
                   <Link to="/lawyercasemanagement">
@@ -134,6 +138,19 @@ const LawyerDashboard = () => {
                         <FontAwesomeIcon icon={faFileAlt} size="1x" />
                       </span>
                       Availability
+                    </button>
+                  </Link>
+                </div>
+                <div className="col flex-grow-1">
+                  <Link to="/message">
+                    <button
+                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                      aria-label="Messages"
+                    >
+                      <span className="p-3">
+                        <FontAwesomeIcon icon={faMessage} size="1x" />
+                      </span>
+                      Messages
                     </button>
                   </Link>
                 </div>

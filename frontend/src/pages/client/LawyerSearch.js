@@ -4,7 +4,7 @@ import Footer from "../../components/footer/footer-client";
 import Navbar from "../../components/navbar/navbar-client";
 import { motion } from "framer-motion";
 import { FaFilter } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const LawyerSearch = () => {
   const [lawyers, setLawyers] = useState([]);
@@ -20,6 +20,7 @@ const LawyerSearch = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLawyers = async () => {
@@ -111,6 +112,16 @@ const LawyerSearch = () => {
 
   const handleCloseModal = () => {
     setSelectedLawyer(null);
+  };
+
+  const handleChat = (e, lawyerId) => {
+    e.stopPropagation(); // Prevent modal from closing
+    navigate(`/client/messages`, {
+      state: {
+        selectedLawyerId: lawyerId,
+        fromSearch: true,
+      },
+    });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -210,6 +221,7 @@ const LawyerSearch = () => {
               <button className="close-button" onClick={handleCloseModal}>
                 ×
               </button>
+
               <div className="lawyer-details">
                 <div className="header-section">
                   <div className="profile-section">
@@ -247,27 +259,28 @@ const LawyerSearch = () => {
                     <span>{selectedLawyer.email}</span>
                   </div>
                   <div className="info-item">
-                    <strong>Availability:</strong>
-                    <span>
-                      {Array.isArray(selectedLawyer.availability?.timeSlots)
-                        ? selectedLawyer.availability.timeSlots.join(", ")
-                        : typeof selectedLawyer.availability === "object"
-                        ? "Available"
-                        : selectedLawyer.availability || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="info-item">
                     <strong>Fees:</strong>
-                    <span>₹{selectedLawyer.fees}</span>
+                    <span>
+                      ₹{selectedLawyer.fees.toString().replace(/^₹/, "")}
+                    </span>
                   </div>
                 </div>
 
                 <div className="modal-actions">
-                  <Link to={`/lawyer-appointment/${selectedLawyer._id}`}>
-                    <button className="appointment-button">
-                      Set Appointment
-                    </button>
+                  <Link
+                    to={`/lawyer-appointment/${selectedLawyer._id}`}
+                    className="action-button appointment-button"
+                  >
+                    <i className="fas fa-calendar-check"></i>
+                    Set Appointment
                   </Link>
+                  <button
+                    className="action-button chat-button"
+                    onClick={(e) => handleChat(e, selectedLawyer._id)}
+                  >
+                    <i className="fas fa-comment"></i>
+                    Chat Now
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -889,33 +902,83 @@ const LawyerSearch = () => {
           .modal-actions {
             display: flex;
             justify-content: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            gap: 20px;
+            margin-top: 30px;
+          }
+
+          .action-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            border: none;
           }
 
           .appointment-button {
-            padding: 12px 30px;
-            background: #000000;
+            background-color: #4caf50;
             color: white;
-            border: none;
-            border-radius: 25px;
-            font-family: "Poppins", sans-serif;
-            font-weight: 500;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 200px;
           }
 
-          .appointment-button:hover {
+          .chat-button {
+            background-color: #2196f3;
+            color: white;
+          }
+
+          .action-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           }
 
-          .appointment-button:active {
+          .action-button:active {
             transform: translateY(0);
+          }
+
+          .action-button i {
+            font-size: 18px;
+          }
+
+          .modal-content.calling-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+          }
+
+          .header-section {
+            text-align: center;
+            margin-bottom: 25px;
+          }
+
+          .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+
+          .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+          }
+
+          .info-item strong {
+            color: #666;
+            font-size: 14px;
+          }
+
+          .info-item span {
+            color: #333;
+            font-size: 16px;
           }
 
           @media (max-width: 768px) {
@@ -964,6 +1027,20 @@ const LawyerSearch = () => {
 
             .filter-actions {
               flex-direction: column;
+            }
+
+            .modal-actions {
+              flex-direction: column;
+              gap: 15px;
+            }
+
+            .action-button {
+              width: 100%;
+              justify-content: center;
+            }
+
+            .info-grid {
+              grid-template-columns: 1fr;
             }
           }
         `}</style>

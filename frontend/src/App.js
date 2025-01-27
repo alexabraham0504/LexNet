@@ -29,6 +29,7 @@ import LawyerSearch from "./pages/client/LawyerSearch";
 import Profile from "./pages/client/Profile";
 import LawyerAppointment from "./pages/client/LawyerAppointment";
 
+
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
@@ -75,11 +76,13 @@ function App() {
           path="/lawyer-appointment/:lawyerId"
           element={<LawyerAppointment />}
         />
+       
 
         {/* Lawyer Pages */}
         <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
         <Route path="/lawyerregistration" element={<LawyerRegistration />} />
         <Route path="/lawyeravailability" element={<LawyerAvailability />} />
+       
       </Routes>
     </Router>
   );
