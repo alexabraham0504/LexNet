@@ -71,7 +71,10 @@ function App() {
         <Route path="/ipc" element={<IPC />} />
         <Route path="/lawyersearch" element={<LawyerSearch />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/lawyer-appointment/:lawyerId" element={<LawyerAppointment />} />
+        <Route
+          path="/lawyer-appointment/:lawyerId"
+          element={<LawyerAppointment />}
+        />
 
         {/* Lawyer Pages */}
         <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
