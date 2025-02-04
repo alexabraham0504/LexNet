@@ -36,6 +36,17 @@ const appointmentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  rescheduleRequest: {
+    requested: { type: Boolean, default: false },
+    reason: String,
+    proposedDate: Date,
+    proposedTime: String,
+    status: { 
+      type: String, 
+      enum: ['pending', 'approved', 'rejected', null],
+      default: null
+    }
+  },
 });
 
 module.exports = mongoose.model("Appointment", appointmentSchema);

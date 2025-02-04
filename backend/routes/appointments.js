@@ -158,4 +158,181 @@ router.put("/cancel/:id", async (req, res) => {
   }
 });
 
+// Update appointment status
+router.put("/status/:id", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
+
+    // Validate status
+    if (!["pending", "confirmed", "cancelled"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    appointment.status = status;
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: `Appointment ${status} successfully`,
+      appointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating appointment status",
+      error: error.message,
+    });
+  }
+});
+
+// Get appointments for a client
+router.get("/client/:email", async (req, res) => {
+  try {
+    const appointments = await Appointment.find({
+      clientEmail: req.params.email
+    })
+    .sort({ appointmentDate: -1, appointmentTime: 1 })
+    .populate('lawyerId', 'fullname'); // This will get the lawyer's name
+
+    // Format the response to include lawyer name
+    const formattedAppointments = appointments.map(apt => ({
+      ...apt._doc,
+      lawyerName: apt.lawyerId.fullname
+    }));
+
+    res.json({ 
+      success: true, 
+      appointments: formattedAppointments 
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching appointments",
+      error: error.message
+    });
+  }
+});
+
+// Request appointment reschedule
+router.post("/reschedule/:id", async (req, res) => {
+  try {
+    const { reason, proposedDate, proposedTime } = req.body;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
+    }
+
+    if (appointment.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: "Only confirmed appointments can be rescheduled"
+      });
+    }
+
+    // Check if the proposed time slot is available
+    const existingAppointment = await Appointment.findOne({
+      lawyerId: appointment.lawyerId,
+      appointmentDate: new Date(proposedDate),
+      appointmentTime: proposedTime,
+      status: { $ne: "cancelled" },
+      _id: { $ne: appointment._id }
+    });
+
+    if (existingAppointment) {
+      return res.status(400).json({
+        success: false,
+        message: "Proposed time slot is already booked"
+      });
+    }
+
+    // Update appointment with reschedule request
+    appointment.rescheduleRequest = {
+      requested: true,
+      reason,
+      proposedDate: new Date(proposedDate),
+      proposedTime,
+      status: 'pending'
+    };
+
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: "Reschedule request submitted successfully",
+      appointment
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error requesting reschedule",
+      error: error.message
+    });
+  }
+});
+
+// Handle reschedule request (approve/reject)
+router.put("/reschedule/:id/:action", async (req, res) => {
+  try {
+    const { action } = req.params;
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
+    }
+
+    if (!appointment.rescheduleRequest.requested) {
+      return res.status(400).json({
+        success: false,
+        message: "No reschedule request found for this appointment"
+      });
+    }
+
+    if (action === 'approve') {
+      // Update appointment with new date and time
+      appointment.appointmentDate = appointment.rescheduleRequest.proposedDate;
+      appointment.appointmentTime = appointment.rescheduleRequest.proposedTime;
+      appointment.rescheduleRequest.status = 'approved';
+    } else if (action === 'reject') {
+      appointment.rescheduleRequest.status = 'rejected';
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action"
+      });
+    }
+
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: `Reschedule request ${action}ed successfully`,
+      appointment
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error handling reschedule request",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
