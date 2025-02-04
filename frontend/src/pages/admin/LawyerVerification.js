@@ -9,31 +9,67 @@ const LawyerVerification = () => {
   const [unverifiedLawyers, setUnverifiedLawyers] = useState([]);
   const [verifiedLawyers, setVerifiedLawyers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchUnverifiedLawyers();
-    fetchVerifiedLawyers();
-  }, []);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [unverifiedRes, verifiedRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/lawyers/unverified"),
+          axios.get("http://localhost:5000/api/lawyers/verified")
+        ]);
+        
+        console.log("Raw unverified lawyer data:", unverifiedRes.data[0]);
+        
+        // Transform the data to directly use fullName from the model
+        const transformedUnverified = unverifiedRes.data.map(lawyer => ({
+          ...lawyer,
+          fullname: lawyer.fullname // Use fullName directly from the model
+        }));
 
-  const fetchUnverifiedLawyers = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:5000/api/lawyers/unverified"
-      );
-      setUnverifiedLawyers(response.data);
-    } catch (error) {
-      console.error("Error fetching unverified lawyers:", error);
-    }
-  };
+        const transformedVerified = verifiedRes.data.map(lawyer => ({
+          ...lawyer,
+          fullname: lawyer.fullname // Use fullName directly from the model
+        }));
+        
+        if (Array.isArray(unverifiedRes.data)) {
+          setUnverifiedLawyers(transformedUnverified);
+        }
+        
+        if (Array.isArray(verifiedRes.data)) {
+          console.log()
+          setVerifiedLawyers(transformedVerified);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const fetchVerifiedLawyers = async () => {
     try {
       const response = await axios.get(
         "http://localhost:5000/api/lawyers/verified"
       );
-      setVerifiedLawyers(response.data);
+      if (Array.isArray(response.data)) {
+        // Transform the data here as well
+        const transformedData = response.data.map(lawyer => ({
+          ...lawyer,
+          fullname: lawyer.fullName // Use fullName directly from the model
+        }));
+        setVerifiedLawyers(transformedData);
+      } else {
+        console.error("Expected array but got:", typeof response.data);
+        setVerifiedLawyers([]);
+      }
     } catch (error) {
       console.error("Error fetching verified lawyers:", error);
+      setVerifiedLawyers([]);
     }
   };
 
@@ -43,6 +79,7 @@ const LawyerVerification = () => {
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
+      await fetchVerifiedLawyers();
       toast.success('Lawyer approved successfully!', {
         position: "top-right",
         style: {
@@ -50,7 +87,6 @@ const LawyerVerification = () => {
           color: '#333333',
         }
       });
-      fetchVerifiedLawyers();
     } catch (error) {
       console.error("Error approving lawyer:", error);
       toast.error('Failed to approve lawyer.', {
@@ -131,15 +167,19 @@ const LawyerVerification = () => {
 
   // Filter lawyers based on the search term
   const filteredUnverifiedLawyers = unverifiedLawyers.filter(
-    (lawyer) =>
-      lawyer.fullname &&
-      lawyer.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+    (lawyer) => {
+      const searchString = searchTerm.toLowerCase();
+      const nameToSearch = (lawyer.fullname || '').toLowerCase();
+      return nameToSearch.includes(searchString);
+    }
   );
 
   const filteredVerifiedLawyers = verifiedLawyers.filter(
-    (lawyer) =>
-      lawyer.fullname &&
-      lawyer.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+    (lawyer) => {
+      const searchString = searchTerm.toLowerCase();
+      const nameToSearch = (lawyer.fullname || '').toLowerCase();
+      return nameToSearch.includes(searchString);
+    }
   );
 
   const PageHeader = () => (
@@ -183,7 +223,7 @@ const LawyerVerification = () => {
       </div>
       <div className="lawyer-verification">
         <div style={{ padding: "20px" }}>
-          <h1>Lawyer Verification</h1>
+          
           <input
             type="text"
             placeholder="Search Lawyers..."
@@ -191,137 +231,228 @@ const LawyerVerification = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          {/* Unverified Lawyers Table */}
-          <h2>Unverified Lawyers</h2>
-          <table className="lawyer-table">
-            <thead>
-              <tr>
-                <th>Profile Picture</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>AEN</th>
-                <th>Specialization</th>
-                <th>Location</th>
-                <th>Law Degree Certificate</th>
-                <th>Bar Council Certificate</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUnverifiedLawyers.map((lawyer) => (
-                <tr key={lawyer._id}>
-                  <td>
-                    {lawyer.profilePicture ? (
-                      <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
-                        alt="Profile"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    ) : (
-                      "No Image"
-                    )}
-                  </td>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              Loading...
+            </div>
+          ) : (
+            <>
+              {/* Unverified Lawyers Table */}
+              <h2>Unverified Lawyers ({unverifiedLawyers.length})</h2>
+              {unverifiedLawyers.length === 0 ? (
+                <p>No unverified lawyers found.</p>
+              ) : (
+                <table className="lawyer-table">
+                  <thead>
+                    <tr>
+                      <th>Profile Picture</th>
+                      <th>fullName</th>
+                      <th>Email</th>
+                      <th>AEN</th>
+                      <th>Specialization</th>
+                      <th>Location</th>
+                      <th>Law Degree Certificate</th>
+                      <th>Bar Council Certificate</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUnverifiedLawyers.map((lawyer) => (
+                      <tr key={lawyer._id}>
+                        <td>
+                          {lawyer.profilePicture ? (
+                            <img
+                              src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                              alt={`${lawyer.fullname || 'N/A'}'s profile`}
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = `
+                                  <div style="
+                                    width: 50px;
+                                    height: 50px;
+                                    border-radius: 50%;
+                                    background-color: #e0e0e0;
+                                    color: #666;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 16px;
+                                    font-weight: 500;
+                                  ">
+                                    ${lawyer.fullname}
+                                  </div>
+                                `;
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "50px",
+                              height: "50px",
+                              borderRadius: "50%",
+                              backgroundColor: "#e0e0e0",
+                              color: "#666",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "16px",
+                              fontWeight: "500"
+                            }}>
+                              {(lawyer.fullname) ? 
+                                lawyer.fullname.charAt(0).toUpperCase() 
+                                : 'N/A'}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {lawyer.fullname}
+                        </td>
+                        <td>{lawyer.email}</td>
+                        <td>{lawyer.AEN}</td>
+                        <td>{lawyer.specialization}</td>
+                        <td>{lawyer.location}</td>
+                        <td>
+                          {lawyer.lawDegreeCertificate ? (
+                            <a
+                              href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            "Not Uploaded"
+                          )}
+                        </td>
+                        <td>
+                          {lawyer.barCouncilCertificate ? (
+                            <a
+                              href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            "Not Uploaded"
+                          )}
+                        </td>
+                        <td>
+                          <button onClick={() => handleApprove(lawyer._id)}>
+                            ✓ Approve
+                          </button>
+                          <button onClick={() => handleReject(lawyer._id)}>
+                            ✕ Reject
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
 
-                  <td>{lawyer.fullname}</td>
-                  <td>{lawyer.email}</td>
-                  <td>{lawyer.AEN}</td>
-                  <td>{lawyer.specialization}</td>
-                  <td>{lawyer.location}</td>
-                  <td>
-                    {lawyer.lawDegreeCertificate ? (
-                      <a
-                        href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View
-                      </a>
-                    ) : (
-                      "Not Uploaded"
-                    )}
-                  </td>
-                  <td>
-                    {lawyer.barCouncilCertificate ? (
-                      <a
-                        href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View
-                      </a>
-                    ) : (
-                      "Not Uploaded"
-                    )}
-                  </td>
-                  <td>
-                    <button onClick={() => handleApprove(lawyer._id)}>
-                      ✓ Approve
-                    </button>
-                    <button onClick={() => handleReject(lawyer._id)}>
-                      ✕ Reject
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Verified Lawyers Table */}
-          <h2>Verified Lawyers</h2>
-          <table className="lawyer-table">
-            <thead>
-              <tr>
-                <th>Profile Picture</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>AEN</th>
-                <th>Specialization</th>
-                <th>Location</th>
-                <th>Visibility Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredVerifiedLawyers.map((lawyer) => (
-                <tr key={lawyer._id}>
-                  <td>
-                    {lawyer.profilePicture ? (
-                      <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
-                        alt="Profile"
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    ) : (
-                      "No Image"
-                    )}
-                  </td>
-                  <td>{lawyer.fullname}</td>
-                  <td>{lawyer.email}</td>
-                  <td>{lawyer.AEN}</td>
-                  <td>{lawyer.specialization}</td>
-                  <td>{lawyer.location}</td>
-                  <td>
-                    <span className={`status-indicator ${lawyer.visibleToClients ? 'status-visible' : 'status-hidden'}`}>
-                      {lawyer.visibleToClients ? 'Visible' : 'Not Visible'}
-                    </span>
-                  </td>
-                  <td>
-                    <button onClick={() => handleToggleVisibility(lawyer._id)}>
-                      {lawyer.visibleToClients ? "Deactivate" : "Activate"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              {/* Verified Lawyers Table */}
+              <h2>Verified Lawyers ({verifiedLawyers.length})</h2>
+              {verifiedLawyers.length === 0 ? (
+                <p>No verified lawyers found.</p>
+              ) : (
+                <table className="lawyer-table">
+                  <thead>
+                    <tr>
+                      <th>Profile Picture</th>
+                      <th>fullName</th>
+                      <th>Email</th>
+                      <th>AEN</th>
+                      <th>Specialization</th>
+                      <th>Location</th>
+                      <th>Visibility Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredVerifiedLawyers.map((lawyer) => (
+                      <tr key={lawyer._id}>
+                        <td>
+                          {lawyer.profilePicture ? (
+                            <img
+                              src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                              alt={`${lawyer.fullname || 'N/A'}'s profile`}
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = `
+                                  <div style="
+                                    width: 50px;
+                                    height: 50px;
+                                    border-radius: 50%;
+                                    background-color: #e0e0e0;
+                                    color: #666;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 16px;
+                                    font-weight: 500;
+                                  ">
+                                    ${lawyer.fullname}
+                                  </div>
+                                `;
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "50px",
+                              height: "50px",
+                              borderRadius: "50%",
+                              backgroundColor: "#e0e0e0",
+                              color: "#666",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "16px",
+                              fontWeight: "500"
+                            }}>
+                              {(lawyer.fullname) ? 
+                                lawyer.fullname.charAt(0).toUpperCase() 
+                                : 'N/A'}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {lawyer.fullname }
+                        </td>
+                        <td>{lawyer.email}</td>
+                        <td>{lawyer.AEN}</td>
+                        <td>{lawyer.specialization}</td>
+                        <td>{lawyer.location}</td>
+                        <td>
+                          <span className={`status-indicator ${lawyer.visibleToClients ? 'status-visible' : 'status-hidden'}`}>
+                            {lawyer.visibleToClients ? 'Visible' : 'Not Visible'}
+                          </span>
+                        </td>
+                        <td>
+                          <button onClick={() => handleToggleVisibility(lawyer._id)}>
+                            {lawyer.visibleToClients ? "Deactivate" : "Activate"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
         </div>
 
         <style jsx>{`

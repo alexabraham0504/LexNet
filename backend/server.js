@@ -23,6 +23,7 @@ const adminAnalyticsRoutes = require("./routes/adminAnalytics");
 const appointmentRoutes = require("./routes/appointments");
 const lawyerRoutes = require("./routes/lawyerRoutes");
 const messageRoutes = require("./routes/messages");
+const lawyerVerificationRoutes = require("./routes/lawyers.js");
 
 // Initialize Express app
 const app = express();
@@ -65,6 +66,7 @@ app.use("/api/lawyer/availability", lawyerAvailabilityRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/messages", messageRoutes);
+
 
 // Root route
 app.get("/", (req, res) => {

@@ -119,25 +119,26 @@ router.delete(
 // Route to get verified and active lawyers with search functionality
 router.get("/verified", async (req, res) => {
   try {
-    const { search } = req.query;
-    console.log("Search query:", search);
+    // const { search } = req.query;
+    // console.log("Search query:", search);
 
-    let query = { isVerified: true, visibleToClients: true };
-    console.log("Initial query:", query);
+    // let query = { isVerified: true, visibleToClients: true };
+    // console.log("Initial query:", query);
 
-    if (search) {
-      query = {
-        ...query,
-        $or: [
-          { fullname: { $regex: search, $options: "i" } },
-          { specialization: { $regex: search, $options: "i" } },
-          { location: { $regex: search, $options: "i" } },
-        ],
-      };
-    }
-    console.log("Final query:", query);
+    // if (search) {
+    //   query = {
+    //     ...query,
+    //     $or: [
+    //       { fullname: { $regex: search, $options: "i" } },
+    //       { specialization: { $regex: search, $options: "i" } },
+    //       { location: { $regex: search, $options: "i" } },
+    //     ],
+    //   };
+    
+    // console.log("Final query:", query);
 
-    const verifiedLawyers = await Lawyer.find(query);
+    const verifiedLawyers = await Lawyer.find({ isVerified: true, visibleToClients: true});
+    console.log("Verified lawyers:", verifiedLawyers);
     console.log("Found lawyers:", verifiedLawyers.length);
 
     res.json(verifiedLawyers);
@@ -150,19 +151,7 @@ router.get("/verified", async (req, res) => {
 // Route to get unverified lawyers (for admin use)
 router.get("/unverified", async (req, res) => {
   try {
-    const unverifiedLawyers = await Lawyer.find({ isVerified: false }).select({
-      fullname: 1,
-      email: 1,
-      phone: 1,
-      AEN: 1,
-      specialization: 1,
-      location: 1,
-      fees: 1,
-      lawDegreeCertificate: 1,
-      barCouncilCertificate: 1,
-      additionalCertificates: 1,
-      visibleToClients: 1,
-    });
+    const unverifiedLawyers = await Lawyer.find({ isVerified: false });
     res.json(unverifiedLawyers);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });

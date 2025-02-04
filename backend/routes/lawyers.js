@@ -381,12 +381,11 @@
 // routes/lawyers.js
 const express = require("express");
 const router = express.Router();
-const Lawyer = require("../models/Lawyer");
-
-// Route to get verified lawyers visible to clients
+const Lawyer = require("../models/lawyerModel");
 router.get("/verified", async (req, res) => {
   try {
-    const lawyers = await Lawyer.find({ isVerified: true, visibleToClients: true });
+    const lawyers = await Lawyer.find({ isVerified: false, visibleToClients: true });
+    console.log("Unverified lawyers:", lawyers);
     res.json(lawyers);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch verified lawyers." });
