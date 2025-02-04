@@ -5,6 +5,8 @@ import Navbar from "../../components/navbar/navbar-client";
 import { motion } from "framer-motion";
 import { FaFilter } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
+import Chat from "../../components/Chat";
+import { useAuth } from "../../context/AuthContext";
 
 const LawyerSearch = () => {
   const [lawyers, setLawyers] = useState([]);
@@ -21,6 +23,9 @@ const LawyerSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
+  const [selectedLawyerId, setSelectedLawyerId] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchLawyers = async () => {
@@ -43,6 +48,20 @@ const LawyerSearch = () => {
 
     fetchLawyers();
   }, [searchTerm]);
+
+  useEffect(() => {
+    console.log("LawyerSearch - current user:", user);
+  }, [user]);
+
+  useEffect(() => {
+    console.log("Session Storage Data:", {
+      token: sessionStorage.getItem("token"),
+      userid: sessionStorage.getItem("userid"),
+      name: sessionStorage.getItem("name"),
+      email: sessionStorage.getItem("email"),
+      role: sessionStorage.getItem("role"),
+    });
+  }, []);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -114,14 +133,20 @@ const LawyerSearch = () => {
     setSelectedLawyer(null);
   };
 
-  const handleChat = (e, lawyerId) => {
-    e.stopPropagation(); // Prevent modal from closing
-    navigate(`/client/messages`, {
-      state: {
-        selectedLawyerId: lawyerId,
-        fromSearch: true,
-      },
+  const handleChat = (lawyer) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    const chatRoomId = `chat_${user._id}_${lawyer.userid}`;
+    console.log("Starting chat with lawyer:", {
+      lawyerId: lawyer.userid,
+      chatRoomId,
     });
+
+    setSelectedLawyerId(lawyer.userid);
+    setShowChat(true);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -276,7 +301,7 @@ const LawyerSearch = () => {
                   </Link>
                   <button
                     className="action-button chat-button"
-                    onClick={(e) => handleChat(e, selectedLawyer._id)}
+                    onClick={() => handleChat(selectedLawyer)}
                   >
                     <i className="fas fa-comment"></i>
                     Chat Now
@@ -384,6 +409,23 @@ const LawyerSearch = () => {
               </div>
             </motion.div>
           </motion.div>
+        )}
+
+        {showChat && selectedLawyerId && (
+          <div className="chat-modal">
+            <Chat
+              chatRoomId={`chat_${
+                user?._id || sessionStorage.getItem("userid")
+              }_${selectedLawyerId}`}
+              receiverId={selectedLawyerId}
+              receiverName={
+                lawyers.find((l) => l.userid === selectedLawyerId)?.fullName
+              }
+            />
+            <button className="close-chat" onClick={() => setShowChat(false)}>
+              Close Chat
+            </button>
+          </div>
         )}
 
         <style jsx>{`
@@ -1042,6 +1084,32 @@ const LawyerSearch = () => {
             .info-grid {
               grid-template-columns: 1fr;
             }
+          }
+
+          .chat-modal {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+          }
+
+          .close-chat {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+          }
+
+          .close-chat:hover {
+            color: #333;
           }
         `}</style>
       </div>

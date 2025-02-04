@@ -3,6 +3,8 @@ const multer = require("multer");
 const path = require("path");
 const lawyerController = require("../controllers/lawyerRegistrationController");
 const Lawyer = require("../models/lawyerModel");
+const User = require("../models/User");
+const fs = require("fs");
 
 const router = express.Router();
 
@@ -19,15 +21,31 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Update the fields configuration to include additional certificates
+// Update the registration route
 router.post(
   "/register",
   upload.fields([
     { name: "profilePicture", maxCount: 1 },
     { name: "lawDegreeCertificate", maxCount: 1 },
-    { name: "barCouncilCertificate", maxCount: 1 },
-    { name: "additionalCertificates", maxCount: 5 }, // Allow up to 5 additional certificates
+    { name: "barCouncilCertificate", maxCount: 1 }
   ]),
+  async (req, res, next) => {
+    try {
+      // Ensure uploads directory exists
+      const uploadsDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadsDir)){
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      next();
+    } catch (error) {
+      console.error("Error in file upload middleware:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error handling file upload",
+        error: error.message
+      });
+    }
+  },
   lawyerController.registerLawyer
 );
 
@@ -185,29 +203,45 @@ router.delete("/reject/:lawyerId", async (req, res) => {
   }
 });
 
-// Route to toggle lawyer activation/visibility (Admin control)
+// Update the toggle visibility route
 router.put("/toggle-visibility/:lawyerId", async (req, res) => {
   try {
-    const lawyerId = req.params.lawyerId;
-    const { message } = req.body; // Get the message from request body
-
-    const lawyer = await Lawyer.findById(lawyerId);
+    console.log("Toggle visibility request for ID:", req.params.lawyerId);
+    
+    // Use findOneAndUpdate to only update the visibleToClients field
+    const lawyer = await Lawyer.findOneAndUpdate(
+      { _id: req.params.lawyerId },
+      [
+        { 
+          $set: { 
+            visibleToClients: { $not: "$visibleToClients" } 
+          } 
+        }
+      ],
+      { new: true, runValidators: false }
+    );
+    
     if (!lawyer) {
-      return res.status(404).json({ message: "Lawyer not found" });
+      console.log("Lawyer not found with ID:", req.params.lawyerId);
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Lawyer not found' 
+      });
     }
 
-    lawyer.visibleToClients = !lawyer.visibleToClients;
-    lawyer.deactivationMessage = message; // Set the message
-    await lawyer.save();
-
-    res.json({
-      message: `Lawyer ${
-        lawyer.visibleToClients ? "activated" : "deactivated"
-      } successfully`,
-      lawyer,
+    return res.status(200).json({
+      success: true,
+      message: `Lawyer visibility ${lawyer.visibleToClients ? 'enabled' : 'disabled'}`,
+      lawyer
     });
+
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("Error in toggle-visibility:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Error updating lawyer visibility',
+      error: error.message
+    });
   }
 });
 

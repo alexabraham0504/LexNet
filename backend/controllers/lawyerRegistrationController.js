@@ -74,6 +74,9 @@ exports.getUserDetails = async (req, res) => {
 // Register lawyer with pre-filled data
 exports.registerLawyer = async (req, res) => {
   try {
+    console.log("Registration request received:", req.body);
+    console.log("Files received:", req.files);
+
     const {
       fullname,
       email,
@@ -81,93 +84,108 @@ exports.registerLawyer = async (req, res) => {
       AEN,
       specialization,
       location,
-      availability,
       fees,
-      visibleToClients,
-      certificateDescriptions,
+      availability,
+      visibleToClients
     } = req.body;
 
-    // Verify user exists in User schema
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found in system" });
+    // Validate required fields
+    if (!email || !fullname || !phone || !AEN || !fees) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+        required: ['email', 'fullname', 'phone', 'AEN', 'fees'],
+        received: { email, fullname, phone, AEN, fees }
+      });
     }
 
-    // Create or update lawyer profile
+    // Find user in User schema
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found. Please register as a user first."
+      });
+    }
+
+    // Create lawyer data object with correct field name mapping
     const lawyerData = {
-      fullname,
-      email,
+      userId: user._id,
+      fullName: fullname,
+      email: email.toLowerCase(),
       phone,
       AEN,
-      specialization,
-      location,
-      availability,
-      fees,
+      specialization: specialization || "",
+      location: location || "",
+      availability: availability || "Available",
+      fees: fees.toString(),
       visibleToClients: visibleToClients === "true",
-      userid: user._id,
+      isVerified: false
     };
 
-    // Handle file uploads
+    // Handle file uploads if present
     if (req.files) {
-      if (req.files["profilePicture"]?.[0]) {
-        lawyerData.profilePicture = req.files["profilePicture"][0].filename;
+      if (req.files.profilePicture?.[0]) {
+        lawyerData.profilePicture = req.files.profilePicture[0].filename;
       }
-      if (req.files["lawDegreeCertificate"]?.[0]) {
-        lawyerData.lawDegreeCertificate =
-          req.files["lawDegreeCertificate"][0].filename;
+      if (req.files.lawDegreeCertificate?.[0]) {
+        lawyerData.lawDegreeCertificate = req.files.lawDegreeCertificate[0].filename;
       }
-      if (req.files["barCouncilCertificate"]?.[0]) {
-        lawyerData.barCouncilCertificate =
-          req.files["barCouncilCertificate"][0].filename;
-      }
-      // Handle additional certificates
-      if (req.files["additionalCertificates"]) {
-        const additionalCerts = req.files["additionalCertificates"].map(
-          (file, index) => ({
-            name: file.originalname,
-            file: file.filename,
-            description: certificateDescriptions
-              ? JSON.parse(certificateDescriptions)[index]
-              : "",
-          })
-        );
-        lawyerData.additionalCertificates = additionalCerts;
+      if (req.files.barCouncilCertificate?.[0]) {
+        lawyerData.barCouncilCertificate = req.files.barCouncilCertificate[0].filename;
       }
     }
 
-    const existingLawyer = await Lawyer.findOne({ email });
+    // Check if lawyer already exists
+    const existingLawyer = await Lawyer.findOne({ email: email.toLowerCase() });
     let lawyer;
 
     if (existingLawyer) {
-      // Update existing lawyer profile while preserving isVerified status and existing certificates
+      // Update existing lawyer while preserving certain fields
       lawyer = await Lawyer.findOneAndUpdate(
-        { email },
+        { email: email.toLowerCase() },
         {
           ...lawyerData,
           isVerified: existingLawyer.isVerified,
-          additionalCertificates: [
-            ...(existingLawyer.additionalCertificates || []),
-            ...(lawyerData.additionalCertificates || []),
-          ],
+          // Only update file fields if new files are uploaded
+          profilePicture: lawyerData.profilePicture || existingLawyer.profilePicture,
+          lawDegreeCertificate: lawyerData.lawDegreeCertificate || existingLawyer.lawDegreeCertificate,
+          barCouncilCertificate: lawyerData.barCouncilCertificate || existingLawyer.barCouncilCertificate,
+          additionalCertificates: existingLawyer.additionalCertificates
         },
         { new: true }
       );
     } else {
+      // Validate required certificates for new registration
+      if (!req.files?.lawDegreeCertificate?.[0] || !req.files?.barCouncilCertificate?.[0]) {
+        return res.status(400).json({
+          success: false,
+          message: "Law Degree Certificate and Bar Council Certificate are required for registration"
+        });
+      }
+
+      // Create new lawyer
       lawyer = new Lawyer(lawyerData);
       await lawyer.save();
+
+      // Update user role
+      await User.findByIdAndUpdate(user._id, { role: "Lawyer" });
     }
 
     res.status(200).json({
-      message: existingLawyer
-        ? "Profile updated successfully"
-        : "Lawyer registered successfully",
-      lawyer,
+      success: true,
+      message: existingLawyer ? "Lawyer profile updated successfully" : "Lawyer registered successfully",
+      lawyer
     });
+
   } catch (error) {
     console.error("Error in lawyer registration:", error);
-    res
-      .status(500)
-      .json({ message: "Error in lawyer registration", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Error registering lawyer: " + error.message,
+      error: error.message,
+      stack: error.stack
+    });
   }
 };
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Helmet } from "react-helmet";
+import { AuthProvider } from "./context/AuthContext";
 
 // General Pages
 import Home from "./pages/Home";
@@ -29,62 +30,63 @@ import LawyerSearch from "./pages/client/LawyerSearch";
 import Profile from "./pages/client/Profile";
 import LawyerAppointment from "./pages/client/LawyerAppointment";
 
-
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
 import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
+import Messages from "./pages/lawyer/Messages";
 
 function App() {
   return (
-    <Router>
-      <Helmet>
-        <title>Lex Net</title>
-        <meta
-          name="description"
-          content="Lex Net | Legal Consulting | Services"
-        />
-      </Helmet>
+    <AuthProvider>
+      <Router>
+        <Helmet>
+          <title>Lex Net</title>
+          <meta
+            name="description"
+            content="Lex Net | Legal Consulting | Services"
+          />
+        </Helmet>
 
-      <Routes>
-        {/* General Pages */}
-        <Route path="/" element={<Home />} />
-        <Route path="*" element={<ErrorPage />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgotpassword" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/verifyemail" element={<VerifyYourEmail />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/aboutus" element={<AboutUs />} />
-        <Route path="/verify/:token" element={<VerifyEmail />} />
+        <Routes>
+          {/* General Pages */}
+          <Route path="/" element={<Home />} />
+          <Route path="*" element={<ErrorPage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgotpassword" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/verifyemail" element={<VerifyYourEmail />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/aboutus" element={<AboutUs />} />
+          <Route path="/verify/:token" element={<VerifyEmail />} />
 
-        {/* Admin Pages */}
-        <Route path="/admindashboard" element={<AdminDashboard />} />
-        <Route path="/contentmoderation" element={<ContentModeration />} />
-        <Route path="/lawyerverification" element={<LawyerVerification />} />
-        <Route path="/platform" element={<Platform />} />
-        <Route path="/reportsanalytics" element={<ReportsAnalytics />} />
-        <Route path="/usermanagement" element={<UserManagement />} />
+          {/* Admin Pages */}
+          <Route path="/admindashboard" element={<AdminDashboard />} />
+          <Route path="/contentmoderation" element={<ContentModeration />} />
+          <Route path="/lawyerverification" element={<LawyerVerification />} />
+          <Route path="/platform" element={<Platform />} />
+          <Route path="/reportsanalytics" element={<ReportsAnalytics />} />
+          <Route path="/usermanagement" element={<UserManagement />} />
 
-        {/* Client Pages */}
-        <Route path="/clientdashboard" element={<ClientDashboard />} />
-        <Route path="/ipc" element={<IPC />} />
-        <Route path="/lawyersearch" element={<LawyerSearch />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route
-          path="/lawyer-appointment/:lawyerId"
-          element={<LawyerAppointment />}
-        />
-       
+          {/* Client Pages */}
+          <Route path="/clientdashboard" element={<ClientDashboard />} />
+          <Route path="/ipc" element={<IPC />} />
+          <Route path="/lawyersearch" element={<LawyerSearch />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/lawyer-appointment/:lawyerId"
+            element={<LawyerAppointment />}
+          />
 
-        {/* Lawyer Pages */}
-        <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
-        <Route path="/lawyerregistration" element={<LawyerRegistration />} />
-        <Route path="/lawyeravailability" element={<LawyerAvailability />} />
-       
-      </Routes>
-    </Router>
+          {/* Lawyer Pages */}
+          <Route path="/lawyerdashboard" element={<LawyerDashboard />} />
+          <Route path="/lawyerregistration" element={<LawyerRegistration />} />
+          <Route path="/lawyeravailability" element={<LawyerAvailability />} />
+          <Route path="/message" element={<Messages />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

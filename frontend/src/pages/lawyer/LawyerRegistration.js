@@ -224,81 +224,77 @@ const LawyerRegistration = () => {
   };
 
   const handleSave = async () => {
-    const formData = new FormData();
-
-    // Append all form fields
-    Object.keys(lawyerData).forEach((key) => {
-      if (
-        key !== "id" &&
-        key !== "verificationStatus" &&
-        lawyerData[key] !== null
-      ) {
-        if (key === "additionalCertificates") {
-          // Skip additionalCertificates as they're handled separately
-          return;
-        }
-
-        if (
-          key === "profilePicture" ||
-          key === "lawDegreeCertificate" ||
-          key === "barCouncilCertificate"
-        ) {
-          // Only append files if they're newly selected
-          if (lawyerData[key] instanceof File) {
-            formData.append(key, lawyerData[key]);
-          }
-        } else {
-          formData.append(key, lawyerData[key]);
-        }
-      }
-    });
-
-    // Handle additional certificates
-    if (newCertificate.file) {
-      formData.append("additionalCertificates", newCertificate.file);
-      formData.append(
-        "certificateDescriptions",
-        JSON.stringify([newCertificate.description])
-      );
-    }
-
-    setIsLoading(true);
-
     try {
+      setIsLoading(true);
+      setError("");
+
+      // Validate required fields
+      const requiredFields = ['fullname', 'phone', 'AEN', 'fees'];
+      const missingFields = requiredFields.filter(field => !lawyerData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Get email from session storage
+      const userEmail = sessionStorage.getItem("email");
+      if (!userEmail) {
+        throw new Error("User email not found. Please login again.");
+      }
+
+      // Validate required certificates for new registration
+      if (!lawyerData.id && (!lawyerData.lawDegreeCertificate || !lawyerData.barCouncilCertificate)) {
+        throw new Error("Law Degree Certificate and Bar Council Certificate are required for registration");
+      }
+
+      const formData = new FormData();
+
+      // Append basic fields
+      formData.append('fullname', lawyerData.fullname);
+      formData.append('email', userEmail);
+      formData.append('phone', lawyerData.phone);
+      formData.append('AEN', lawyerData.AEN);
+      formData.append('specialization', lawyerData.specialization || '');
+      formData.append('location', lawyerData.location || '');
+      formData.append('fees', lawyerData.fees);
+      formData.append('availability', lawyerData.availability);
+      formData.append('visibleToClients', lawyerData.visibleToClients);
+
+      // Append files if they exist and are new
+      if (lawyerData.profilePicture instanceof File) {
+        formData.append('profilePicture', lawyerData.profilePicture);
+      }
+      if (lawyerData.lawDegreeCertificate instanceof File) {
+        formData.append('lawDegreeCertificate', lawyerData.lawDegreeCertificate);
+      }
+      if (lawyerData.barCouncilCertificate instanceof File) {
+        formData.append('barCouncilCertificate', lawyerData.barCouncilCertificate);
+      }
+
       const response = await axios.post(
-        "http://localhost:5000/api/lawyers/register",
+        'http://localhost:5000/api/lawyers/register',
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
 
-      const message = response.data.lawyer.isVerified
-        ? "Profile updated successfully!"
-        : "Profile submitted for verification!";
+      if (response.data.success) {
+        alert(response.data.message);
+        setLawyerData(prev => ({
+          ...prev,
+          ...response.data.lawyer,
+          id: response.data.lawyer._id
+        }));
+      } else {
+        throw new Error(response.data.message);
+      }
 
-      alert(message);
-
-      // Update the local state with the response data
-      setLawyerData((prevData) => ({
-        ...prevData,
-        ...response.data.lawyer,
-        verificationStatus: response.data.lawyer.isVerified
-          ? "Approved"
-          : "Pending",
-      }));
-
-      // Reset new certificate form
-      setNewCertificate({
-        file: null,
-        description: "",
-        name: "",
-      });
     } catch (error) {
-      console.error("Error saving lawyer profile:", error);
-      alert("Failed to save lawyer profile.");
+      console.error('Error saving lawyer profile:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to save lawyer profile');
     } finally {
       setIsLoading(false);
     }
@@ -309,6 +305,8 @@ const LawyerRegistration = () => {
       <Navbar />
       <div style={styles.profileContainer}>
         <h2 style={styles.heading}>Lawyer Registration</h2>
+
+        {error && <div style={styles.errorMessage}>{error}</div>}
 
         <div style={styles.verificationStatus}>
           Verification Status: {lawyerData.verificationStatus}
@@ -943,6 +941,16 @@ const styles = {
   row: {
     display: 'flex',
     justifyContent: 'space-between',
+  },
+  errorMessage: {
+    backgroundColor: '#ffebee',
+    color: '#c62828',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    border: '1px solid #ef9a9a',
+    fontSize: '14px',
+    textAlign: 'center',
   },
 };
 

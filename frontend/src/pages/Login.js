@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { auth, googleProvider } from "./firebaseConfig.js";
 import { signInWithPopup } from "firebase/auth";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -73,41 +75,89 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+    
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          ...formData,
-          role: sessionStorage.getItem("selectedRole"),
-        }
-      );
-
-      const data = response.data;
-
-      // Display error message if account is not approved
-      if (data.message && data.message.includes("pending approval")) {
-        setError(data.message);
+      // Ensure email and password are not empty
+      if (!formData.email || !formData.password) {
+        setError("Please provide both email and password");
         return;
       }
 
-      sessionStorage.setItem("token", data.token);
-      sessionStorage.setItem("name", data.fullName);
-      sessionStorage.setItem("role", data.role);
-      sessionStorage.setItem("userid", data.id);
-      sessionStorage.setItem("email", formData.email); // Store email in sessionStorage
+      const loginData = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password
+      };
 
-      if (data.role === "Admin") {
-        navigate("/AdminDashboard");
-      } else if (data.role === "Lawyer") {
-        navigate("/LawyerDashboard");
-      } else if (data.role === "Client") {
-        navigate("/ClientDashboard");
-      }
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "An error occurred. Please try again."
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        loginData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
+
+      if (response.data.success) {
+        const { token, user } = response.data;
+        
+        // Store auth data in sessionStorage
+        sessionStorage.setItem("token", token);
+        sessionStorage.setItem("userid", user._id);
+        sessionStorage.setItem("name", user.fullName);
+        sessionStorage.setItem("email", user.email);
+        sessionStorage.setItem("role", user.role);
+
+        // Use the login function from AuthContext
+        login({
+          ...user,
+          token,
+        });
+
+        // Redirect based on role
+        const userRole = user.role.toLowerCase();
+        switch(userRole) {
+          case "lawyer":
+            navigate("/lawyerdashboard");
+            break;
+          case "client":
+            navigate("/clientdashboard");
+            break;
+          case "admin":
+            navigate("/admindashboard");
+            break;
+          default:
+            setError("Invalid user role");
+        }
+      } else {
+        setError(response.data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error details:", error);
+      
+      if (error.response) {
+        // Handle specific error cases
+        const status = error.response.status;
+        const errorMessage = error.response.data?.message;
+
+        switch (status) {
+          case 400:
+            setError(errorMessage || "Invalid email or password");
+            break;
+          case 401:
+            setError("Invalid credentials");
+            break;
+          case 403:
+            setError("Account not verified or pending approval");
+            break;
+          default:
+            setError("Failed to login. Please try again.");
+        }
+      } else if (error.request) {
+        setError("No response from server. Please check your connection.");
+      } else {
+        setError("Failed to login. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

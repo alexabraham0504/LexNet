@@ -20,7 +20,8 @@
   "description": "\"# LexNet\"",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "lsof -ti :5000 | xargs kill -9 && nodemon server.js --watch"
   },
   "keywords": [],
   "author": "",

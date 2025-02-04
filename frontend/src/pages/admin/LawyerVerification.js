@@ -1,29 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
-
-// Define ActionButtons component at the top of the file, before the main component
-const ActionButtons = ({ lawyer, onApprove, onReject, onToggle }) => (
-  <div style={styles.actionButtons}>
-    {lawyer.isVerified ? (
-      <button style={styles.toggleBtn} onClick={() => onToggle(lawyer._id)}>
-        {lawyer.visibleToClients ? "Deactivate" : "Activate"}
-      </button>
-    ) : (
-      <>
-        <button style={styles.approveBtn} onClick={() => onApprove(lawyer._id)}>
-          Approve
-        </button>
-        <button style={styles.rejectBtn} onClick={() => onReject(lawyer._id)}>
-          Reject
-        </button>
-      </>
-    )}
-  </div>
-);
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const LawyerVerification = () => {
   const [unverifiedLawyers, setUnverifiedLawyers] = useState([]);
@@ -31,288 +11,711 @@ const LawyerVerification = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchLawyers();
+    fetchUnverifiedLawyers();
+    fetchVerifiedLawyers();
   }, []);
 
-  const fetchLawyers = async () => {
+  const fetchUnverifiedLawyers = async () => {
     try {
-      const [unverifiedRes, verifiedRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/lawyers/unverified"),
-        axios.get("http://localhost:5000/api/lawyers/verified"),
-      ]);
-      setUnverifiedLawyers(unverifiedRes.data);
-      setVerifiedLawyers(verifiedRes.data);
+      const response = await axios.get(
+        "http://localhost:5000/api/lawyers/unverified"
+      );
+      setUnverifiedLawyers(response.data);
     } catch (error) {
-      console.error("Error fetching lawyers:", error);
+      console.error("Error fetching unverified lawyers:", error);
+    }
+  };
+
+  const fetchVerifiedLawyers = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/lawyers/verified"
+      );
+      setVerifiedLawyers(response.data);
+    } catch (error) {
+      console.error("Error fetching verified lawyers:", error);
     }
   };
 
   const handleApprove = async (id) => {
     try {
       await axios.put(`http://localhost:5000/api/lawyers/approve/${id}`);
-      setUnverifiedLawyers((prev) =>
-        prev.filter((lawyer) => lawyer._id !== id)
+      setUnverifiedLawyers((prevLawyers) =>
+        prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
-      fetchLawyers();
-      toast.success("Lawyer approved successfully!", {
+      toast.success('Lawyer approved successfully!', {
         position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+        style: {
+          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
+          color: '#333333',
+        }
       });
+      fetchVerifiedLawyers();
     } catch (error) {
       console.error("Error approving lawyer:", error);
-      toast.error("Failed to approve lawyer");
+      toast.error('Failed to approve lawyer.', {
+        position: "top-right",
+        style: {
+          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
+          color: '#333333',
+        }
+      });
     }
   };
 
   const handleReject = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/api/lawyers/reject/${id}`);
-      setUnverifiedLawyers((prev) =>
-        prev.filter((lawyer) => lawyer._id !== id)
+      setUnverifiedLawyers((prevLawyers) =>
+        prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
-      toast.info("Lawyer application rejected", {
+      toast.info('Lawyer rejected successfully!', {
         position: "top-right",
-        autoClose: 3000,
+        style: {
+          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
+          color: '#333333',
+        }
       });
     } catch (error) {
       console.error("Error rejecting lawyer:", error);
-      toast.error("Failed to reject lawyer");
+      toast.error('Failed to reject lawyer.', {
+        position: "top-right",
+        style: {
+          background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
+          color: '#333333',
+        }
+      });
     }
   };
 
-  const handleToggleVisibility = async (id) => {
+  const handleToggleVisibility = async (lawyerId) => {
     try {
-      await axios.put(
-        `http://localhost:5000/api/lawyers/toggle-visibility/${id}`
+      console.log("Attempting to toggle visibility for lawyer:", lawyerId);
+      
+      const response = await axios.put(
+        `http://localhost:5000/api/lawyers/toggle-visibility/${lawyerId}`
       );
-      setVerifiedLawyers((prev) =>
-        prev.map((lawyer) =>
-          lawyer._id === id
-            ? { ...lawyer, visibleToClients: !lawyer.visibleToClients }
-            : lawyer
-        )
-      );
-      toast.success("Visibility status updated!", {
-        position: "top-right",
-        autoClose: 2000,
-      });
+      
+      console.log("Toggle visibility response:", response.data);
+      
+      if (response.data.success) {
+        setVerifiedLawyers(prevLawyers => 
+          prevLawyers.map(lawyer => 
+            lawyer._id === lawyerId 
+              ? { ...lawyer, visibleToClients: !lawyer.visibleToClients }
+              : lawyer
+          )
+        );
+
+        toast.success(response.data.message, {
+          position: "top-right",
+          style: {
+            background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
+            color: '#333333',
+          }
+        });
+      } else {
+        throw new Error(response.data.message || 'Failed to toggle visibility');
+      }
     } catch (error) {
       console.error("Error toggling lawyer visibility:", error);
-      toast.error("Failed to update visibility status");
+      console.error("Error details:", error.response?.data);
+      
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to toggle lawyer visibility"
+      );
     }
   };
 
-  const filterLawyers = (lawyers) =>
-    lawyers.filter((lawyer) =>
-      lawyer.fullname?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // Filter lawyers based on the search term
+  const filteredUnverifiedLawyers = unverifiedLawyers.filter(
+    (lawyer) =>
+      lawyer.fullname &&
+      lawyer.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  return (
-    <div style={styles.container}>
-      <Navbar />
-      <ToastContainer />
-      <div style={styles.content}>
-        <h1 style={styles.heading}>Lawyer Verification Dashboard</h1>
-        <p style={styles.subheading}>Manage and verify lawyer registrations</p>
+  const filteredVerifiedLawyers = verifiedLawyers.filter(
+    (lawyer) =>
+      lawyer.fullname &&
+      lawyer.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-        <div style={styles.stats}>
-          <div style={styles.statBox}>
-            <div>Pending Verification</div>
-            <div>{unverifiedLawyers.length}</div>
+  const PageHeader = () => (
+    <div className="header-container">
+      <div className="header-content">
+        <h1>Lawyer Verification</h1>
+        <p className="subtitle">Manage and verify lawyer registrations</p>
+        <div className="stats-container">
+          <div className="stat-box">
+            <span className="stat-number">{unverifiedLawyers.length}</span>
+            <span className="stat-label">Pending</span>
           </div>
-          <div style={styles.statBox}>
-            <div>Verified Lawyers</div>
-            <div>{verifiedLawyers.length}</div>
+          <div className="stat-box">
+            <span className="stat-number">{verifiedLawyers.length}</span>
+            <span className="stat-label">Verified</span>
           </div>
-        </div>
-
-        <input
-          type="text"
-          style={styles.searchBar}
-          placeholder="Search lawyers by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        {/* Pending Verification Table */}
-        <div style={styles.tableContainer}>
-          <h2>Pending Verification</h2>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>Profile</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>AEN</th>
-                <th>Specialization</th>
-                <th>Documents</th>
-                <th>Additional Certificates</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterLawyers(unverifiedLawyers).map((lawyer) => (
-                <tr key={lawyer._id}>
-                  <td>
-                    <img
-                      src={
-                        lawyer.profilePicture
-                          ? `http://localhost:5000/uploads/${lawyer.profilePicture}`
-                          : "/default-profile.png"
-                      }
-                      alt={lawyer.fullname}
-                      onError={(e) => (e.target.src = "/default-profile.png")}
-                      style={styles.profilePic}
-                    />
-                  </td>
-                  <td>{lawyer.fullname}</td>
-                  <td>{lawyer.email}</td>
-                  <td>{lawyer.phone}</td>
-                  <td>{lawyer.AEN}</td>
-                  <td>{lawyer.specialization}</td>
-                  <td>
-                    {lawyer.lawDegreeCertificate && (
-                      <a
-                        style={styles.documentLink}
-                        href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Law Degree
-                      </a>
-                    )}
-                    {lawyer.barCouncilCertificate && (
-                      <a
-                        style={styles.documentLink}
-                        href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Bar Council
-                      </a>
-                    )}
-                  </td>
-                  <td>
-                    {lawyer.additionalCertificates &&
-                      lawyer.additionalCertificates.map((cert, index) => (
-                        <a
-                          key={index}
-                          style={styles.documentLink}
-                          href={`http://localhost:5000/uploads/${cert.file}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={cert.description}
-                        >
-                          {cert.name}
-                        </a>
-                      ))}
-                  </td>
-                  <td>
-                    <ActionButtons
-                      lawyer={lawyer}
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                      onToggle={handleToggleVisibility}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Verified Lawyers Table */}
-        <div style={styles.tableContainer}>
-          <h2>Verified Lawyers</h2>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>Profile</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>AEN</th>
-                <th>Specialization</th>
-                <th>Documents</th>
-                <th>Additional Certificates</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterLawyers(verifiedLawyers).map((lawyer) => (
-                <tr key={lawyer._id}>
-                  <td>
-                    <img
-                      src={
-                        lawyer.profilePicture
-                          ? `http://localhost:5000/uploads/${lawyer.profilePicture}`
-                          : "/default-profile.png"
-                      }
-                      alt={lawyer.fullname}
-                      style={styles.profilePic}
-                    />
-                  </td>
-                  <td>{lawyer.fullname}</td>
-                  <td>{lawyer.email}</td>
-                  <td>{lawyer.phone}</td>
-                  <td>{lawyer.AEN}</td>
-                  <td>{lawyer.specialization}</td>
-                  <td>
-                    {lawyer.lawDegreeCertificate && (
-                      <a
-                        style={styles.documentLink}
-                        href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Law Degree
-                      </a>
-                    )}
-                    {lawyer.barCouncilCertificate && (
-                      <a
-                        style={styles.documentLink}
-                        href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Bar Council
-                      </a>
-                    )}
-                  </td>
-                  <td>
-                    {lawyer.additionalCertificates &&
-                      lawyer.additionalCertificates.map((cert, index) => (
-                        <a
-                          key={index}
-                          style={styles.documentLink}
-                          href={`http://localhost:5000/uploads/${cert.file}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={cert.description}
-                        >
-                          {cert.name}
-                        </a>
-                      ))}
-                  </td>
-                  <td>
-                    <ActionButtons
-                      lawyer={lawyer}
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                      onToggle={handleToggleVisibility}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <Navbar />
+      <div className="header-container">
+        <div className="pattern-overlay"></div>
+        <div className="header-content">
+          <h1>Lawyer Verification</h1>
+          <p className="subtitle">Manage and verify lawyer registrations</p>
+          <div className="stats-container">
+            <div className="stat-box">
+              <span className="stat-number">{unverifiedLawyers.length}</span>
+              <span className="stat-label">Pending</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-number">{verifiedLawyers.length}</span>
+              <span className="stat-label">Verified</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="lawyer-verification">
+        <div style={{ padding: "20px" }}>
+          <h1>Lawyer Verification</h1>
+          <input
+            type="text"
+            placeholder="Search Lawyers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          {/* Unverified Lawyers Table */}
+          <h2>Unverified Lawyers</h2>
+          <table className="lawyer-table">
+            <thead>
+              <tr>
+                <th>Profile Picture</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>AEN</th>
+                <th>Specialization</th>
+                <th>Location</th>
+                <th>Law Degree Certificate</th>
+                <th>Bar Council Certificate</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUnverifiedLawyers.map((lawyer) => (
+                <tr key={lawyer._id}>
+                  <td>
+                    {lawyer.profilePicture ? (
+                      <img
+                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        alt="Profile"
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    ) : (
+                      "No Image"
+                    )}
+                  </td>
+
+                  <td>{lawyer.fullname}</td>
+                  <td>{lawyer.email}</td>
+                  <td>{lawyer.AEN}</td>
+                  <td>{lawyer.specialization}</td>
+                  <td>{lawyer.location}</td>
+                  <td>
+                    {lawyer.lawDegreeCertificate ? (
+                      <a
+                        href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View
+                      </a>
+                    ) : (
+                      "Not Uploaded"
+                    )}
+                  </td>
+                  <td>
+                    {lawyer.barCouncilCertificate ? (
+                      <a
+                        href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View
+                      </a>
+                    ) : (
+                      "Not Uploaded"
+                    )}
+                  </td>
+                  <td>
+                    <button onClick={() => handleApprove(lawyer._id)}>
+                      ✓ Approve
+                    </button>
+                    <button onClick={() => handleReject(lawyer._id)}>
+                      ✕ Reject
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Verified Lawyers Table */}
+          <h2>Verified Lawyers</h2>
+          <table className="lawyer-table">
+            <thead>
+              <tr>
+                <th>Profile Picture</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>AEN</th>
+                <th>Specialization</th>
+                <th>Location</th>
+                <th>Visibility Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredVerifiedLawyers.map((lawyer) => (
+                <tr key={lawyer._id}>
+                  <td>
+                    {lawyer.profilePicture ? (
+                      <img
+                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        alt="Profile"
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    ) : (
+                      "No Image"
+                    )}
+                  </td>
+                  <td>{lawyer.fullname}</td>
+                  <td>{lawyer.email}</td>
+                  <td>{lawyer.AEN}</td>
+                  <td>{lawyer.specialization}</td>
+                  <td>{lawyer.location}</td>
+                  <td>
+                    <span className={`status-indicator ${lawyer.visibleToClients ? 'status-visible' : 'status-hidden'}`}>
+                      {lawyer.visibleToClients ? 'Visible' : 'Not Visible'}
+                    </span>
+                  </td>
+                  <td>
+                    <button onClick={() => handleToggleVisibility(lawyer._id)}>
+                      {lawyer.visibleToClients ? "Deactivate" : "Activate"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <style jsx>{`
+          .lawyer-verification {
+            padding: 20px;
+          }
+          input {
+            padding: 12px 20px;
+            margin: 20px 0;
+            width: 80%;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          }
+          input:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+          }
+          .lawyer-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+          }
+          .lawyer-table thead {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+          }
+          .lawyer-table th {
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+          }
+          .lawyer-table th:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, #2196F3, transparent);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+          }
+          .lawyer-table th:hover:after {
+            transform: scaleX(1);
+          }
+          .lawyer-table td {
+            padding: 16px 15px;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: middle;
+          }
+          .lawyer-table tbody tr {
+            transition: all 0.3s ease;
+          }
+          .lawyer-table tbody tr:hover {
+            background-color: #f8faff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+          }
+          .lawyer-table tbody tr:nth-child(even) {
+            background-color: #fafbff;
+          }
+          .lawyer-table th:first-child,
+          .lawyer-table td:first-child {
+            padding-left: 25px;
+          }
+          .lawyer-table th:last-child,
+          .lawyer-table td:last-child {
+            padding-right: 25px;
+          }
+          .lawyer-table td img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
+          }
+          .lawyer-table td img:hover {
+            transform: scale(1.1);
+          }
+          .lawyer-table td a {
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+          .lawyer-table td a:hover {
+            color: #1565C0;
+            text-decoration: underline;
+          }
+          @media (max-width: 1024px) {
+            .lawyer-table {
+              display: block;
+              overflow-x: auto;
+              white-space: nowrap;
+            }
+            .lawyer-table th,
+            .lawyer-table td {
+              padding: 12px 10px;
+            }
+            .lawyer-table th {
+              font-size: 13px;
+            }
+            .lawyer-table td {
+              font-size: 13px;
+            }
+          }
+          .status-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+          }
+          .status-visible {
+            background-color: #e3fcef;
+            color: #00875a;
+          }
+          .status-hidden {
+            background-color: #fff1f0;
+            color: #de350b;
+          }
+          button {
+            padding: 10px 20px;
+            margin: 0 8px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          }
+          /* Approve button */
+          button:nth-child(1) {
+            background: #ffffff;
+            color: #00875A;
+            border: 2px solid #00875A;
+          }
+          button:nth-child(1):hover {
+            background: #00875A;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 135, 90, 0.3);
+          }
+          /* Reject button */
+          button:nth-child(2) {
+            background: #ffffff;
+            color: #E34935;
+            border: 2px solid #E34935;
+          }
+          button:nth-child(2):hover {
+            background: #E34935;
+            color: white;
+            box-shadow: 0 5px 15px rgba(227, 73, 53, 0.3);
+          }
+          /* Toggle visibility button (for verified lawyers) */
+          button:only-child {
+            background: #ffffff;
+            color: #0052CC;
+            border: 2px solid #0052CC;
+          }
+          button:only-child:hover {
+            background: #0052CC;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 82, 204, 0.3);
+          }
+          /* Common button hover effects */
+          button:hover {
+            transform: translateY(-2px);
+          }
+          button:active {
+            transform: translateY(0);
+          }
+          /* Add ripple effect */
+          button::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform 0.5s, opacity 1s;
+          }
+          button:active::after {
+            transform: scale(0, 0);
+            opacity: 0.3;
+            transition: 0s;
+          }
+          /* Disable button styles */
+          button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+          }
+          /* Add icon space if needed */
+          button svg {
+            margin-right: 8px;
+            font-size: 16px;
+          }
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            button {
+              min-width: 100px;
+              padding: 8px 16px;
+              font-size: 12px;
+            }
+          }
+          .header-container {
+            background: linear-gradient(
+              rgba(26, 35, 126, 0.95), /* Dark blue with opacity */
+              rgba(13, 71, 161, 0.95)  /* Lighter blue with opacity */
+            ),
+            url('https://images.unsplash.com/photo-1575505586569-646b2ca898fc') center/cover;
+            padding: 60px 0;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+          }
+
+          /* For the main content area */
+          .lawyer-verification {
+            background: linear-gradient(
+              rgba(255, 255, 255, 0.95),
+              rgba(255, 255, 255, 0.95)
+            ),
+            url('https://images.unsplash.com/photo-1575505586569-646b2ca898fc') fixed center/cover;
+            padding: 2rem;
+            min-height: 100vh;
+          }
+
+          /* Add a subtle pattern overlay */
+          .pattern-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,%3Csvg width="20" height="20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M0 0h20v20H0z" fill="%23ffffff" fill-opacity="0.05"/%3E%3C/svg%3E');
+            opacity: 0.1;
+            pointer-events: none;
+          }
+
+          .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+          }
+
+          h1 {
+            color: #ffffff;
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+          }
+
+          h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 80px;
+            height: 4px;
+            background: #2196F3;
+            border-radius: 2px;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+          }
+
+          .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            margin: 20px 0;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+          }
+
+          .stats-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+          }
+
+          .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+          }
+
+          .stat-box:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+          }
+
+          .stat-number {
+            display: block;
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-family: 'Poppins', sans-serif;
+          }
+
+          .stat-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+
+          /* Responsive styles */
+          @media (max-width: 768px) {
+            .header-container {
+              padding: 30px 0;
+            }
+
+            h1 {
+              font-size: 2.5rem;
+            }
+
+            .subtitle {
+              font-size: 1rem;
+            }
+
+            .stats-container {
+              flex-direction: column;
+              gap: 15px;
+            }
+
+            .stat-box {
+              padding: 12px 20px;
+            }
+
+            .stat-number {
+              font-size: 1.8rem;
+            }
+          }
+        `}</style>
+      </div>
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        limit={3}
+      />
       <Footer />
     </div>
   );
@@ -320,194 +723,7 @@ const LawyerVerification = () => {
 
 export default LawyerVerification;
 
-// ===== Inline Styles =====
-const styles = {
-  container: {
-    minHeight: "100vh",
-    background: "linear-gradient(145deg, #f0f2f5, #e8eaf6)",
-    padding: "30px 20px",
-    fontFamily: '"Inter", "Segoe UI", Arial, sans-serif',
-  },
-  content: {
-    maxWidth: "1400px",
-    margin: "0 auto",
-    padding: "40px",
-    backgroundColor: "white",
-    borderRadius: "24px",
-    boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
-  },
-  heading: {
-    color: "#2c3e50",
-    marginBottom: "20px",
-    fontSize: "36px",
-    fontWeight: "700",
-    letterSpacing: "-0.5px",
-    background: "linear-gradient(45deg, #1a237e, #3949ab)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-  },
-  subheading: {
-    color: "#5c6bc0",
-    marginBottom: "35px",
-    fontSize: "20px",
-    fontWeight: "500",
-    letterSpacing: "0.2px",
-  },
-  stats: {
-    display: "flex",
-    gap: "30px",
-    marginBottom: "50px",
-    padding: "10px 0",
-  },
-  statBox: {
-    flex: 1,
-    padding: "30px",
-    backgroundColor: "#ffffff",
-    borderRadius: "20px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-    border: "1px solid rgba(228, 232, 240, 0.8)",
-    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-    "&:hover": {
-      transform: "translateY(-5px)",
-      boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
-    },
-  },
-  searchBar: {
-    width: "100%",
-    padding: "18px 25px",
-    marginBottom: "35px",
-    border: "2px solid #e8eaf6",
-    borderRadius: "16px",
-    fontSize: "16px",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    backgroundColor: "#f8f9ff",
-    "&:focus": {
-      outline: "none",
-      borderColor: "#3f51b5",
-      backgroundColor: "#ffffff",
-      boxShadow: "0 0 0 4px rgba(63, 81, 181, 0.1)",
-    },
-  },
-  tableContainer: {
-    margin: "40px 0",
-    borderRadius: "20px",
-    overflow: "hidden",
-    boxShadow: "0 12px 36px rgba(0,0,0,0.1)",
-    border: "1px solid rgba(228, 232, 240, 0.8)",
-    background: "#ffffff",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: "0",
-    "& th": {
-      padding: "20px 24px",
-      backgroundColor: "#f8f9ff",
-      color: "#2c3e50",
-      fontSize: "15px",
-      fontWeight: "600",
-      letterSpacing: "0.5px",
-      textTransform: "uppercase",
-      borderBottom: "2px solid #e8eaf6",
-    },
-    "& td": {
-      padding: "20px 24px",
-      fontSize: "15px",
-      color: "#4a5568",
-      borderBottom: "1px solid #edf2f7",
-      transition: "all 0.2s ease",
-    },
-    "& tr:hover td": {
-      backgroundColor: "#f8f9ff",
-    },
-  },
-  profilePic: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "16px",
-    objectFit: "cover",
-    border: "3px solid #fff",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      transform: "scale(1.1) rotate(3deg)",
-      boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-    },
-  },
-  documentLink: {
-    display: "inline-block",
-    color: "#3f51b5",
-    textDecoration: "none",
-    padding: "8px 16px",
-    margin: "4px 8px 4px 0",
-    borderRadius: "12px",
-    backgroundColor: "#e8eaf6",
-    fontSize: "14px",
-    fontWeight: "500",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    border: "1px solid transparent",
-    "&:hover": {
-      backgroundColor: "#c5cae9",
-      transform: "translateY(-2px)",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-      border: "1px solid #3f51b5",
-    },
-  },
-  approveBtn: {
-    backgroundColor: "#4caf50",
-    color: "white",
-    padding: "12px 24px",
-    margin: "6px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "14px",
-    fontWeight: "600",
-    letterSpacing: "0.5px",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    boxShadow: "0 4px 12px rgba(76, 175, 80, 0.2)",
-    "&:hover": {
-      transform: "translateY(-2px)",
-      boxShadow: "0 6px 16px rgba(76, 175, 80, 0.3)",
-      backgroundColor: "#43a047",
-    },
-  },
-  rejectBtn: {
-    backgroundColor: "#f44336",
-    color: "white",
-    padding: "12px 24px",
-    margin: "6px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "14px",
-    fontWeight: "600",
-    letterSpacing: "0.5px",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    boxShadow: "0 4px 12px rgba(244, 67, 54, 0.2)",
-    "&:hover": {
-      transform: "translateY(-2px)",
-      boxShadow: "0 6px 16px rgba(244, 67, 54, 0.3)",
-      backgroundColor: "#e53935",
-    },
-  },
-  toggleBtn: {
-    backgroundColor: "#3f51b5",
-    color: "white",
-    padding: "12px 24px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "14px",
-    fontWeight: "600",
-    letterSpacing: "0.5px",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    boxShadow: "0 4px 12px rgba(63, 81, 181, 0.2)",
-    "&:hover": {
-      transform: "translateY(-2px)",
-      boxShadow: "0 6px 16px rgba(63, 81, 181, 0.3)",
-      backgroundColor: "#3949ab",
-    },
-  },
-  actionButtons: {
-    display: "flex",
-    gap: "10px",
-  },
-};
+  
+
+
+

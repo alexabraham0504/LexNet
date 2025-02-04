@@ -10,9 +10,11 @@ import {
   faMessage,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 const LawyerDashboard = () => {
   const [lawyerData, setLawyerData] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchLawyerData = async () => {
@@ -35,8 +37,6 @@ const LawyerDashboard = () => {
 
         if (!userEmail) {
           console.error("User email not found in any storage location");
-          // Uncomment the following line if you want to redirect to login
-          // window.location.href = "/login";
           return;
         }
 
@@ -102,20 +102,6 @@ const LawyerDashboard = () => {
               {/* Horizontal Buttons */}
               <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                 <div className="col flex-grow-1">
-                  <Link to="/Message">
-                    <button
-                      className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                      aria-label="Profile"
-                    >
-                      <span className="p-3">
-                        <FontAwesomeIcon icon={faUserCog} size="1x" />
-                      </span>
-                      Profile
-                    </button>
-                  </Link>
-                </div>
-
-                <div className="col flex-grow-1">
                   <Link to="/lawyercasemanagement">
                     <button
                       className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
@@ -160,119 +146,119 @@ const LawyerDashboard = () => {
         </div>
 
         <Footer />
-      </div>
 
-      <style>
-        {`
-          .lawyer-dashboard-page {
-            font-size: 0.9rem;
-            max-width: 100%;
-          }
-          .hero-section {
-            background-image: url("/assets/hero.webp");
-            height: 600px;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            display: flex;
-          }
-          .hero-overlay {
-            background-color: rgba(0, 0, 0, 0.6);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-          }
-          .text-container {
-            position: relative;
-            z-index: 1;
-            margin-top: 8rem;
-            margin-left: 3rem;
-          }
-          .text-1,
-          .text-2 {
-            color: #fff;
-            font-family: "Marmelad", sans-serif;
-            letter-spacing: 0.1rem;
-          }
-          .text-2 {
-            line-height: 2rem;
-          }
-          .slide {
-            opacity: 0;
-            transform: translateX(-100%);
-            animation: slideLeft 1s forwards;
-          }
-          @keyframes slideLeft {
-            from {
+        <style>
+          {`
+            .lawyer-dashboard-page {
+              font-size: 0.9rem;
+              max-width: 100%;
+            }
+            .hero-section {
+              background-image: url("/assets/hero.webp");
+              height: 600px;
+              background-size: cover;
+              background-position: center;
+              position: relative;
+              display: flex;
+            }
+            .hero-overlay {
+              background-color: rgba(0, 0, 0, 0.6);
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+            }
+            .text-container {
+              position: relative;
+              z-index: 1;
+              margin-top: 8rem;
+              margin-left: 3rem;
+            }
+            .text-1,
+            .text-2 {
+              color: #fff;
+              font-family: "Marmelad", sans-serif;
+              letter-spacing: 0.1rem;
+            }
+            .text-2 {
+              line-height: 2rem;
+            }
+            .slide {
               opacity: 0;
               transform: translateX(-100%);
+              animation: slideLeft 1s forwards;
             }
-            to {
-              opacity: 1;
-              transform: translateX(0);
+            @keyframes slideLeft {
+              from {
+                opacity: 0;
+                transform: translateX(-100%);
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
             }
-          }
-          @media (max-width: 768px) {
-            .text-container {
-              margin-left: 1rem;
+            @media (max-width: 768px) {
+              .text-container {
+                margin-left: 1rem;
+              }
             }
-          }
-          .status-alert {
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            animation: slideIn 0.3s ease-out;
-          }
-
-          .deactivated {
-            background-color: #fff3f3;
-            border: 1px solid #ffcdd2;
-          }
-
-          .activated {
-            background-color: #f1f8e9;
-            border: 1px solid #c5e1a5;
-          }
-
-          .alert-content {
-            text-align: center;
-          }
-
-          .alert-content h3 {
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-          }
-
-          .deactivated h3 {
-            color: #d32f2f;
-          }
-
-          .activated h3 {
-            color: #2e7d32;
-          }
-
-          .alert-content p {
-            color: #666;
-            margin: 0;
-            font-size: 1rem;
-            line-height: 1.5;
-          }
-
-          @keyframes slideIn {
-            from {
-              transform: translateY(-20px);
-              opacity: 0;
+            .status-alert {
+              padding: 20px;
+              margin: 20px 0;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+              animation: slideIn 0.3s ease-out;
             }
-            to {
-              transform: translateY(0);
-              opacity: 1;
+
+            .deactivated {
+              background-color: #fff3f3;
+              border: 1px solid #ffcdd2;
             }
-          }
-        `}
-      </style>
+
+            .activated {
+              background-color: #f1f8e9;
+              border: 1px solid #c5e1a5;
+            }
+
+            .alert-content {
+              text-align: center;
+            }
+
+            .alert-content h3 {
+              margin-bottom: 10px;
+              font-size: 1.2rem;
+            }
+
+            .deactivated h3 {
+              color: #d32f2f;
+            }
+
+            .activated h3 {
+              color: #2e7d32;
+            }
+
+            .alert-content p {
+              color: #666;
+              margin: 0;
+              font-size: 1rem;
+              line-height: 1.5;
+            }
+
+            @keyframes slideIn {
+              from {
+                transform: translateY(-20px);
+                opacity: 0;
+              }
+              to {
+                transform: translateY(0);
+                opacity: 1;
+              }
+            }
+          `}
+        </style>
+      </div>
     </>
   );
 };

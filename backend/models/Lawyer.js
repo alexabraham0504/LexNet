@@ -1,3 +1,9 @@
+// visibleToClients: {
+//   type: Boolean,
+//   default: true
+// }, 
+
+
 const mongoose = require("mongoose");
 
 const additionalCertificateSchema = new mongoose.Schema({
@@ -14,18 +20,15 @@ const lawyerSchema = new mongoose.Schema({
   AEN: { type: String, required: true },
   specialization: { type: String, required: true },
   location: { type: String, required: true },
-  availability: { type: [String], default: [] }, // Changed to an array for multiple slots
+  availability: { type: [String], default: [] },
   fees: {
     type: String,
     required: true,
     set: function (value) {
-      // Remove any existing ₹ symbols and spaces
       const cleanValue = value.toString().replace(/[₹\s]/g, "");
-      // Add single ₹ symbol
       return `₹${cleanValue}`;
     },
     get: function (value) {
-      // If value doesn't have ₹ symbol, add it
       if (!value) return "";
       if (!value.startsWith("₹")) {
         return `₹${value}`;
@@ -56,14 +59,13 @@ const lawyerSchema = new mongoose.Schema({
   },
 });
 
-// Enable getters
 lawyerSchema.set("toObject", { getters: true });
 lawyerSchema.set("toJSON", { getters: true });
 
-// Add middleware to handle additionalCertificates updates
 lawyerSchema.pre("save", function (next) {
   console.log("Pre-save middleware:", this.additionalCertificates);
   next();
 });
 
-module.exports = mongoose.model("Lawyer", lawyerSchema);
+// Export as a singleton to prevent model recompilation errors
+module.exports = mongoose.models.Lawyer || mongoose.model("Lawyer", lawyerSchema);

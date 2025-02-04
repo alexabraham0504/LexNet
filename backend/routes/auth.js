@@ -131,47 +131,88 @@ router.get("/verify/:token", async (req, res) => {
 
 // Login route
 router.post("/login", async (req, res) => {
-  console.log("Request body:", req.body);
-  const { email, password } = req.body;
-
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials." });
-    }
+    const { email, password } = req.body;
 
-    // Check if user is approved
-    if (user.status !== "approved") {
-      return res.status(403).json({
-        message:
-          "Your account is pending approval or has been rejected/suspended. Please contact admin.",
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide both email and password"
       });
     }
 
-    // Compare plain text password with hashed password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: "Password is wrong." });
+    console.log("Login attempt for:", email);
+
+    // Find user by email (case-insensitive)
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${email}$`, 'i') }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // Verify password using bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    // Special checks for Lawyer role
+    if (user.role === "Lawyer") {
+      if (!user.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: "Please verify your email before logging in"
+        });
+      }
+
+      if (user.status !== "approved") {
+        return res.status(400).json({
+          success: false,
+          message: "Your account is pending approval. Please wait for admin approval."
+        });
+      }
     }
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, role: user.role, fullName: user.fullName },
+      { 
+        userId: user._id,
+        role: user.role,
+        email: user.email
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
-    // Send response with token and user details
-    res.status(200).json({
-      message: "Login successful.",
-      token, // Include the token in the response
-      id: user._id, // Include the user's ID
-      role: user.role,
-      fullName: user.fullName, // Include the fullName
+    // Send success response
+    return res.status(200).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        status: user.status
+      }
     });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error." });
+    console.error("Login error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred during login. Please try again later."
+    });
   }
 });
 
