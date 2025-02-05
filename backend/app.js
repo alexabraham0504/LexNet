@@ -1,5 +1,7 @@
 const socketIo = require("socket.io");
 const http = require("http");
+const express = require('express');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -37,7 +39,8 @@ io.on("connection", (socket) => {
   });
 });
 
-// ... rest of your express app setup
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Use server.listen instead of app.listen
 const PORT = process.env.PORT || 5000;

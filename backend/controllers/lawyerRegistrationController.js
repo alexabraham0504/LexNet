@@ -51,6 +51,13 @@ exports.getUserDetails = async (req, res) => {
 
     // Check if lawyer profile already exists
     const existingLawyer = await Lawyer.findOne({ email });
+
+    // Log the data being sent
+    console.log("Sending lawyer details:", {
+      ...userDetails,
+      ...existingLawyer?.toObject()
+    });
+
     if (existingLawyer) {
       return res.status(200).json({
         ...userDetails,
@@ -65,9 +72,10 @@ exports.getUserDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching user details:", error);
-    res
-      .status(500)
-      .json({ message: "Error fetching user details", error: error.message });
+    res.status(500).json({ 
+      message: "Error fetching user details", 
+      error: error.message 
+    });
   }
 };
 

@@ -49,6 +49,9 @@ const LawyerRegistration = () => {
           `http://localhost:5000/api/lawyers/user-details/${userEmail}`
         );
 
+        console.log("Lawyer data received:", response.data); // Debug log
+        console.log("Profile picture path:", response.data.profilePicture); // Debug log
+
         setLawyerData((prevData) => ({
           ...prevData,
           ...response.data,
@@ -300,11 +303,18 @@ const LawyerRegistration = () => {
     }
   };
 
+  // Add this function to get the correct image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath instanceof File) return URL.createObjectURL(imagePath);
+    return `http://localhost:5000/uploads/${imagePath}`;
+  };
+
   return (
     <div style={styles.pageContainer}>
       <Navbar />
       <div style={styles.profileContainer}>
-        <h2 style={styles.heading}>Lawyer Registration</h2>
+        <h2 style={styles.heading}>Lawyer Profile</h2>
 
         {error && <div style={styles.errorMessage}>{error}</div>}
 
@@ -316,13 +326,13 @@ const LawyerRegistration = () => {
           <div style={styles.profileImageContainer}>
             {lawyerData.profilePicture ? (
               <img
-                src={
-                  typeof lawyerData.profilePicture === "string"
-                    ? lawyerData.profilePicture
-                    : URL.createObjectURL(lawyerData.profilePicture)
-                }
+                src={getImageUrl(lawyerData.profilePicture)}
                 alt="Profile"
                 style={styles.profileImage}
+                onError={(e) => {
+                  console.error("Error loading image:", e);
+                  e.target.src = "path/to/fallback/image.jpg"; // Optional: Add a fallback image
+                }}
               />
             ) : (
               <div style={styles.placeholderImage}>No Image</div>

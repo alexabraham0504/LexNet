@@ -1,7 +1,3 @@
-// // visibleToClients: {
-// //   type: Boolean,
-// //   default: true
-// // }, 
 
 
 // const mongoose = require("mongoose");

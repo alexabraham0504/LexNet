@@ -88,6 +88,7 @@ const ClientDashboard = () => {
                   // { to: "/Profile", icon: faUser, label: "Me" },
                   { to: "/LawyerSearch", icon: faSearch, label: "Search" },
                   { to: "/IPC", icon: faGavel, label: "IPC" },
+                  
                   {
                     onClick: handleCaseDetails,
                     icon: faFileAlt,

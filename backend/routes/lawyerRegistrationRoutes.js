@@ -119,23 +119,7 @@ router.delete(
 // Route to get verified and active lawyers with search functionality
 router.get("/verified", async (req, res) => {
   try {
-    // const { search } = req.query;
-    // console.log("Search query:", search);
 
-    // let query = { isVerified: true, visibleToClients: true };
-    // console.log("Initial query:", query);
-
-    // if (search) {
-    //   query = {
-    //     ...query,
-    //     $or: [
-    //       { fullname: { $regex: search, $options: "i" } },
-    //       { specialization: { $regex: search, $options: "i" } },
-    //       { location: { $regex: search, $options: "i" } },
-    //     ],
-    //   };
-    
-    // console.log("Final query:", query);
 
     const verifiedLawyers = await Lawyer.find({ isVerified: true, visibleToClients: true});
     console.log("Verified lawyers:", verifiedLawyers);
