@@ -4,6 +4,7 @@ import axios from "axios";
 import { auth, googleProvider } from "./firebaseConfig.js";
 import { signInWithPopup } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/navbar/home-navbar";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -164,98 +165,97 @@ const Login = () => {
   };
 
   return (
-    <div style={styles.loginPage}>
-      <div style={styles.logoContainer}>
-        <img src="/favicon.png" alt="Logo" style={styles.logo} />
-        <h1 style={styles.appName}>Lex Net</h1>
-      </div>
-      <div style={styles.overlay}>
-        <div style={styles.loginContainer}>
-          <h2 style={styles.loginTitle}>Welcome Back</h2>
-          <form onSubmit={handleSubmit}>
-            <div style={styles.formGroup}>
-              <label htmlFor="email" style={styles.formLabel}>
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                style={styles.formInput}
-                placeholder="Enter your email"
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label htmlFor="password" style={styles.formLabel}>
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                style={styles.formInput}
-                placeholder="Enter your password"
-              />
-            </div>
-            <div style={styles.rememberMe}>
-              <input type="checkbox" id="rememberMe" />
-              <label htmlFor="rememberMe" style={styles.rememberMeLabel}>
-                Remember Me
-              </label>
-            </div>
-            <button
-              id="login"
-              type="submit"
-              style={styles.btnLogin}
-              className="btn-login glass-button"
-              disabled={loading}
-            >
-              {loading ? "Signing in..." : "Login"}
-            </button>
+    <>
+      <Navbar />
+      <div style={styles.loginPage}>
+        <div style={styles.overlay}>
+          <div style={styles.loginContainer}>
+            <h2 style={styles.loginTitle}>Welcome Back</h2>
+            <form onSubmit={handleSubmit}>
+              <div style={styles.formGroup}>
+                <label htmlFor="email" style={styles.formLabel}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  style={styles.formInput}
+                  placeholder="Enter your email"
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label htmlFor="password" style={styles.formLabel}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  style={styles.formInput}
+                  placeholder="Enter your password"
+                />
+              </div>
+              <div style={styles.rememberMe}>
+                <input type="checkbox" id="rememberMe" />
+                <label htmlFor="rememberMe" style={styles.rememberMeLabel}>
+                  Remember Me
+                </label>
+              </div>
+              <button
+                id="login"
+                type="submit"
+                style={styles.btnLogin}
+                className="btn-login glass-button"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Login"}
+              </button>
 
-            <button
-              onClick={() => setIsRoleModalOpen(true)}
-              style={styles.googleButton}
-              className="google-button glass-button"
-              disabled={loading}
-            >
-              {loading ? "Signing in with Google..." : "Sign in with Google"}
-            </button>
-            {error && <p style={{ color: "red" }}>{error}</p>}
+              <button
+                onClick={() => setIsRoleModalOpen(true)}
+                style={styles.googleButton}
+                className="google-button glass-button"
+                disabled={loading}
+              >
+                {loading ? "Signing in with Google..." : "Sign in with Google"}
+              </button>
+              {error && <p style={{ color: "red" }}>{error}</p>}
 
-            <Link to="/forgotpassword" style={styles.forgotPassword}>
-              Lost your password?
-            </Link>
-          </form>
-        </div>
-      </div>
-
-      {/* Role Selection Modal */}
-      {isRoleModalOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <h3>Select Your Role</h3>
-            <button
-              style={styles.roleButton}
-              onClick={() => handleRoleSelection("Lawyer")}
-            >
-              Lawyer
-            </button>
-            <button
-              style={styles.roleButton}
-              onClick={() => handleRoleSelection("Client")}
-            >
-              Client
-            </button>
+              <Link to="/forgotpassword" style={styles.forgotPassword}>
+                Lost your password?
+              </Link>
+            </form>
           </div>
         </div>
-      )}
+
+        {/* Role Selection Modal */}
+        {isRoleModalOpen && (
+          <div style={styles.modalOverlay}>
+            <div style={styles.modalContent}>
+              <h3>Select Your Role</h3>
+              <button
+                style={styles.roleButton}
+                onClick={() => handleRoleSelection("Lawyer")}
+              >
+                Lawyer
+              </button>
+              <button
+                style={styles.roleButton}
+                onClick={() => handleRoleSelection("Client")}
+              >
+                Client
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <style>
         {`
@@ -313,12 +313,101 @@ const Login = () => {
           }
         `}
       </style>
-    </div>
+    </>
   );
 };
 
 const styles = {
-  // ... existing styles
+  loginPage: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    backgroundImage: "url('/assets/loginpicture.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    fontFamily: "'Open Sans', sans-serif",
+    overflow: "hidden",
+    paddingTop: "80px",
+  },
+
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loginContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    padding: "2rem",
+    borderRadius: "8px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.9)",
+    maxWidth: "400px",
+    width: "90%",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    textAlign: "center",
+    marginRight: 0,
+  },
+
+  loginTitle: {
+    color: "#fff",
+    fontSize: "1.5rem",
+    marginBottom: "1rem",
+    fontWeight: "bold",
+  },
+
+  formGroup: {
+    marginBottom: "1rem",
+    textAlign: "left",
+  },
+
+  formLabel: {
+    display: "block",
+    fontSize: "1rem",
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  formInput: {
+    width: "100%",
+    padding: "0.8rem",
+    borderRadius: "8px",
+    border: "none",
+    boxShadow: "0 0 5px rgba(0, 0, 0, 0.2)",
+    fontSize: "1rem",
+  },
+
+  rememberMe: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "1rem",
+  },
+
+  rememberMeLabel: {
+    fontSize: "0.9rem",
+    color: "#fff",
+    marginLeft: "0.5rem",
+  },
+
+  forgotPassword: {
+    fontSize: "0.9rem",
+    color: "#fff",
+    textDecoration: "none",
+    display: "block",
+    marginTop: "1rem",
+  },
 
   btnLogin: {
     padding: "0.8rem",
@@ -419,118 +508,6 @@ const styles = {
     border: "none",
     borderRadius: "5px",
     cursor: "pointer",
-  },
-
-  loginPage: {
-    position: "relative",
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    minHeight: "100vh",
-    backgroundImage: "url('/assets/loginpicture.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    fontFamily: "'Open Sans', sans-serif",
-  },
-
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-
-  loginContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    padding: "2rem",
-    borderRadius: "8px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.9)",
-    maxWidth: "400px",
-    width: "100%",
-    textAlign: "center",
-    marginRight: "15rem",
-  },
-
-  // Logo and App Name styles
-  logoContainer: {
-    position: "absolute",
-    top: "20px",
-    left: "20px",
-    display: "flex",
-    alignItems: "center",
-  },
-
-  logo: {
-    width: "100px",
-    marginRight: "10px",
-  },
-
-  appName: {
-    fontSize: "1.8rem",
-    color: "#fff",
-    fontWeight: "bold",
-  },
-
-  loginTitle: {
-    color: "#fff",
-    fontSize: "1.5rem",
-    marginBottom: "1rem",
-    fontWeight: "bold",
-  },
-
-  formGroup: {
-    marginBottom: "1rem",
-    textAlign: "left",
-  },
-
-  formLabel: {
-    display: "block",
-    fontSize: "1rem",
-    color: "#fff",
-    fontWeight: "600",
-  },
-
-  formInput: {
-    width: "100%",
-    padding: "0.8rem",
-    borderRadius: "8px",
-    border: "none",
-    boxShadow: "0 0 5px rgba(0, 0, 0, 0.2)",
-    fontSize: "1rem",
-  },
-
-  rememberMe: {
-    display: "flex",
-    alignItems: "center",
-    marginBottom: "1rem",
-  },
-
-  rememberMeLabel: {
-    fontSize: "0.9rem",
-    color: "#fff",
-    marginLeft: "0.5rem",
-  },
-
-  forgotPassword: {
-    fontSize: "0.9rem",
-    color: "#fff",
-    textDecoration: "none",
-    display: "block",
-    marginTop: "1rem",
-  },
-
-  "@keyframes reflectLight": {
-    "0%": {
-      left: "-100%",
-    },
-    "100%": {
-      left: "100%",
-    },
   },
 };
 

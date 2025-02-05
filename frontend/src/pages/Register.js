@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import Navbar from "../components/navbar/home-navbar";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -122,231 +123,228 @@ const Register = () => {
   };
 
   return (
-    <div style={styles.registerPage}>
-      <div style={styles.registerContainer}>
-        <h2 style={styles.registerTitle}>Register</h2>
-        <form onSubmit={handleSubmit}>
-          {/* Full Name */}
-          <div style={styles.formGroup}>
-            <label htmlFor="fullName" style={styles.formLabel}>
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-              style={{
-                ...styles.formInput,
-                borderColor: errors.firstName ? "red" : "#c2b697",
-              }}
-            />
-            {errors.firstName && (
-              <p style={styles.errorMessage}>{errors.firstName}</p>
-            )}
-          </div>
-
-    
-
-          {/* Email */}
-          <div style={styles.formGroup}>
-            <label htmlFor="email" style={styles.formLabel}>
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              style={{
-                ...styles.formInput,
-                borderColor: errors.email ? "red" : "#c2b697",
-              }}
-            />
-            {errors.email && <p style={styles.errorMessage}>{errors.email}</p>}
-          </div>
-
-          {/* Phone */}
-          <div style={styles.formGroup}>
-            <label htmlFor="phone" style={styles.formLabel}>
-              Phone
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              style={{
-                ...styles.formInput,
-                borderColor: errors.phone ? "red" : "#c2b697",
-              }}
-            />
-            {errors.phone && <p style={styles.errorMessage}>{errors.phone}</p>}
-          </div>
-
-          {/* Password */}
-          <div style={styles.formGroup}>
-            <label htmlFor="password" style={styles.formLabel}>
-              Password
-            </label>
-            <div style={styles.passwordWrapper}>
+    <>
+      <Navbar />
+      <div style={styles.registerPage}>
+        <div style={styles.registerContainer}>
+          <h2 style={styles.registerTitle}>Register</h2>
+          <form onSubmit={handleSubmit}>
+            {/* Full Name */}
+            <div style={styles.formGroup}>
+              <label htmlFor="fullName" style={styles.formLabel}>
+                Full Name
+              </label>
               <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={formData.password}
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleChange}
                 required
                 style={{
                   ...styles.formInput,
-                  borderColor: errors.password ? "red" : "#c2b697",
+                  borderColor: errors.firstName ? "red" : "#c2b697",
                 }}
               />
-              <span
-                onClick={togglePasswordVisibility}
-                style={styles.passwordToggleIcon}
-              >
-                <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} />
-              </span>
+              {errors.firstName && (
+                <p style={styles.errorMessage}>{errors.firstName}</p>
+              )}
             </div>
-            {errors.password && (
-              <p style={styles.errorMessage}>{errors.password}</p>
-            )}
-          </div>
 
-          {/* Confirm Password */}
-          <div style={styles.formGroup}>
-            <label htmlFor="confirmPassword" style={styles.formLabel}>
-              Confirm Password
-            </label>
-            <div style={styles.passwordWrapper}>
+            {/* Email */}
+            <div style={styles.formGroup}>
+              <label htmlFor="email" style={styles.formLabel}>
+                Email
+              </label>
               <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 required
                 style={{
                   ...styles.formInput,
-                  borderColor: errors.confirmPassword ? "red" : "#c2b697",
+                  borderColor: errors.email ? "red" : "#c2b697",
                 }}
               />
-              <span
-                onClick={toggleConfirmPasswordVisibility}
-                style={styles.passwordToggleIcon}
-              >
-                <FontAwesomeIcon
-                  icon={showConfirmPassword ? faEye : faEyeSlash}
+              {errors.email && <p style={styles.errorMessage}>{errors.email}</p>}
+            </div>
+
+            {/* Phone */}
+            <div style={styles.formGroup}>
+              <label htmlFor="phone" style={styles.formLabel}>
+                Phone
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+                style={{
+                  ...styles.formInput,
+                  borderColor: errors.phone ? "red" : "#c2b697",
+                }}
+              />
+              {errors.phone && <p style={styles.errorMessage}>{errors.phone}</p>}
+            </div>
+
+            {/* Password */}
+            <div style={styles.formGroup}>
+              <label htmlFor="password" style={styles.formLabel}>
+                Password
+              </label>
+              <div style={styles.passwordWrapper}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  style={{
+                    ...styles.formInput,
+                    borderColor: errors.password ? "red" : "#c2b697",
+                  }}
                 />
-              </span>
+                <span
+                  onClick={togglePasswordVisibility}
+                  style={styles.passwordToggleIcon}
+                >
+                  <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} />
+                </span>
+              </div>
+              {errors.password && (
+                <p style={styles.errorMessage}>{errors.password}</p>
+              )}
             </div>
-            {errors.confirmPassword && (
-              <p style={styles.errorMessage}>{errors.confirmPassword}</p>
-            )}
-          </div>
 
-          {/* Role Dropdown */}
-          <div style={styles.formGroup}>
-            <label htmlFor="role" style={styles.formLabel}>
-              Role
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              style={styles.formInput}
-              required
+            {/* Confirm Password */}
+            <div style={styles.formGroup}>
+              <label htmlFor="confirmPassword" style={styles.formLabel}>
+                Confirm Password
+              </label>
+              <div style={styles.passwordWrapper}>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  style={{
+                    ...styles.formInput,
+                    borderColor: errors.confirmPassword ? "red" : "#c2b697",
+                  }}
+                />
+                <span
+                  onClick={toggleConfirmPasswordVisibility}
+                  style={styles.passwordToggleIcon}
+                >
+                  <FontAwesomeIcon
+                    icon={showConfirmPassword ? faEye : faEyeSlash}
+                  />
+                </span>
+              </div>
+              {errors.confirmPassword && (
+                <p style={styles.errorMessage}>{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {/* Role Dropdown */}
+            <div style={styles.formGroup}>
+              <label htmlFor="role" style={styles.formLabel}>
+                Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                style={styles.formInput}
+                required
+              >
+                <option value="Client">Client</option>
+                <option value="Lawyer">Lawyer</option>
+              </select>
+            </div>
+
+            {errors.submit && <p style={styles.errorMessage}>{errors.submit}</p>}
+
+            <button
+              type="submit"
+              style={styles.btnRegister}
+              disabled={loading}
             >
-              <option value="Client">Client</option>
-              <option value="Lawyer">Lawyer</option>
-            </select>
-          </div>
+              {loading ? "Registering..." : "Register"}
+            </button>
 
-          {errors.submit && <p style={styles.errorMessage}>{errors.submit}</p>}
-
-          <button
-            type="submit"
-            style={styles.btnRegister}
-            disabled={loading}
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
-
-          <div style={styles.formOptions}>
-            <Link to="/login" style={styles.centeredLink}>
-              Already have an account? Login
-            </Link>
-          </div>
-        </form>
+            <div style={styles.formOptions}>
+              <Link to="/login" style={styles.centeredLink}>
+                Already have an account? Login
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
 // Styles
 const styles = {
   registerPage: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    backgroundImage: "url('/assets/registerpic.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  },
-  overlay: {
-    position: "absolute",
+    position: "fixed",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay for better text contrast
     display: "flex",
-    justifyContent: "flex-end", // Align overlay to right
+    justifyContent: "center",
     alignItems: "center",
+    height: "100vh",
+    backgroundImage: "url('/assets/registerpic.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    overflow: "hidden",
+    paddingTop: "80px",
   },
   registerContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.3)", // Make it transparent
-    padding: "3rem",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    padding: "1.5rem",
     borderRadius: "30px",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.9)",
     maxWidth: "400px",
     width: "80%",
     textAlign: "left",
-    marginLeft: "45rem", // Add some margin to the right
+    marginLeft: 0,
+    transform: "scale(0.9)",
   },
   registerTitle: {
     textAlign: "center",
     color: "#02182b",
-    fontSize: "1.5rem",
+    fontSize: "1.3rem",
     fontWeight: "bold",
-    marginBottom: "1rem",
+    marginBottom: "0.8rem",
   },
   formGroup: {
-    marginBottom: "0.8rem",
+    marginBottom: "0.6rem",
   },
   formLabel: {
     display: "block",
     fontSize: "0.9rem",
     fontWeight: "500",
-    marginBottom: "0rem",
+    marginBottom: "0.2rem",
     color: "#02182b",
- 
   },
   formInput: {
     width: "100%",
-    padding: "0.5rem", // Smaller padding
+    padding: "0.4rem",
     border: "1px solid #c2b697",
     borderRadius: "13px",
-    fontSize: "0.8rem", // Smaller font size
+    fontSize: "0.8rem",
     backgroundColor: "#f9f9f9",
     transition: "border-color 0.3s ease",
   },
@@ -361,37 +359,38 @@ const styles = {
     transform: "translateY(-50%)",
     padding: "5px",
     borderRadius: "50%",
-    fontSize: ".75rem", // Icon size
+    fontSize: ".75rem",
   },
   errorMessage: {
     color: "red",
-    fontSize: "0.75rem", // Error message size
+    fontSize: "0.75rem",
     marginTop: "0.3rem",
   },
   btnRegister: {
     display: "block",
     width: "100%",
-    padding: "0.5rem", // Reduced button padding
+    padding: "0.5rem",
     backgroundColor: "#2d6da5",
     color: "#fff",
     border: "none",
     borderRadius: "6px",
-    fontSize: "0.85rem", // Button font size
+    fontSize: "0.85rem",
     fontWeight: "500",
     cursor: "pointer",
     transition: "background-color 0.3s ease",
+    marginTop: "0.8rem",
   },
   formOptions: {
     textAlign: "center",
-    marginTop: "0.3rem",
-    marginBottom: "1rem", // Adjusted margin
+    marginTop: "0.5rem",
+    marginBottom: "0.5rem",
     borderRadius: "5px",
   },
   centeredLink: {
     textDecoration: "none",
     color: "#02182b",
     fontWeight: "500",
-    fontSize: "bold", // Smaller link font size
+    fontSize: "bold",
   },
 };
 

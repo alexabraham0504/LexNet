@@ -3,6 +3,7 @@ import axios from "axios";
 import Footer from "../../components/footer/footer-admin";
 // import Header from "../../components/header/header-admin";
 import Navbar from "../../components/navbar/navbar-client";
+import ClientSidebar from "../../components/sidebar/ClientSidebar";
 
 const Profile = () => {
   const [profileData, setProfileData] = useState({
@@ -15,6 +16,7 @@ const Profile = () => {
   });
   const [editMode, setEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // State to manage loading
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -108,110 +110,170 @@ const Profile = () => {
   }
 
   return (
-    <div>
+    <div className="page-container">
       <Navbar />
+      <ClientSidebar onToggle={setIsSidebarCollapsed} />
+      <div className={`main-content ${isSidebarCollapsed ? '' : 'sidebar-expanded'}`}>
+        <div className="profile-wrapper">
+          <div className="profile-container">
+            <h2 className="heading">
+              {!profileData.id ? "Create Profile" : "Edit Profile"}
+            </h2>
+            <div style={styles.profileContent}>
+              <div style={styles.leftColumn}>
+                <div style={styles.profileImageContainer}>
+                  {profileData.profilePicture ? (
+                    typeof profileData.profilePicture === "string" ? (
+                      <img
+                        src={profileData.profilePicture}
+                        alt="Profile"
+                        style={styles.profileImage}
+                      />
+                    ) : (
+                      <img
+                        src={URL.createObjectURL(profileData.profilePicture)}
+                        alt="Profile"
+                        style={styles.profileImage}
+                      />
+                    )
+                  ) : (
+                    <div style={styles.placeholderImage}>No Image</div>
+                  )}
+                </div>
 
-      <div style={styles.profileContainer}>
-        <h2 style={styles.heading}>
-          {!profileData.id ? "Create Profile" : "Edit Profile"}
-        </h2>
-        <div style={styles.profileContent}>
-          <div style={styles.leftColumn}>
-            <div style={styles.profileImageContainer}>
-              {profileData.profilePicture ? (
-                typeof profileData.profilePicture === "string" ? (
-                  <img
-                    src={profileData.profilePicture}
-                    alt="Profile"
-                    style={styles.profileImage}
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Choose File</label>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    disabled={!editMode}
+                    style={styles.input}
                   />
+                </div>
+              </div>
+
+              <div style={styles.rightColumn}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Full Name</label>
+                  <input
+                    type="text"
+                    name="fullname"
+                    value={profileData.fullname}
+                    onChange={handleChange}
+                    disabled={!editMode}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={profileData.email}
+                    onChange={handleChange}
+                    disabled={!editMode}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={profileData.location}
+                    onChange={handleChange}
+                    disabled={!editMode}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Legal Needs</label>
+                  <textarea
+                    name="legalNeeds"
+                    value={profileData.legalNeeds}
+                    onChange={handleChange}
+                    disabled={!editMode}
+                    style={styles.textarea}
+                  ></textarea>
+                </div>
+
+                {editMode ? (
+                  <button onClick={handleSave} style={styles.saveButton}>
+                    {profileData.id ? "Save Changes" : "Create Profile"}
+                  </button>
                 ) : (
-                  <img
-                    src={URL.createObjectURL(profileData.profilePicture)}
-                    alt="Profile"
-                    style={styles.profileImage}
-                  />
-                )
-              ) : (
-                <div style={styles.placeholderImage}>No Image</div>
-              )}
+                  <button
+                    onClick={() => setEditMode(true)}
+                    style={styles.editButton}
+                  >
+                    Edit Profile
+                  </button>
+                )}
+              </div>
             </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Choose File</label>
-              <input
-                type="file"
-                onChange={handleFileChange}
-                disabled={!editMode}
-                style={styles.input}
-              />
-            </div>
-          </div>
-
-          <div style={styles.rightColumn}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Full Name</label>
-              <input
-                type="text"
-                name="fullname"
-                value={profileData.fullname}
-                onChange={handleChange}
-                disabled={!editMode}
-                style={styles.input}
-                required
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Email</label>
-              <input
-                type="email"
-                name="email"
-                value={profileData.email}
-                onChange={handleChange}
-                disabled={!editMode}
-                style={styles.input}
-                required
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Location</label>
-              <input
-                type="text"
-                name="location"
-                value={profileData.location}
-                onChange={handleChange}
-                disabled={!editMode}
-                style={styles.input}
-                required
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Legal Needs</label>
-              <textarea
-                name="legalNeeds"
-                value={profileData.legalNeeds}
-                onChange={handleChange}
-                disabled={!editMode}
-                style={styles.textarea}
-              ></textarea>
-            </div>
-
-            {editMode ? (
-              <button onClick={handleSave} style={styles.saveButton}>
-                {profileData.id ? "Save Changes" : "Create Profile"}
-              </button>
-            ) : (
-              <button
-                onClick={() => setEditMode(true)}
-                style={styles.editButton}
-              >
-                Edit Profile
-              </button>
-            )}
           </div>
         </div>
       </div>
       <Footer />
+
+      <style jsx="true">{`
+        .page-container {
+          min-height: 100vh;
+          position: relative;
+          width: 100%;
+          background: #f8f9fa;
+        }
+
+        .main-content {
+          padding: 20px;
+          width: 100%;
+          margin-left: 0;
+          transition: margin-left 0.3s ease;
+        }
+
+        .main-content.sidebar-expanded {
+          margin-left: 280px;
+        }
+
+        .profile-wrapper {
+          max-width: 800px;
+          margin: 2rem auto;
+          padding: 0 1rem;
+        }
+
+        .profile-container {
+          background: white;
+          padding: 2rem;
+          border-radius: 15px;
+          box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        .heading {
+          color: #2c3e50;
+          margin-bottom: 2rem;
+          padding-bottom: 1rem;
+          border-bottom: 2px solid #e9ecef;
+        }
+
+        @media (max-width: 768px) {
+          .main-content.sidebar-expanded {
+            margin-left: 240px;
+          }
+
+          .profile-wrapper {
+            margin: 1rem auto;
+          }
+
+          .profile-container {
+            padding: 1rem;
+          }
+        }
+
+        /* ... rest of your existing styles ... */
+      `}</style>
     </div>
   );
 };

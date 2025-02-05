@@ -5,6 +5,7 @@ import "react-calendar/dist/Calendar.css";
 import axios from "axios";
 import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
+import ClientSidebar from '../../components/sidebar/ClientSidebar';
 
 const BAD_WORDS = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'damn', 'cunt', 'dick', 'pussy', 
@@ -41,6 +42,7 @@ const LawyerAppointment = () => {
     proposedDate: null,
     proposedTime: ''
   });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   // Fetch lawyer details on component mount
   useEffect(() => {
@@ -482,106 +484,111 @@ const LawyerAppointment = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="appointment-container">
-        <h2>Book Appointment with {lawyerDetails?.fullname}</h2>
+      <div className="page-container">
+        <Navbar />
+        <ClientSidebar onToggle={setIsSidebarCollapsed} />
+        <div className={`main-content ${isSidebarCollapsed ? '' : 'sidebar-expanded'}`}>
+          <div className="appointment-container">
+            <h2>Book Appointment with {lawyerDetails?.fullname}</h2>
 
-        <div className="booking-grid">
-          <div className="calendar-section">
-            <h3>Select Date</h3>
-            <Calendar
-              onChange={handleDateChange}
-              value={selectedDate}
-              minDate={new Date()}
-              className="custom-calendar"
-            />
-          </div>
+            <div className="booking-grid">
+              <div className="calendar-section">
+                <h3>Select Date</h3>
+                <Calendar
+                  onChange={handleDateChange}
+                  value={selectedDate}
+                  minDate={new Date()}
+                  className="custom-calendar"
+                />
+              </div>
 
-          <div className="time-slots-section">
-            <h3>Available Time Slots</h3>
-            {isLoading ? (
-              <div className="loading-spinner">Loading time slots...</div>
-            ) : selectedDate ? (
-              <>
-                <div className="date-info">
-                  Selected Date: {selectedDate.toDateString()}
-                </div>
-                {availabilityStatus === 'available' && availableTimeSlots.length > 0 ? (
+              <div className="time-slots-section">
+                <h3>Available Time Slots</h3>
+                {isLoading ? (
+                  <div className="loading-spinner">Loading time slots...</div>
+                ) : selectedDate ? (
                   <>
-                    <div className="availability-status available">
-                      {availableTimeSlots.length} time slots available
+                    <div className="date-info">
+                      Selected Date: {selectedDate.toDateString()}
                     </div>
-                    <div className="time-slots-grid">
-                      {availableTimeSlots.map((slot) => (
-                        <button
-                          key={slot}
-                          className={`time-slot ${
-                            selectedTimeSlot === slot ? "selected" : ""
-                          }`}
-                          onClick={() => handleTimeSlotSelect(slot)}
-                        >
-                          {slot}
-                        </button>
-                      ))}
-                    </div>
+                    {availabilityStatus === 'available' && availableTimeSlots.length > 0 ? (
+                      <>
+                        <div className="availability-status available">
+                          {availableTimeSlots.length} time slots available
+                        </div>
+                        <div className="time-slots-grid">
+                          {availableTimeSlots.map((slot) => (
+                            <button
+                              key={slot}
+                              className={`time-slot ${
+                                selectedTimeSlot === slot ? "selected" : ""
+                              }`}
+                              onClick={() => handleTimeSlotSelect(slot)}
+                            >
+                              {slot}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className={`availability-status ${availabilityStatus === 'fully-booked' ? 'booked' : 'unavailable'}`}>
+                        {availabilityStatus === 'fully-booked' 
+                          ? "All slots are booked for this date. Please select another date."
+                          : "Lawyer is not available on this date"}
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <div className={`availability-status ${availabilityStatus === 'fully-booked' ? 'booked' : 'unavailable'}`}>
-                    {availabilityStatus === 'fully-booked' 
-                      ? "All slots are booked for this date. Please select another date."
-                      : "Lawyer is not available on this date"}
+                  <div className="select-date-message">
+                    Please select a date to view available time slots
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="select-date-message">
-                Please select a date to view available time slots
-              </div>
-            )}
-          </div>
-
-          <div className="booking-form-section">
-            <h3>Appointment Details</h3>
-            <form onSubmit={handleSubmit}>
-              {renderFormGroup("Name", "clientName", "text", 50)}
-              {renderFormGroup("Email", "clientEmail", "email", 100)}
-              {renderFormGroup("Phone", "clientPhone", "tel", 10)}
-              <div className="form-group">
-                <label>Notes <span className="optional">(Optional)</span></label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  maxLength={500}
-                  className={validationErrors.notes ? "error" : ""}
-                />
-                <small className="char-count">
-                  {formData.notes.length}/500 characters
-                </small>
-                {validationErrors.notes && (
-                  <span className="error-text">{validationErrors.notes}</span>
-                )}
               </div>
 
-              {error && <div className="error-message">{error}</div>}
-              {success && (
-                <div className="success-message">
-                  Appointment booked successfully!
-                </div>
-              )}
+              <div className="booking-form-section">
+                <h3>Appointment Details</h3>
+                <form onSubmit={handleSubmit}>
+                  {renderFormGroup("Name", "clientName", "text", 50)}
+                  {renderFormGroup("Email", "clientEmail", "email", 100)}
+                  {renderFormGroup("Phone", "clientPhone", "tel", 10)}
+                  <div className="form-group">
+                    <label>Notes <span className="optional">(Optional)</span></label>
+                    <textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleInputChange}
+                      maxLength={500}
+                      className={validationErrors.notes ? "error" : ""}
+                    />
+                    <small className="char-count">
+                      {formData.notes.length}/500 characters
+                    </small>
+                    {validationErrors.notes && (
+                      <span className="error-text">{validationErrors.notes}</span>
+                    )}
+                  </div>
 
-              <button
-                type="submit"
-                className="submit-button"
-                disabled={!selectedDate || !selectedTimeSlot}
-              >
-                Book Appointment
-              </button>
-            </form>
+                  {error && <div className="error-message">{error}</div>}
+                  {success && (
+                    <div className="success-message">
+                      Appointment booked successfully!
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="submit-button"
+                    disabled={!selectedDate || !selectedTimeSlot}
+                  >
+                    Book Appointment
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
+        <Footer />
       </div>
-      <Footer />
 
       {showStatusPopup && (
         <div className="popup-overlay">
@@ -721,11 +728,43 @@ const LawyerAppointment = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style jsx="true">{`
+        .page-container {
+          min-height: 100vh;
+          position: relative;
+          width: 100%;
+          background: #f8f9fa;
+        }
+
+        .main-content {
+          padding: 20px;
+          width: 100%;
+          margin-left: 0;
+          transition: margin-left 0.3s ease;
+        }
+
+        .main-content.sidebar-expanded {
+          margin-left: 280px;
+        }
+
         .appointment-container {
-          max-width: 1200px;
+          max-width: 800px;
           margin: 2rem auto;
-          padding: 0 1rem;
+          padding: 2rem;
+          background: white;
+          border-radius: 15px;
+          box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 768px) {
+          .main-content.sidebar-expanded {
+            margin-left: 240px;
+          }
+
+          .appointment-container {
+            margin: 1rem;
+            padding: 1rem;
+          }
         }
 
         .booking-grid {
