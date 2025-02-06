@@ -7,6 +7,7 @@ import Footer from "../../components/footer/footer-lawyer";
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/600.css";
 import "@fontsource/montserrat/700.css";
+import LawyerIconPanel from '../../components/LawyerIconPanel';
 
 const LawyerAvailability = () => {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -238,6 +239,7 @@ const LawyerAvailability = () => {
   return (
     <>
       <Navbar />
+      <LawyerIconPanel />
       <div className="dashboard-container">
         <div className="hero-section">
           <h1 className="main-title">Availability Dashboard</h1>
@@ -416,11 +418,11 @@ const LawyerAvailability = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx="true">{`
         .dashboard-container {
-          min-height: 100vh;
-          background: #f8fafc;
-          padding: 2rem;
+          margin-left: 60px;
+          min-height: calc(100vh - 60px);
+          padding: 20px;
         }
 
         .content-wrapper {
@@ -656,6 +658,13 @@ const LawyerAvailability = () => {
 
           .appointments-tabs {
             grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-container {
+            margin-left: 50px;
+            padding: 15px;
           }
         }
       `}</style>

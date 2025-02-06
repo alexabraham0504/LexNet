@@ -116,19 +116,21 @@ router.delete(
   lawyerController.removeAdditionalCertificate
 );
 
-// Route to get verified and active lawyers with search functionality
+// Route to get verified lawyers
 router.get("/verified", async (req, res) => {
   try {
-
-
-    const verifiedLawyers = await Lawyer.find({ isVerified: true, visibleToClients: true});
-    console.log("Verified lawyers:", verifiedLawyers);
-    console.log("Found lawyers:", verifiedLawyers.length);
+    // Get all verified lawyers, regardless of visibility status
+    const verifiedLawyers = await Lawyer.find({ 
+      isVerified: true 
+    });
 
     res.json(verifiedLawyers);
   } catch (error) {
     console.error("Error in /verified route:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ 
+      message: "Failed to fetch verified lawyers.",
+      error: error.message 
+    });
   }
 });
 
@@ -246,5 +248,79 @@ router.get("/:lawyerId", async (req, res) => {
 
 // Add this new route at the beginning of your routes
 router.get("/user-details/:email", lawyerController.getUserDetails);
+
+// Add these new routes for activation/deactivation
+
+// Route to activate a lawyer
+router.put("/activate/:lawyerId", async (req, res) => {
+  try {
+    const lawyer = await Lawyer.findByIdAndUpdate(
+      req.params.lawyerId,
+      { 
+        visibleToClients: true,
+        status: 'active',
+        deactivationMessage: null,
+        deactivationReason: null
+      },
+      { new: true }
+    );
+
+    if (!lawyer) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Lawyer not found" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Lawyer activated successfully", 
+      lawyer 
+    });
+  } catch (error) {
+    console.error("Error activating lawyer:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to activate lawyer", 
+      error: error.message 
+    });
+  }
+});
+
+// Route to deactivate a lawyer
+router.put("/deactivate/:lawyerId", async (req, res) => {
+  try {
+    const lawyer = await Lawyer.findByIdAndUpdate(
+      req.params.lawyerId,
+      { 
+        visibleToClients: false,
+        status: 'inactive',
+        deactivationMessage: "Your account has been deactivated by admin.",
+        deactivationReason: "Deactivated by administrator"
+      },
+      { new: true }
+    );
+
+    if (!lawyer) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Lawyer not found" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Lawyer deactivated successfully", 
+      lawyer 
+    });
+  } catch (error) {
+    console.error("Error deactivating lawyer:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to deactivate lawyer", 
+      error: error.message 
+    });
+  }
+});
 
 module.exports = router;

@@ -82,26 +82,36 @@ const ClientDashboard = () => {
             </div>
 
             <div className="button-section">
-              <Link to="/LawyerSearch" className="dashboard-link">
-                <div className="dashboard-button">
-                  <FontAwesomeIcon icon={faFileAlt} className="button-icon" />
-                  <span>Lawyer Search</span>
-                </div>
-              </Link>
-
-              <Link to="/IPC" className="dashboard-link">
-                <div className="dashboard-button">
-                  <FontAwesomeIcon icon={faGavel} className="button-icon" />
-                      <span>IPC</span>
-                </div>
-              </Link>
-
-              <Link to="/cases" className="dashboard-link">
-                <div className="dashboard-button">
-                  <FontAwesomeIcon icon={faMessage} className="button-icon" />
-                          <span>Cases</span>
-                </div>
-              </Link>
+              <div className="col flex-grow-1">
+                <Link to="/LawyerSearch" className="dashboard-link">
+                  <button className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold">
+                    <span className="p-3">
+                      <FontAwesomeIcon icon={faSearch} size="1x" />
+                    </span>
+                    Lawyer Search
+                  </button>
+                </Link>
+              </div>
+              <div className="col flex-grow-1">
+                <Link to="/IPC" className="dashboard-link">
+                  <button className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold">
+                    <span className="p-3">
+                      <FontAwesomeIcon icon={faGavel} size="1x" />
+                    </span>
+                    IPC
+                  </button>
+                </Link>
+              </div>
+              <div className="col flex-grow-1">
+                <Link to="/cases" className="dashboard-link">
+                  <button className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold">
+                    <span className="p-3">
+                      <FontAwesomeIcon icon={faFileAlt} size="1x" />
+                    </span>
+                    Cases
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -173,46 +183,31 @@ const ClientDashboard = () => {
             width: 100%;
             display: flex;
             justify-content: center;
-            gap: 0;
-            background-color: rgb(191, 172, 143);
+            background-color: transparent;
             margin-top: auto;
             position: relative;
             z-index: 2;
+            padding: 0;
           }
 
           .dashboard-link {
-            flex: 1;
             text-decoration: none;
             color: #1a365d;
-            border-right: 1px solid rgba(0, 0, 0, 0.1);
-            text-align: center;
+            width: 100%;
           }
 
-          .dashboard-link:last-child {
-            border-right: none;
-          }
-
-          .dashboard-button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-            background-color: transparent;
-            transition: all 0.3s ease;
-            gap: 0.5rem;
-            height: 100%;
-            font-weight: 500;
-          }
-
-          .dashboard-button:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-          }
-
-          .button-icon {
-            font-size: 1.2rem;
+          .btn-outline-dark {
+            background-color: rgb(191, 172, 143);
+            border: none;
             color: #1a365d;
-            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+          }
+
+          .btn-outline-dark:hover {
+            background-color: #1a365d;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
           }
 
           @keyframes slideLeft {
@@ -247,17 +242,12 @@ const ClientDashboard = () => {
               flex-direction: column;
             }
 
-            .dashboard-link {
-              border-right: none;
-              border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            .col {
+              padding: 0;
             }
 
-            .dashboard-link:last-child {
-              border-bottom: none;
-            }
-
-            .dashboard-button {
-              padding: 1rem;
+            .btn-outline-dark {
+              border-radius: 0;
             }
           }
         `}</style>

@@ -18,6 +18,7 @@ import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
 import io from "socket.io-client";
 import Modal from "react-modal";
+import AdminIconPanel from "../../components/AdminIconPanel";
 
 ChartJS.register(
   CategoryScale,
@@ -755,7 +756,8 @@ const ReportsAnalytics = () => {
   return (
     <PageContainer>
       <Navbar />
-      <MainContent>
+      <AdminIconPanel />
+      <MainContent style={{ marginLeft: '60px' }}>
         <DashboardContainer>
           <h1>Analytics Dashboard</h1>
           <RealTimeIndicator>
@@ -867,6 +869,16 @@ const ReportsAnalytics = () => {
       >
         {renderModalContent()}
       </Modal>
+
+      <style>
+        {`
+          @media (max-width: 768px) {
+            div[style*="margin-left: 60px"] {
+              margin-left: 50px !important;
+            }
+          }
+        `}
+      </style>
     </PageContainer>
   );
 };

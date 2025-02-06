@@ -4,6 +4,7 @@ import Footer from "../../components/footer/footer-lawyer";
 import Navbar from "../../components/navbar/navbar-lawyer";
 import '@fontsource/poppins';
 import '@fontsource/roboto';
+import LawyerIconPanel from '../../components/LawyerIconPanel';
 
 const LawyerRegistration = () => {
   const [lawyerData, setLawyerData] = useState({
@@ -313,6 +314,7 @@ const LawyerRegistration = () => {
   return (
     <div style={styles.pageContainer}>
       <Navbar />
+      <LawyerIconPanel />
       <div style={styles.profileContainer}>
         <h2 style={styles.heading}>Lawyer Profile</h2>
 
@@ -639,6 +641,17 @@ const LawyerRegistration = () => {
         </form>
       </div>
       <Footer />
+
+      <style jsx="true">{`
+        @media (max-width: 768px) {
+          .profileContainer {
+            margin-left: 50px;
+            padding: 15px;
+            width: 95%;
+            left: 25px;
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -649,6 +662,9 @@ const styles = {
     minHeight: '100vh',
     fontFamily: 'Poppins, sans-serif',
     padding: '20px 0',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
   },
   profileContainer: {
     maxWidth: '1100px',
@@ -658,6 +674,9 @@ const styles = {
     borderRadius: '20px',
     boxShadow: '0 8px 32px rgba(31, 38, 135, 0.1)',
     backdropFilter: 'blur(10px)',
+    width: '90%',
+    position: 'relative',
+    left: '30px'
   },
   heading: {
     textAlign: 'center',

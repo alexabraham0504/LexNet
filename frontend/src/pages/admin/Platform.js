@@ -3,6 +3,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
+import AdminIconPanel from "../../components/AdminIconPanel";
 import Modal from "react-modal"; // Import Modal
 import { ThreeDots } from "react-loader-spinner"; // Import ThreeDots loader
 
@@ -124,88 +125,101 @@ const Platform = () => {
   return (
     <div style={styles.pageWrapper}>
       <Navbar />
-      <ToastContainer position="top-right" autoClose={3000} />
-      {loading && (
-        <ThreeDots height="80" width="80" color="#1a237e" ariaLabel="loading" />
-      )}{" "}
-      {/* Loader */}
-      <div style={styles.container}>
-        <h2 style={styles.title}>IPC Section Management</h2>
+      <AdminIconPanel />
+      <div style={{ marginLeft: '60px' }}>
+        <ToastContainer position="top-right" autoClose={3000} />
+        {loading && (
+          <ThreeDots height="80" width="80" color="#1a237e" ariaLabel="loading" />
+        )}{" "}
+        {/* Loader */}
+        <div style={styles.container}>
+          <h2 style={styles.title}>IPC Section Management</h2>
 
-        {/* Search Container */}
-        <div style={styles.searchContainer}>
-          <div style={styles.searchWrapper}>
-            <i className="fas fa-search" style={styles.searchIcon}></i>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search IPC sections..."
-              style={styles.searchInput}
-            />
-            <button
-              onClick={() => setSearchTerm("")}
-              style={styles.clearButton}
-            >
-              Clear
-            </button>{" "}
-            {/* Clear button */}
+          {/* Search Container */}
+          <div style={styles.searchContainer}>
+            <div style={styles.searchWrapper}>
+              <i className="fas fa-search" style={styles.searchIcon}></i>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search IPC sections..."
+                style={styles.searchInput}
+              />
+              <button
+                onClick={() => setSearchTerm("")}
+                style={styles.clearButton}
+              >
+                Clear
+              </button>{" "}
+              {/* Clear button */}
+            </div>
           </div>
-        </div>
 
-        {/* Add New Section Button */}
-        <button onClick={openModal} style={styles.addButton}>
-          <i className="fas fa-plus" style={styles.buttonIcon}></i>
-          Add New Section
-        </button>
+          {/* Add New Section Button */}
+          <button onClick={openModal} style={styles.addButton}>
+            <i className="fas fa-plus" style={styles.buttonIcon}></i>
+            Add New Section
+          </button>
 
-        {/* Modal for Adding New Section */}
-        <Modal
-          isOpen={modalIsOpen}
-          onRequestClose={closeModal}
-          style={modalStyles}
-        >
-          <h3>Add New Section</h3>
-          {/* Form inputs for new section */}
-          <button onClick={handleAddSection}>Submit</button>
-        </Modal>
+          {/* Modal for Adding New Section */}
+          <Modal
+            isOpen={modalIsOpen}
+            onRequestClose={closeModal}
+            style={modalStyles}
+          >
+            <h3>Add New Section</h3>
+            {/* Form inputs for new section */}
+            <button onClick={handleAddSection}>Submit</button>
+          </Modal>
 
-        {/* Sections List Card */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>IPC Sections</h3>
-          <div style={styles.sectionListContainer}>
-            {searchTerm.trim() === "" ? (
-              <div style={styles.noResults}>Enter a search term to find IPC sections</div>
-            ) : filteredSections.length > 0 ? (
-              filteredSections.map((section) => (
-                <div key={section._id} style={styles.sectionItem}>
-                  <div style={styles.sectionContent}>
-                    <h4 style={styles.sectionTitle}>{section.section}</h4>
-                    <p style={styles.sectionDescription}>
-                      {section.description}
-                    </p>
-                    {section.caseStudy && (
-                      <div style={styles.caseStudyBox}>
-                        <h5 style={styles.caseStudyTitle}>Case Study</h5>
-                        <p style={styles.caseStudyText}>{section.caseStudy}</p>
-                      </div>
-                    )}
+          {/* Sections List Card */}
+          <div style={styles.card}>
+            <h3 style={styles.cardTitle}>IPC Sections</h3>
+            <div style={styles.sectionListContainer}>
+              {searchTerm.trim() === "" ? (
+                <div style={styles.noResults}>Enter a search term to find IPC sections</div>
+              ) : filteredSections.length > 0 ? (
+                filteredSections.map((section) => (
+                  <div key={section._id} style={styles.sectionItem}>
+                    <div style={styles.sectionContent}>
+                      <h4 style={styles.sectionTitle}>{section.section}</h4>
+                      <p style={styles.sectionDescription}>
+                        {section.description}
+                      </p>
+                      {section.caseStudy && (
+                        <div style={styles.caseStudyBox}>
+                          <h5 style={styles.caseStudyTitle}>Case Study</h5>
+                          <p style={styles.caseStudyText}>{section.caseStudy}</p>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveSection(section._id)}
+                      style={styles.removeButton}
+                    >
+                      <i className="fas fa-trash-alt"></i>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleRemoveSection(section._id)}
-                    style={styles.removeButton}
-                  >
-                    <i className="fas fa-trash-alt"></i>
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div style={styles.noResults}>No sections found matching your search</div>
-            )}
+                ))
+              ) : (
+                <div style={styles.noResults}>No sections found matching your search</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
       <Footer />
+
+      <style>
+        {`
+          @media (max-width: 768px) {
+            div[style*="margin-left: 60px"] {
+              margin-left: 50px !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };

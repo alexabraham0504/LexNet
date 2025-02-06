@@ -6,6 +6,7 @@ import Footer from "../../components/footer/footer-lawyer";
 import Chat from "../../components/Chat";
 import io from "socket.io-client";
 import "./Messages.css";
+import LawyerIconPanel from '../../components/LawyerIconPanel';
 
 const Messages = () => {
   const [activeChats, setActiveChats] = useState([]);
@@ -161,6 +162,7 @@ const Messages = () => {
   return (
     <div className="messages-page">
       <Navbar />
+      <LawyerIconPanel />
       <div className="messages-container">
         <div className="chat-list">
           <h2>Messages</h2>
@@ -219,6 +221,21 @@ const Messages = () => {
         </div>
       </div>
       <Footer />
+
+      <style jsx="true">{`
+        .messages-container {
+          margin-left: 60px;
+          min-height: calc(100vh - 60px);
+          padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+          .messages-container {
+            margin-left: 50px;
+            padding: 15px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

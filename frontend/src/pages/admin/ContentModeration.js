@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
+import AdminIconPanel from "../../components/AdminIconPanel";
 
 const ContentModeration = () => {
   const [feedback, setFeedback] = useState([]);
@@ -57,6 +58,10 @@ const ContentModeration = () => {
       padding: '2rem 4rem',
       minHeight: 'calc(100vh - 140px)',
       background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%)',
+      marginLeft: '60px',
+      '@media (max-width: 768px)': {
+        marginLeft: '50px'
+      }
     },
     contentModeration: {
       background: 'white',
@@ -168,6 +173,7 @@ const ContentModeration = () => {
   return (
     <div>
       <Navbar />
+      <AdminIconPanel />
       <div style={styles.container}>
         <div style={styles.contentModeration}>
           <h1 style={styles.heading}>Content Moderation Dashboard</h1>

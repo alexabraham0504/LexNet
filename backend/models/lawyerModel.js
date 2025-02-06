@@ -45,11 +45,16 @@ const lawyerSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
-  visibleToClients: { type: Boolean, default: false },
+  visibleToClients: { type: Boolean, default: true },
   isVerified: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   deactivationReason: { type: String },
   deactivationMessage: { type: String, default: null },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
   createdAt: {
     type: Date,
     default: Date.now,

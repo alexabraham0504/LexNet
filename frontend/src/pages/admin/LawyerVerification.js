@@ -4,6 +4,7 @@ import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AdminIconPanel from "../../components/AdminIconPanel";
 
 const LawyerVerification = () => {
   const [unverifiedLawyers, setUnverifiedLawyers] = useState([]);
@@ -124,44 +125,20 @@ const LawyerVerification = () => {
     }
   };
 
-  const handleToggleVisibility = async (lawyerId) => {
+  const handleToggleStatus = async (id, currentStatus) => {
     try {
-      console.log("Attempting to toggle visibility for lawyer:", lawyerId);
-      
-      const response = await axios.put(
-        `http://localhost:5000/api/lawyers/toggle-visibility/${lawyerId}`
-      );
-      
-      console.log("Toggle visibility response:", response.data);
+      const action = currentStatus === 'active' ? 'deactivate' : 'activate';
+      const response = await axios.put(`http://localhost:5000/api/lawyers/${action}/${id}`);
       
       if (response.data.success) {
-        setVerifiedLawyers(prevLawyers => 
-          prevLawyers.map(lawyer => 
-            lawyer._id === lawyerId 
-              ? { ...lawyer, visibleToClients: !lawyer.visibleToClients }
-              : lawyer
-          )
-        );
-
-        toast.success(response.data.message, {
-          position: "top-right",
-          style: {
-            background: 'linear-gradient(45deg, #ffffff, #f5f5f5)',
-            color: '#333333',
-          }
-        });
+        await fetchVerifiedLawyers(); // Refresh the list
+        toast.success(`Lawyer ${action}d successfully!`);
       } else {
-        throw new Error(response.data.message || 'Failed to toggle visibility');
+        throw new Error(response.data.message || `Failed to ${action} lawyer`);
       }
     } catch (error) {
-      console.error("Error toggling lawyer visibility:", error);
-      console.error("Error details:", error.response?.data);
-      
-      toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to toggle lawyer visibility"
-      );
+      console.error(`Error ${currentStatus === 'active' ? 'deactivating' : 'activating'} lawyer:`, error);
+      toast.error(`Failed to ${currentStatus === 'active' ? 'deactivate' : 'activate'} lawyer.`);
     }
   };
 
@@ -182,673 +159,419 @@ const LawyerVerification = () => {
     }
   );
 
-  const PageHeader = () => (
-    <div className="header-container">
-      <div className="header-content">
-        <h1>Lawyer Verification</h1>
-        <p className="subtitle">Manage and verify lawyer registrations</p>
-        <div className="stats-container">
-          <div className="stat-box">
-            <span className="stat-number">{unverifiedLawyers.length}</span>
-            <span className="stat-label">Pending</span>
-          </div>
-          <div className="stat-box">
-            <span className="stat-number">{verifiedLawyers.length}</span>
-            <span className="stat-label">Verified</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div>
-      <Navbar />
-      <div className="header-container">
-        <div className="pattern-overlay"></div>
-        <div className="header-content">
-          <h1>Lawyer Verification</h1>
-          <p className="subtitle">Manage and verify lawyer registrations</p>
-          <div className="stats-container">
-            <div className="stat-box">
-              <span className="stat-number">{unverifiedLawyers.length}</span>
-              <span className="stat-label">Pending</span>
+    <>
+      <div className="lawyer-verification-container">
+        <Navbar />
+        <AdminIconPanel />
+        <div className="main-content">
+          <div className="lawyer-verification">
+            <div className="header-container">
+              <div className="header-content">
+                <h1>Lawyer Verification</h1>
+                <p className="subtitle">Manage and verify lawyer registrations</p>
+                <div className="stats-container">
+                  <div className="stat-box">
+                    <span className="stat-number">{unverifiedLawyers.length}</span>
+                    <span className="stat-label">Pending</span>
+                  </div>
+                  <div className="stat-box">
+                    <span className="stat-number">{verifiedLawyers.length}</span>
+                    <span className="stat-label">Verified</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="stat-box">
-              <span className="stat-number">{verifiedLawyers.length}</span>
-              <span className="stat-label">Verified</span>
+
+            <div className="content-section">
+              <input
+                type="text"
+                placeholder="Search Lawyers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+
+              {isLoading ? (
+                <div className="loading">Loading...</div>
+              ) : (
+                <>
+                  <section className="unverified-section">
+                    <h2>Unverified Lawyers ({filteredUnverifiedLawyers.length})</h2>
+                    {filteredUnverifiedLawyers.length === 0 ? (
+                      <p className="no-results">No unverified lawyers found.</p>
+                    ) : (
+                      <div className="lawyers-grid">
+                        {filteredUnverifiedLawyers.map((lawyer) => (
+                          <div key={lawyer._id} className="lawyer-card">
+                            <div className="lawyer-info">
+                              <img
+                                src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                                alt={lawyer.fullname}
+                                className="profile-pic"
+                                onError={(e) => {
+                                  e.target.src = '/assets/default-avatar.png';
+                                }}
+                              />
+                              <h3>{lawyer.fullname}</h3>
+                              <p>{lawyer.email}</p>
+                              <p>AEN: {lawyer.AEN}</p>
+                              <p>Specialization: {lawyer.specialization}</p>
+                            </div>
+                            <div className="document-links">
+                              <a
+                                href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="doc-link"
+                              >
+                                View Law Degree
+                              </a>
+                              <a
+                                href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="doc-link"
+                              >
+                                View Bar Council Certificate
+                              </a>
+                            </div>
+                            <div className="action-buttons">
+                              <button
+                                onClick={() => handleApprove(lawyer._id)}
+                                className="approve-btn"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(lawyer._id)}
+                                className="reject-btn"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="verified-section">
+                    <h2>Verified Lawyers ({filteredVerifiedLawyers.length})</h2>
+                    {filteredVerifiedLawyers.length === 0 ? (
+                      <p className="no-results">No verified lawyers found.</p>
+                    ) : (
+                      <div className="lawyers-grid">
+                        {filteredVerifiedLawyers.map((lawyer) => (
+                          <div key={lawyer._id} className={`lawyer-card ${lawyer.visibleToClients ? 'active' : 'inactive'}`}>
+                            <div className="lawyer-info">
+                              <img
+                                src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                                alt={lawyer.fullname}
+                                className="profile-pic"
+                                onError={(e) => {
+                                  e.target.src = '/assets/default-avatar.png';
+                                }}
+                              />
+                              <h3>{lawyer.fullname}</h3>
+                              <p>{lawyer.email}</p>
+                              <p>AEN: {lawyer.AEN}</p>
+                              <p>Specialization: {lawyer.specialization}</p>
+                              <div className="status-container">
+                                <span className={`status-badge ${lawyer.visibleToClients ? 'active' : 'inactive'}`}>
+                                  {lawyer.visibleToClients ? '✓ Active' : '⊘ Inactive'}
+                                </span>
+                                <button
+                                  onClick={() => handleToggleStatus(lawyer._id, lawyer.visibleToClients ? 'active' : 'inactive')}
+                                  className={`toggle-status-btn ${lawyer.visibleToClients ? 'deactivate' : 'activate'}`}
+                                >
+                                  {lawyer.visibleToClients ? 'Deactivate' : 'Activate'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </>
+              )}
             </div>
           </div>
         </div>
+        <Footer />
       </div>
-      <div className="lawyer-verification">
-        <div style={{ padding: "20px" }}>
-          
-          <input
-            type="text"
-            placeholder="Search Lawyers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <ToastContainer />
+      <style jsx="true">{`
+        .lawyer-verification-container {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background: #f5f7fa;
+        }
 
-          {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              Loading...
-            </div>
-          ) : (
-            <>
-              {/* Unverified Lawyers Table */}
-              <h2>Unverified Lawyers ({unverifiedLawyers.length})</h2>
-              {unverifiedLawyers.length === 0 ? (
-                <p>No unverified lawyers found.</p>
-              ) : (
-                <table className="lawyer-table">
-                  <thead>
-                    <tr>
-                      <th>Profile Picture</th>
-                      <th>fullName</th>
-                      <th>Email</th>
-                      <th>AEN</th>
-                      <th>Specialization</th>
-                      <th>Location</th>
-                      <th>Law Degree Certificate</th>
-                      <th>Bar Council Certificate</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUnverifiedLawyers.map((lawyer) => (
-                      <tr key={lawyer._id}>
-                        <td>
-                          {lawyer.profilePicture ? (
-                            <img
-                              src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
-                              alt={`${lawyer.fullname || 'N/A'}'s profile`}
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                              }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = `
-                                  <div style="
-                                    width: 50px;
-                                    height: 50px;
-                                    border-radius: 50%;
-                                    background-color: #e0e0e0;
-                                    color: #666;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    font-size: 16px;
-                                    font-weight: 500;
-                                  ">
-                                    ${lawyer.fullname}
-                                  </div>
-                                `;
-                              }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: "50px",
-                              height: "50px",
-                              borderRadius: "50%",
-                              backgroundColor: "#e0e0e0",
-                              color: "#666",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "16px",
-                              fontWeight: "500"
-                            }}>
-                              {(lawyer.fullname) ? 
-                                lawyer.fullname.charAt(0).toUpperCase() 
-                                : 'N/A'}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          {lawyer.fullname}
-                        </td>
-                        <td>{lawyer.email}</td>
-                        <td>{lawyer.AEN}</td>
-                        <td>{lawyer.specialization}</td>
-                        <td>{lawyer.location}</td>
-                        <td>
-                          {lawyer.lawDegreeCertificate ? (
-                            <a
-                              href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              View
-                            </a>
-                          ) : (
-                            "Not Uploaded"
-                          )}
-                        </td>
-                        <td>
-                          {lawyer.barCouncilCertificate ? (
-                            <a
-                              href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              View
-                            </a>
-                          ) : (
-                            "Not Uploaded"
-                          )}
-                        </td>
-                        <td>
-                          <button onClick={() => handleApprove(lawyer._id)}>
-                            ✓ Approve
-                          </button>
-                          <button onClick={() => handleReject(lawyer._id)}>
-                            ✕ Reject
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+        .main-content {
+          margin-left: 60px;
+          padding: 20px;
+          flex: 1;
+        }
 
-              {/* Verified Lawyers Table */}
-              <h2>Verified Lawyers ({verifiedLawyers.length})</h2>
-              {verifiedLawyers.length === 0 ? (
-                <p>No verified lawyers found.</p>
-              ) : (
-                <table className="lawyer-table">
-                  <thead>
-                    <tr>
-                      <th>Profile Picture</th>
-                      <th>fullName</th>
-                      <th>Email</th>
-                      <th>AEN</th>
-                      <th>Specialization</th>
-                      <th>Location</th>
-                      <th>Visibility Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredVerifiedLawyers.map((lawyer) => (
-                      <tr key={lawyer._id}>
-                        <td>
-                          {lawyer.profilePicture ? (
-                            <img
-                              src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
-                              alt={`${lawyer.fullname || 'N/A'}'s profile`}
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "50%",
-                                objectFit: "cover",
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                              }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = `
-                                  <div style="
-                                    width: 50px;
-                                    height: 50px;
-                                    border-radius: 50%;
-                                    background-color: #e0e0e0;
-                                    color: #666;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    font-size: 16px;
-                                    font-weight: 500;
-                                  ">
-                                    ${lawyer.fullname}
-                                  </div>
-                                `;
-                              }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: "50px",
-                              height: "50px",
-                              borderRadius: "50%",
-                              backgroundColor: "#e0e0e0",
-                              color: "#666",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "16px",
-                              fontWeight: "500"
-                            }}>
-                              {(lawyer.fullname) ? 
-                                lawyer.fullname.charAt(0).toUpperCase() 
-                                : 'N/A'}
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          {lawyer.fullname }
-                        </td>
-                        <td>{lawyer.email}</td>
-                        <td>{lawyer.AEN}</td>
-                        <td>{lawyer.specialization}</td>
-                        <td>{lawyer.location}</td>
-                        <td>
-                          <span className={`status-indicator ${lawyer.visibleToClients ? 'status-visible' : 'status-hidden'}`}>
-                            {lawyer.visibleToClients ? 'Visible' : 'Not Visible'}
-                          </span>
-                        </td>
-                        <td>
-                          <button onClick={() => handleToggleVisibility(lawyer._id)}>
-                            {lawyer.visibleToClients ? "Deactivate" : "Activate"}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </>
-          )}
-        </div>
+        .lawyer-verification {
+          max-width: 1400px;
+          margin: 0 auto;
+          width: 100%;
+        }
 
-        <style jsx>{`
-          .lawyer-verification {
-            padding: 20px;
+        .header-container {
+          background: linear-gradient(135deg, #1a237e, #0d47a1);
+          padding: 40px;
+          border-radius: 15px;
+          margin-bottom: 30px;
+          color: white;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+          text-align: center;
+        }
+
+        .header-content h1 {
+          font-size: 2.5rem;
+          margin-bottom: 15px;
+          font-weight: 600;
+        }
+
+        .subtitle {
+          font-size: 1.1rem;
+          opacity: 0.9;
+          margin-bottom: 25px;
+        }
+
+        .stats-container {
+          display: flex;
+          justify-content: center;
+          gap: 30px;
+        }
+
+        .stat-box {
+          background: rgba(255, 255, 255, 0.1);
+          padding: 20px 40px;
+          border-radius: 10px;
+          backdrop-filter: blur(5px);
+        }
+
+        .stat-number {
+          display: block;
+          font-size: 2.5rem;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+
+        .stat-label {
+          font-size: 1rem;
+          opacity: 0.9;
+        }
+
+        .content-section {
+          background: white;
+          padding: 30px;
+          border-radius: 15px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 15px 25px;
+          border: 2px solid #e0e0e0;
+          border-radius: 10px;
+          font-size: 1rem;
+          margin-bottom: 30px;
+          transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+          border-color: #1a237e;
+          box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+          outline: none;
+        }
+
+        .lawyers-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 25px;
+          margin-top: 25px;
+        }
+
+        .lawyer-card {
+          background: white;
+          border-radius: 12px;
+          padding: 25px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .lawyer-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .profile-pic {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          object-fit: cover;
+          margin-bottom: 20px;
+          border: 3px solid #f5f7fa;
+        }
+
+        .lawyer-info h3 {
+          font-size: 1.2rem;
+          margin-bottom: 10px;
+          color: #2c3e50;
+        }
+
+        .lawyer-info p {
+          color: #666;
+          margin-bottom: 8px;
+          font-size: 0.95rem;
+        }
+
+        .doc-link {
+          display: block;
+          padding: 10px;
+          margin: 8px 0;
+          background: #f8f9fa;
+          border-radius: 8px;
+          text-decoration: none;
+          color: #1a237e;
+          transition: background-color 0.2s ease;
+        }
+
+        .doc-link:hover {
+          background: #e8eaf6;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 12px;
+          margin-top: 20px;
+        }
+
+        .approve-btn, .reject-btn {
+          flex: 1;
+          padding: 10px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+
+        .approve-btn {
+          background: #4caf50;
+          color: white;
+        }
+
+        .reject-btn {
+          background: #f44336;
+          color: white;
+        }
+
+        .approve-btn:hover {
+          background: #43a047;
+        }
+
+        .reject-btn:hover {
+          background: #e53935;
+        }
+
+        .status-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .status-badge {
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.85rem;
+          font-weight: 500;
+        }
+
+        .status-badge.active {
+          background: #4caf50;
+          color: white;
+        }
+
+        .status-badge.inactive {
+          background: #f44336;
+          color: white;
+        }
+
+        .toggle-status-btn {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+
+        .toggle-status-btn.deactivate {
+          background: #ff5252;
+          color: white;
+        }
+
+        .toggle-status-btn.deactivate:hover {
+          background: #d32f2f;
+        }
+
+        .toggle-status-btn.activate {
+          background: #4caf50;
+          color: white;
+        }
+
+        .toggle-status-btn.activate:hover {
+          background: #388e3c;
+        }
+
+        .lawyer-card.inactive {
+          opacity: 0.8;
+          background: #f8f8f8;
+          border: 1px solid #ddd;
+        }
+
+        @media (max-width: 768px) {
+          .main-content {
+            margin-left: 50px;
+            padding: 15px;
           }
-          input {
-            padding: 12px 20px;
-            margin: 20px 0;
-            width: 80%;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-          }
-          input:focus {
-            outline: none;
-            border-color: #2196F3;
-            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
-          }
-          .lawyer-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            background: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin: 20px 0;
-          }
-          .lawyer-table thead {
-            background: linear-gradient(135deg, #1a237e, #0d47a1);
-          }
-          .lawyer-table th {
-            padding: 18px 15px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 14px;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 3px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            position: relative;
-          }
-          .lawyer-table th:after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(to right, #2196F3, transparent);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-          }
-          .lawyer-table th:hover:after {
-            transform: scaleX(1);
-          }
-          .lawyer-table td {
-            padding: 16px 15px;
-            font-size: 14px;
-            color: #333;
-            border-bottom: 1px solid #eef2f7;
-            vertical-align: middle;
-          }
-          .lawyer-table tbody tr {
-            transition: all 0.3s ease;
-          }
-          .lawyer-table tbody tr:hover {
-            background-color: #f8faff;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-          }
-          .lawyer-table tbody tr:nth-child(even) {
-            background-color: #fafbff;
-          }
-          .lawyer-table th:first-child,
-          .lawyer-table td:first-child {
-            padding-left: 25px;
-          }
-          .lawyer-table th:last-child,
-          .lawyer-table td:last-child {
-            padding-right: 25px;
-          }
-          .lawyer-table td img {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #fff;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            transition: transform 0.3s ease;
-          }
-          .lawyer-table td img:hover {
-            transform: scale(1.1);
-          }
-          .lawyer-table td a {
-            color: #2196F3;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-          }
-          .lawyer-table td a:hover {
-            color: #1565C0;
-            text-decoration: underline;
-          }
-          @media (max-width: 1024px) {
-            .lawyer-table {
-              display: block;
-              overflow-x: auto;
-              white-space: nowrap;
-            }
-            .lawyer-table th,
-            .lawyer-table td {
-              padding: 12px 10px;
-            }
-            .lawyer-table th {
-              font-size: 13px;
-            }
-            .lawyer-table td {
-              font-size: 13px;
-            }
-          }
-          .status-indicator {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
-          }
-          .status-visible {
-            background-color: #e3fcef;
-            color: #00875a;
-          }
-          .status-hidden {
-            background-color: #fff1f0;
-            color: #de350b;
-          }
-          button {
-            padding: 10px 20px;
-            margin: 0 8px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 500;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 120px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          }
-          /* Approve button */
-          button:nth-child(1) {
-            background: #ffffff;
-            color: #00875A;
-            border: 2px solid #00875A;
-          }
-          button:nth-child(1):hover {
-            background: #00875A;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0, 135, 90, 0.3);
-          }
-          /* Reject button */
-          button:nth-child(2) {
-            background: #ffffff;
-            color: #E34935;
-            border: 2px solid #E34935;
-          }
-          button:nth-child(2):hover {
-            background: #E34935;
-            color: white;
-            box-shadow: 0 5px 15px rgba(227, 73, 53, 0.3);
-          }
-          /* Toggle visibility button (for verified lawyers) */
-          button:only-child {
-            background: #ffffff;
-            color: #0052CC;
-            border: 2px solid #0052CC;
-          }
-          button:only-child:hover {
-            background: #0052CC;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0, 82, 204, 0.3);
-          }
-          /* Common button hover effects */
-          button:hover {
-            transform: translateY(-2px);
-          }
-          button:active {
-            transform: translateY(0);
-          }
-          /* Add ripple effect */
-          button::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
-            background-repeat: no-repeat;
-            background-position: 50%;
-            transform: scale(10, 10);
-            opacity: 0;
-            transition: transform 0.5s, opacity 1s;
-          }
-          button:active::after {
-            transform: scale(0, 0);
-            opacity: 0.3;
-            transition: 0s;
-          }
-          /* Disable button styles */
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-          }
-          /* Add icon space if needed */
-          button svg {
-            margin-right: 8px;
-            font-size: 16px;
-          }
-          /* Responsive adjustments */
-          @media (max-width: 768px) {
-            button {
-              min-width: 100px;
-              padding: 8px 16px;
-              font-size: 12px;
-            }
-          }
+
           .header-container {
-            background: linear-gradient(
-              rgba(26, 35, 126, 0.95), /* Dark blue with opacity */
-              rgba(13, 71, 161, 0.95)  /* Lighter blue with opacity */
-            ),
-            url('https://images.unsplash.com/photo-1575505586569-646b2ca898fc') center/cover;
-            padding: 60px 0;
-            margin-bottom: 40px;
-            position: relative;
-            overflow: hidden;
+            padding: 30px 20px;
           }
 
-          /* For the main content area */
-          .lawyer-verification {
-            background: linear-gradient(
-              rgba(255, 255, 255, 0.95),
-              rgba(255, 255, 255, 0.95)
-            ),
-            url('https://images.unsplash.com/photo-1575505586569-646b2ca898fc') fixed center/cover;
-            padding: 2rem;
-            min-height: 100vh;
-          }
-
-          /* Add a subtle pattern overlay */
-          .pattern-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url('data:image/svg+xml,%3Csvg width="20" height="20" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M0 0h20v20H0z" fill="%23ffffff" fill-opacity="0.05"/%3E%3C/svg%3E');
-            opacity: 0.1;
-            pointer-events: none;
-          }
-
-          .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            position: relative;
-            z-index: 1;
-          }
-
-          h1 {
-            color: #ffffff;
-            font-size: 3.2rem;
-            font-weight: 700;
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            position: relative;
-            display: inline-block;
-          }
-
-          h1::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 0;
-            width: 80px;
-            height: 4px;
-            background: #2196F3;
-            border-radius: 2px;
-            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
-          }
-
-          .subtitle {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-            margin: 20px 0;
-            font-weight: 400;
-            letter-spacing: 0.5px;
+          .header-content h1 {
+            font-size: 2rem;
           }
 
           .stats-container {
-            display: flex;
-            gap: 30px;
-            margin-top: 30px;
+            flex-direction: column;
+            gap: 15px;
           }
 
           .stat-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 15px 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
+            padding: 15px 30px;
           }
 
-          .stat-box:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+          .lawyers-grid {
+            grid-template-columns: 1fr;
           }
-
-          .stat-number {
-            display: block;
-            color: #ffffff;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-            font-family: 'Poppins', sans-serif;
-          }
-
-          .stat-label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-
-          /* Responsive styles */
-          @media (max-width: 768px) {
-            .header-container {
-              padding: 30px 0;
-            }
-
-            h1 {
-              font-size: 2.5rem;
-            }
-
-            .subtitle {
-              font-size: 1rem;
-            }
-
-            .stats-container {
-              flex-direction: column;
-              gap: 15px;
-            }
-
-            .stat-box {
-              padding: 12px 20px;
-            }
-
-            .stat-number {
-              font-size: 1.8rem;
-            }
-          }
-        `}</style>
-      </div>
-      <ToastContainer 
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        limit={3}
-      />
-      <Footer />
-    </div>
+        }
+      `}</style>
+    </>
   );
 };
 

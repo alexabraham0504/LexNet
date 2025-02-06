@@ -18,6 +18,7 @@ import { FaCheck, FaTimes, FaUserShield, FaUsers } from "react-icons/fa";
 import styled from "styled-components";
 import Footer from "../../components/footer/footer-admin";
 import Navbar from "../../components/navbar/navbar-admin";
+import AdminIconPanel from "../../components/AdminIconPanel";
 
 // Update PageWrapper back to light theme
 const PageWrapper = styled.div`
@@ -411,7 +412,8 @@ const AdminUserManagement = () => {
   return (
     <PageWrapper>
       <Navbar />
-      <Container>
+      <AdminIconPanel />
+      <Container style={{ marginLeft: '60px' }}>
         <HeaderSection>
           <FaUsers size={32} color="#2c3e50" />
           <Title variant="h4">User Account Management</Title>
@@ -529,6 +531,14 @@ const AdminUserManagement = () => {
         )}
       </Container>
       <Footer />
+
+      <style jsx="true">{`
+        @media (max-width: 768px) {
+          div[style*="margin-left: 60px"] {
+            margin-left: 50px !important;
+          }
+        }
+      `}</style>
     </PageWrapper>
   );
 };
