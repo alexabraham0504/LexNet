@@ -5,6 +5,82 @@ import Navbar from "../../components/navbar/navbar-lawyer";
 import '@fontsource/poppins';
 import '@fontsource/roboto';
 import LawyerIconPanel from '../../components/LawyerIconPanel';
+import Select from 'react-select';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LocationPicker from '../../components/LocationPicker';
+import IconButton from '@mui/material/IconButton';
+
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBLSAPqtZQ4KhCTNP9zkM2Dke9giqwhENc';
+
+const SPECIALIZATIONS = [
+  "Civil Law",
+  "Criminal Law",
+  "Corporate Law",
+  "Family Law",
+  "Real Estate Law",
+  "Intellectual Property Law",
+  "Tax Law",
+  "Labor and Employment Law",
+  "Constitutional Law",
+  "Environmental Law",
+  "Immigration Law",
+  "Bankruptcy Law",
+  "Consumer Protection Law",
+  "Human Rights Law",
+  "Medical Law",
+  "Maritime Law",
+  "International Law",
+  "Administrative Law",
+  "Banking and Finance Law",
+  "Competition Law",
+  "Cyber Law",
+  "Education Law",
+  "Elder Law",
+  "Entertainment Law",
+  "Insurance Law",
+  "Juvenile Law",
+  "Media Law",
+  "Military Law",
+  "Patent Law",
+  "Personal Injury Law",
+  "Securities Law",
+  "Sports Law",
+  "Technology Law",
+  "Telecommunications Law",
+  "Transportation Law",
+  "Trust and Estate Law",
+  "White Collar Crime",
+  "Women and Child Rights",
+  "Alternative Dispute Resolution",
+  "Arbitration Law",
+  "Commercial Law"
+];
+
+const COURTS = [
+  { value: "Supreme Court", label: "Supreme Court" },
+  { value: "High Court", label: "High Court" },
+  { value: "District Court", label: "District Court" },
+  { value: "Sessions Court", label: "Sessions Court" },
+  { value: "Family Court", label: "Family Court" },
+  { value: "Consumer Court", label: "Consumer Court" },
+  { value: "Labour Court", label: "Labour Court" },
+  { value: "Tax Court", label: "Tax Court" },
+  { value: "Criminal Court", label: "Criminal Court" },
+  { value: "Civil Court", label: "Civil Court" },
+];
+
+const LANGUAGES = [
+  { value: "English", label: "English" },
+  { value: "Hindi", label: "Hindi" },
+  { value: "Malayalam", label: "Malayalam" },
+  // Add more languages as needed
+];
 
 const LawyerRegistration = () => {
   const [lawyerData, setLawyerData] = useState({
@@ -14,7 +90,16 @@ const LawyerRegistration = () => {
     phone: "",
     AEN: "",
     specialization: "",
-    location: "",
+    location: {
+      address: "",
+      lat: null,
+      lng: null
+    },
+    officeLocation: {
+      address: "",
+      lat: null,
+      lng: null
+    },
     availability: "Available",
     fees: "",
     profilePicture: null,
@@ -23,6 +108,18 @@ const LawyerRegistration = () => {
     visibleToClients: false,
     verificationStatus: "Pending",
     additionalCertificates: [],
+    languagesSpoken: [],
+    caseHistory: "",
+    bio: "",
+    officeAddress: "",
+    yearsOfExperience: "",
+    lawFirm: "",
+    appointmentFees: "",
+    consultationFees: "",
+    caseDetailsFees: "",
+    videoCallFees: "",
+    caseHandlingFees: "",
+    practicingCourts: [],
   });
 
   const [newCertificate, setNewCertificate] = useState({
@@ -33,6 +130,18 @@ const LawyerRegistration = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  // Add new state for fee error dialog
+  const [feeErrorOpen, setFeeErrorOpen] = useState(false);
+  const [feeErrorMessage, setFeeErrorMessage] = useState("");
+
+  // Add new state for map dialog
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
+
+  // Add a new state for office location
+  const [showOfficeLocationPicker, setShowOfficeLocationPicker] = useState(false);
 
   useEffect(() => {
     const userEmail = sessionStorage.getItem("email");
@@ -43,6 +152,7 @@ const LawyerRegistration = () => {
   useEffect(() => {
     const fetchLawyerData = async () => {
       try {
+        setIsLoading(true);
         const userEmail = sessionStorage.getItem("email");
         if (!userEmail) return;
 
@@ -50,28 +160,44 @@ const LawyerRegistration = () => {
           `http://localhost:5000/api/lawyers/user-details/${userEmail}`
         );
 
-        console.log("Lawyer data received:", response.data); // Debug log
-        console.log("Profile picture path:", response.data.profilePicture); // Debug log
+        console.log("Received data:", response.data);
 
         setLawyerData((prevData) => ({
           ...prevData,
           ...response.data,
+          fullname: response.data.fullname || '', // Explicitly set fullname
           id: response.data._id,
           verificationStatus: response.data.isVerified ? "Approved" : "Pending",
+          location: {
+            address: response.data.location?.address || '',
+            lat: response.data.location?.lat || null,
+            lng: response.data.location?.lng || null
+          },
+          officeLocation: {
+            address: response.data.officeLocation?.address || '',
+            lat: response.data.officeLocation?.lat || null,
+            lng: response.data.officeLocation?.lng || null
+          }
         }));
       } catch (error) {
         console.error("Error fetching lawyer data:", error);
         setError("Failed to fetch user data");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchLawyerData();
   }, []);
 
-  // Render loading state
-  if (isLoading) {
-    return <div>Loading user data...</div>;
-  }
+  // Add this useEffect to handle auto-resize when data changes
+  useEffect(() => {
+    const homeAddressTextarea = document.querySelector('textarea[value="' + lawyerData.location.address + '"]');
+    const officeAddressTextarea = document.querySelector('textarea[value="' + lawyerData.officeLocation.address + '"]');
+    
+    if (homeAddressTextarea) autoResizeTextArea(homeAddressTextarea);
+    if (officeAddressTextarea) autoResizeTextArea(officeAddressTextarea);
+  }, [lawyerData.location.address, lawyerData.officeLocation.address]);
 
   // Render error state
   if (error) {
@@ -80,15 +206,57 @@ const LawyerRegistration = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // List of immutable fields
+    const immutableFields = ['fullname', 'email', 'AEN'];
+    
+    // If the field is immutable and already has a value, don't allow changes
+    if (immutableFields.includes(name) && lawyerData[name]) {
+      return;
+    }
 
-    if (name === "fees") {
-      // Remove any non-numeric characters and leading zeros
-      const numericValue = value.replace(/[^0-9]/g, "").replace(/^0+/, "");
+    // Handle all fee fields
+    if (name.endsWith('Fees')) {
+      // Remove existing commas and non-numeric characters
+      const numericValue = value.replace(/[^0-9]/g, "");
+      
+      // Remove leading zeros
+      const valueWithoutLeadingZeros = numericValue.replace(/^0+/, '');
+      
+      // If empty after removing zeros, set to empty string
+      if (!valueWithoutLeadingZeros) {
+        setLawyerData(prevData => ({
+          ...prevData,
+          [name]: ''
+        }));
+        return;
+      }
+      
+      // Validate maximum amount
+      if (valueWithoutLeadingZeros.length > 9) {
+        setFeeErrorMessage(`${name.replace('Fees', ' Fees')} cannot exceed ₹99,999,999`);
+        setFeeErrorOpen(true);
+        return;
+      }
+      
+      // Format number with commas
+      const formattedValue = valueWithoutLeadingZeros.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+      setLawyerData(prevData => ({
+        ...prevData,
+        [name]: formattedValue,
+      }));
+    } 
+    // Handle phone number
+    else if (name === 'phone') {
+      const phoneNumber = value.replace(/[^0-9]/g, "").slice(0, 10);
       setLawyerData((prevData) => ({
         ...prevData,
-        [name]: numericValue,
+        [name]: phoneNumber,
       }));
-    } else {
+    }
+    // Handle other fields
+    else {
       setLawyerData((prevData) => ({
         ...prevData,
         [name]: type === "checkbox" ? checked : value,
@@ -102,9 +270,11 @@ const LawyerRegistration = () => {
 
     // Prevent changing certificates if they already exist
     if (
-      (name === "lawDegreeCertificate" && lawyerData.lawDegreeCertificate) ||
-      (name === "barCouncilCertificate" && lawyerData.barCouncilCertificate)
+      ((name === "lawDegreeCertificate" && lawyerData.lawDegreeCertificate) ||
+      (name === "barCouncilCertificate" && lawyerData.barCouncilCertificate))
     ) {
+      alert("This certificate cannot be modified once uploaded.");
+      e.target.value = ''; // Reset the file input
       return;
     }
 
@@ -131,6 +301,10 @@ const LawyerRegistration = () => {
       ...prev,
       description: e.target.value,
     }));
+  };
+
+  const handleAlertClose = () => {
+    setAlertOpen(false);
   };
 
   const handleAddCertificate = async () => {
@@ -200,10 +374,14 @@ const LawyerRegistration = () => {
         ...refreshResponse.data,
       }));
 
-      alert("Certificate added successfully!");
+      // Show success alert
+      setAlertMessage("Certificate added successfully!");
+      setAlertOpen(true);
     } catch (error) {
       console.error("Error adding certificate:", error);
-      alert(error.response?.data?.message || "Failed to add certificate.");
+      // Show error alert
+      setAlertMessage(error.response?.data?.message || "Failed to add certificate.");
+      setAlertOpen(true);
     }
   };
 
@@ -220,49 +398,116 @@ const LawyerRegistration = () => {
         ),
       }));
 
-      alert("Certificate removed successfully!");
+      // Show success alert
+      setAlertMessage("Certificate removed successfully!");
+      setAlertOpen(true);
     } catch (error) {
       console.error("Error removing certificate:", error);
-      alert("Failed to remove certificate.");
+      // Show error alert
+      setAlertMessage("Failed to remove certificate.");
+      setAlertOpen(true);
     }
   };
 
-  const handleSave = async () => {
+  const handleLanguageChange = (selectedOptions) => {
+    setLawyerData(prevData => ({
+      ...prevData,
+      languagesSpoken: selectedOptions ? selectedOptions.map(option => option.value) : []
+    }));
+  };
+
+  const handleCourtsChange = (selectedOptions) => {
+    setLawyerData(prevData => ({
+      ...prevData,
+      practicingCourts: selectedOptions ? selectedOptions.map(option => option.value) : []
+    }));
+  };
+
+  const handleLocationChange = (newLocation) => {
+    setLawyerData(prev => ({
+      ...prev,
+      location: newLocation,
+      officeAddress: newLocation.address
+    }));
+  };
+
+  const handleOfficeLocationChange = (newLocation) => {
+    setLawyerData(prev => ({
+      ...prev,
+      officeLocation: {
+        address: newLocation.address,
+        lat: newLocation.lat,
+        lng: newLocation.lng
+      }
+    }));
+  };
+
+  const handleOfficeLocationPickerOpen = () => {
+    setShowOfficeLocationPicker(true);
+  };
+
+  const handleOfficeLocationPickerClose = () => {
+    setShowOfficeLocationPicker(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
     try {
-      setIsLoading(true);
       setError("");
 
       // Validate required fields
-      const requiredFields = ['fullname', 'phone', 'AEN', 'fees'];
+      const requiredFields = [
+        'fullname', 
+        'phone', 
+        'AEN', 
+        'appointmentFees',
+        'consultationFees',
+        'caseDetailsFees',
+        'videoCallFees',
+        'caseHandlingFees'
+      ];
+      
       const missingFields = requiredFields.filter(field => !lawyerData[field]);
       
       if (missingFields.length > 0) {
         throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
-      // Get email from session storage
-      const userEmail = sessionStorage.getItem("email");
-      if (!userEmail) {
-        throw new Error("User email not found. Please login again.");
-      }
-
-      // Validate required certificates for new registration
-      if (!lawyerData.id && (!lawyerData.lawDegreeCertificate || !lawyerData.barCouncilCertificate)) {
-        throw new Error("Law Degree Certificate and Bar Council Certificate are required for registration");
+      // Validate practicing courts
+      if (!lawyerData.practicingCourts || lawyerData.practicingCourts.length === 0) {
+        throw new Error('Please select at least one practicing court');
       }
 
       const formData = new FormData();
-
-      // Append basic fields
+      
+      // Add existing form data
       formData.append('fullname', lawyerData.fullname);
-      formData.append('email', userEmail);
+      formData.append('email', sessionStorage.getItem("email"));
       formData.append('phone', lawyerData.phone);
       formData.append('AEN', lawyerData.AEN);
       formData.append('specialization', lawyerData.specialization || '');
-      formData.append('location', lawyerData.location || '');
-      formData.append('fees', lawyerData.fees);
-      formData.append('availability', lawyerData.availability);
-      formData.append('visibleToClients', lawyerData.visibleToClients);
+      
+      // Ensure location data is properly stringified
+      if (lawyerData.location) {
+        formData.append('location', JSON.stringify({
+          address: lawyerData.location.address || '',
+          lat: lawyerData.location.lat || null,
+          lng: lawyerData.location.lng || null
+        }));
+      }
+
+      // Append all fee fields (remove commas before sending)
+      const feeFields = ['appointmentFees', 'consultationFees', 'caseDetailsFees', 'videoCallFees', 'caseHandlingFees'];
+      feeFields.forEach(field => {
+        const feeValue = lawyerData[field].replace(/,/g, '');
+        formData.append(field, feeValue);
+      });
+
+      // Append languages spoken
+      formData.append('languagesSpoken', JSON.stringify(lawyerData.languagesSpoken || []));
+
+      // Append practicing courts
+      formData.append('practicingCourts', JSON.stringify(lawyerData.practicingCourts || []));
 
       // Append files if they exist and are new
       if (lawyerData.profilePicture instanceof File) {
@@ -273,6 +518,24 @@ const LawyerRegistration = () => {
       }
       if (lawyerData.barCouncilCertificate instanceof File) {
         formData.append('barCouncilCertificate', lawyerData.barCouncilCertificate);
+      }
+
+      // Add availability and visibility
+      formData.append('availability', lawyerData.availability || 'Available');
+      formData.append('visibleToClients', lawyerData.visibleToClients || false);
+
+      // Ensure office location data is properly stringified
+      if (lawyerData.officeLocation) {
+        formData.append('officeLocation', JSON.stringify({
+          address: lawyerData.officeLocation.address || '',
+          lat: lawyerData.officeLocation.lat || null,
+          lng: lawyerData.officeLocation.lng || null
+        }));
+      }
+
+      // Log the data being sent
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
       }
 
       const response = await axios.post(
@@ -286,21 +549,35 @@ const LawyerRegistration = () => {
       );
 
       if (response.data.success) {
-        alert(response.data.message);
+        setAlertMessage(response.data.message);
+        setAlertOpen(true);
+        
+        // Update the state with the returned data, preserving location information
         setLawyerData(prev => ({
           ...prev,
           ...response.data.lawyer,
-          id: response.data.lawyer._id
+          id: response.data.lawyer._id,
+          location: {
+            address: response.data.lawyer.location?.address || prev.location.address,
+            lat: response.data.lawyer.location?.lat || prev.location.lat,
+            lng: response.data.lawyer.location?.lng || prev.location.lng
+          },
+          officeLocation: {
+            address: response.data.lawyer.officeLocation?.address || prev.officeLocation.address,
+            lat: response.data.lawyer.officeLocation?.lat || prev.officeLocation.lat,
+            lng: response.data.lawyer.officeLocation?.lng || prev.officeLocation.lng
+          }
         }));
       } else {
-        throw new Error(response.data.message);
+        throw new Error(response.data.message || 'Failed to save lawyer profile');
       }
 
     } catch (error) {
-      console.error('Error saving lawyer profile:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to save lawyer profile');
-    } finally {
-      setIsLoading(false);
+      console.error("Error saving lawyer profile:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to save lawyer profile";
+      setError(errorMessage);
+      setAlertMessage(errorMessage);
+      setAlertOpen(true);
     }
   };
 
@@ -311,6 +588,28 @@ const LawyerRegistration = () => {
     return `http://localhost:5000/uploads/${imagePath}`;
   };
 
+  // Add handleFeeErrorClose function
+  const handleFeeErrorClose = () => {
+    setFeeErrorOpen(false);
+  };
+
+  // Add handlers for map dialog
+  const handleOpenMap = () => {
+    setMapDialogOpen(true);
+  };
+
+  const handleCloseMap = () => {
+    setMapDialogOpen(false);
+  };
+
+  // Add a new function to handle textarea auto-resize
+  const autoResizeTextArea = (element) => {
+    if (element) {
+      element.style.height = 'auto';
+      element.style.height = (element.scrollHeight) + 'px';
+    }
+  };
+
   return (
     <div style={styles.pageContainer}>
       <Navbar />
@@ -318,7 +617,12 @@ const LawyerRegistration = () => {
       <div style={styles.profileContainer}>
         <h2 style={styles.heading}>Lawyer Profile</h2>
 
-        {error && <div style={styles.errorMessage}>{error}</div>}
+        {error && (
+          <div style={styles.errorAlert}>
+            <span style={styles.errorIcon}>⚠️</span>
+            {error}
+          </div>
+        )}
 
         <div style={styles.verificationStatus}>
           Verification Status: {lawyerData.verificationStatus}
@@ -353,85 +657,120 @@ const LawyerRegistration = () => {
           </div>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSave();
-          }}
-        >
+        <form onSubmit={handleSave}>
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Full Name</label>
+              <label style={styles.label}>Full Name*</label>
               <input
                 type="text"
-                id="fullname"
                 name="fullname"
                 value={lawyerData.fullname}
                 onChange={handleChange}
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  backgroundColor: lawyerData.fullname ? '#f5f5f5' : '#fff',
+                  cursor: lawyerData.fullname ? 'not-allowed' : 'text',
+                }}
+                disabled={!!lawyerData.fullname}
                 required
-                readOnly={lawyerData.verificationStatus === "Approved"}
               />
+              {lawyerData.fullname && (
+                <small style={styles.helperText}>This field cannot be modified once set</small>
+              )}
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Email</label>
+              <label style={styles.label}>Email*</label>
               <input
                 type="email"
-                id="email"
                 name="email"
                 value={lawyerData.email}
-                onChange={handleChange}
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  backgroundColor: '#f5f5f5',
+                  cursor: 'not-allowed',
+                }}
+                disabled={true}
                 required
-                readOnly={lawyerData.verificationStatus === "Approved"}
               />
+              <small style={styles.helperText}>Email cannot be modified</small>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Phone</label>
+              <label style={styles.label}>Phone Number*</label>
               <input
                 type="tel"
-                id="phone"
                 name="phone"
                 value={lawyerData.phone}
                 onChange={handleChange}
                 style={styles.input}
+                placeholder="Enter 10-digit phone number"
                 required
-                readOnly={lawyerData.verificationStatus === "Approved"}
+                pattern="[0-9]{10}"
+                maxLength="10"
               />
+              <small style={styles.helperText}>You can update your phone number anytime</small>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Advocate Enrollment Number</label>
+              <label style={styles.label}>Advocate Enrollment Number*</label>
               <input
                 type="text"
                 name="AEN"
                 value={lawyerData.AEN}
                 onChange={handleChange}
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  backgroundColor: lawyerData.AEN ? '#f5f5f5' : '#fff',
+                  cursor: lawyerData.AEN ? 'not-allowed' : 'text',
+                }}
+                disabled={!!lawyerData.AEN}
                 required
-                readOnly={lawyerData.verificationStatus === "Approved"}
               />
+              {lawyerData.AEN && (
+                <small style={styles.helperText}>This field cannot be modified once set</small>
+              )}
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Specialization</label>
-              <input
-                type="text"
+              <select
                 name="specialization"
                 value={lawyerData.specialization}
                 onChange={handleChange}
-                style={styles.input}
+                style={styles.select}
+                required
                 readOnly={lawyerData.verificationStatus === "Approved"}
-              />
+              >
+                <option value="">Select Specialization</option>
+                {SPECIALIZATIONS.map((specialization) => (
+                  <option key={specialization} value={specialization}>
+                    {specialization}
+                  </option>
+                ))}
+              </select>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Location</label>
-              <input
-                type="text"
-                name="location"
-                value={lawyerData.location}
-                onChange={handleChange}
-                style={styles.input}
-                readOnly={lawyerData.verificationStatus === "Approved"}
-              />
+              <label style={styles.label}>Home Address*</label>
+              <div style={styles.locationInputGroup}>
+                <textarea
+                  value={lawyerData.location.address || ''}
+                  style={{
+                    ...styles.locationInput,
+                    resize: 'none', // Remove manual resize
+                    overflow: 'hidden', // Hide scrollbar
+                    minHeight: '50px'
+                  }}
+                  placeholder="Click to select location"
+                  readOnly
+                  onClick={handleOpenMap}
+                  ref={(element) => element && autoResizeTextArea(element)}
+                  onInput={(e) => autoResizeTextArea(e.target)}
+                />
+                <button 
+                  type="button"
+                  onClick={handleOpenMap}
+                  style={styles.mapButton}
+                >
+                  📍 Select
+                </button>
+              </div>
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Availability</label>
@@ -447,74 +786,237 @@ const LawyerRegistration = () => {
               </select>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Fees (₹)</label>
+              <label style={styles.label}>Appointment Fees (₹)*</label>
               <input
                 type="text"
-                name="fees"
-                value={
-                  lawyerData.fees ? lawyerData.fees.replace(/[^0-9]/g, "") : ""
-                }
+                name="appointmentFees"
+                value={lawyerData.appointmentFees}
                 onChange={handleChange}
                 style={styles.input}
-                placeholder="Enter amount in Rupees"
+                placeholder="Enter amount (min ₹100)"
                 required
-                pattern="[0-9]*"
-                readOnly={lawyerData.verificationStatus === "Approved"}
               />
+              <small style={styles.helperText}>Enter amount without currency symbol</small>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Consultation Fees (₹)*</label>
+              <input
+                type="text"
+                name="consultationFees"
+                value={lawyerData.consultationFees}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="Enter amount (min ₹100)"
+                required
+              />
+              <small style={styles.helperText}>Enter amount without currency symbol</small>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Case Details Fees (₹)*</label>
+              <input
+                type="text"
+                name="caseDetailsFees"
+                value={lawyerData.caseDetailsFees}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="Enter amount (min ₹100)"
+                required
+              />
+              <small style={styles.helperText}>Enter amount without currency symbol</small>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Video Call Fees (₹)*</label>
+              <input
+                type="text"
+                name="videoCallFees"
+                value={lawyerData.videoCallFees}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="Enter amount (min ₹100)"
+                required
+              />
+              <small style={styles.helperText}>Enter amount without currency symbol</small>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Case Handling Fees (₹)*</label>
+              <input
+                type="text"
+                name="caseHandlingFees"
+                value={lawyerData.caseHandlingFees}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="Enter amount (min ₹100)"
+                required
+              />
+              <small style={styles.helperText}>Enter amount without currency symbol</small>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Languages Spoken*</label>
+              <Select
+                isMulti
+                name="languagesSpoken"
+                options={LANGUAGES}
+                value={LANGUAGES.filter(lang => 
+                  lawyerData.languagesSpoken?.includes(lang.value)
+                )}
+                onChange={handleLanguageChange}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      border: '1px solid #3949ab',
+                    },
+                  }),
+                  multiValue: (base) => ({
+                    ...base,
+                    backgroundColor: '#e8eaf6',
+                    borderRadius: '4px',
+                  }),
+                  multiValueLabel: (base) => ({
+                    ...base,
+                    color: '#3949ab',
+                    fontWeight: 500,
+                  }),
+                  multiValueRemove: (base) => ({
+                    ...base,
+                    color: '#3949ab',
+                    '&:hover': {
+                      backgroundColor: '#c5cae9',
+                      color: '#1a237e',
+                    },
+                  }),
+                }}
+                placeholder="Select languages..."
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Practicing Courts*</label>
+              <Select
+                isMulti
+                name="practicingCourts"
+                options={COURTS}
+                value={COURTS.filter(court => 
+                  lawyerData.practicingCourts?.includes(court.value)
+                )}
+                onChange={handleCourtsChange}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      border: '1px solid #3949ab',
+                    },
+                  }),
+                  multiValue: (base) => ({
+                    ...base,
+                    backgroundColor: '#e8eaf6',
+                    borderRadius: '4px',
+                  }),
+                  multiValueLabel: (base) => ({
+                    ...base,
+                    color: '#3949ab',
+                    fontWeight: 500,
+                  }),
+                  multiValueRemove: (base) => ({
+                    ...base,
+                    color: '#3949ab',
+                    '&:hover': {
+                      backgroundColor: '#c5cae9',
+                      color: '#1a237e',
+                    },
+                  }),
+                }}
+                placeholder="Select practicing courts..."
+                required
+              />
+              <small style={styles.helperText}>Select all courts where you practice</small>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Case History / Success Rate</label>
+              <textarea
+                name="caseHistory"
+                value={lawyerData.caseHistory}
+                onChange={handleChange}
+                style={styles.textarea}
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Bio / About Section</label>
+              <textarea
+                name="bio"
+                value={lawyerData.bio}
+                onChange={handleChange}
+                style={styles.textarea}
+              />
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Office Address</label>
+              <div style={styles.locationInputGroup}>
+                <textarea
+                  value={lawyerData.officeLocation.address || ''}
+                  style={{
+                    ...styles.locationInput,
+                    resize: 'none', // Remove manual resize
+                    overflow: 'hidden', // Hide scrollbar
+                    minHeight: '50px'
+                  }}
+                  placeholder="Click to select location"
+                  readOnly
+                  onClick={handleOfficeLocationPickerOpen}
+                  ref={(element) => element && autoResizeTextArea(element)}
+                  onInput={(e) => autoResizeTextArea(e.target)}
+                />
+                <button 
+                  type="button"
+                  onClick={handleOfficeLocationPickerOpen}
+                  style={styles.mapButton}
+                >
+                  📍 Select
+                </button>
+              </div>
             </div>
           </div>
 
           <div style={styles.row}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Law Degree Certificate</label>
-              {lawyerData.lawDegreeCertificate ? (
-                <div style={styles.certificateDisplay}>
-                  <span style={styles.certificateText}>
-                    Certificate uploaded ✓
-                  </span>
-                  <a
-                    href={`http://localhost:5000/uploads/${lawyerData.lawDegreeCertificate}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.viewLink}
-                  >
-                    View Certificate
-                  </a>
-                </div>
-              ) : (
-                <input
-                  type="file"
-                  name="lawDegreeCertificate"
-                  onChange={handleFileChange}
-                  style={styles.input}
-                  required
-                />
+              <label style={styles.label}>Law Degree Certificate*</label>
+              <input
+                type="file"
+                name="lawDegreeCertificate"
+                onChange={handleFileChange}
+                style={{
+                  ...styles.input,
+                  backgroundColor: lawyerData.lawDegreeCertificate ? '#f5f5f5' : '#fff',
+                  cursor: lawyerData.lawDegreeCertificate ? 'not-allowed' : 'pointer',
+                }}
+                disabled={!!lawyerData.lawDegreeCertificate}
+                required={!lawyerData.lawDegreeCertificate}
+              />
+              {lawyerData.lawDegreeCertificate && (
+                <small style={styles.helperText}>Certificate already uploaded and cannot be modified</small>
               )}
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Bar Council Certificate</label>
-              {lawyerData.barCouncilCertificate ? (
-                <div style={styles.certificateDisplay}>
-                  <span style={styles.certificateText}>
-                    Certificate uploaded ✓
-                  </span>
-                  <a
-                    href={`http://localhost:5000/uploads/${lawyerData.barCouncilCertificate}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.viewLink}
-                  >
-                    View Certificate
-                  </a>
-                </div>
-              ) : (
-                <input
-                  type="file"
-                  name="barCouncilCertificate"
-                  onChange={handleFileChange}
-                  style={styles.input}
-                  required
-                />
+              <label style={styles.label}>Bar Council Certificate*</label>
+              <input
+                type="file"
+                name="barCouncilCertificate"
+                onChange={handleFileChange}
+                style={{
+                  ...styles.input,
+                  backgroundColor: lawyerData.barCouncilCertificate ? '#f5f5f5' : '#fff',
+                  cursor: lawyerData.barCouncilCertificate ? 'not-allowed' : 'pointer',
+                }}
+                disabled={!!lawyerData.barCouncilCertificate}
+                required={!lawyerData.barCouncilCertificate}
+              />
+              {lawyerData.barCouncilCertificate && (
+                <small style={styles.helperText}>Certificate already uploaded and cannot be modified</small>
               )}
             </div>
           </div>
@@ -631,7 +1133,7 @@ const LawyerRegistration = () => {
             >
               <div style={styles.buttonContent}>
                 {isLoading ? (
-                  <span style={{ opacity: 0.8 }}>Processing...</span>
+                  <span>Loading...</span>
                 ) : (
                   <span>{lawyerData.id ? "Update" : "Register"}</span>
                 )}
@@ -639,8 +1141,206 @@ const LawyerRegistration = () => {
             </button>
           </div>
         </form>
+
+        <Dialog
+          open={alertOpen}
+          onClose={handleAlertClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+          PaperProps={{
+            style: {
+              borderRadius: '15px',
+              padding: '30px',
+              background: 'linear-gradient(135deg, #f6f9fc 0%, #eef5fe 100%)',
+              boxShadow: '0 8px 32px rgba(31, 38, 135, 0.1)',
+              textAlign: 'center',
+              maxWidth: '400px',
+              margin: 'auto',
+              animation: 'jumpIn 0.6s ease',
+            },
+          }}
+        >
+          <DialogTitle id="alert-dialog-title" style={{ color: '#1a237e', fontWeight: 'bold', fontSize: '1.5rem' }}>
+            <div className="icon-animation">
+              <CheckCircleIcon style={{ fontSize: '3rem', color: '#4caf50', marginBottom: '10px' }} />
+            </div>
+            <div className="title-animation">Success</div>
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText 
+              id="alert-dialog-description" 
+              className="content-animation"
+              style={{ color: '#333', fontSize: '1rem', marginBottom: '20px' }}
+            >
+              {alertMessage}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions style={{ justifyContent: 'center' }}>
+            <Button
+              onClick={handleAlertClose}
+              className="button-animation"
+              style={{
+                backgroundColor: '#3949ab',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#303f9f';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#3949ab';
+              }}
+            >
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Fee Error Dialog */}
+        <Dialog
+          open={feeErrorOpen}
+          onClose={handleFeeErrorClose}
+          aria-labelledby="fee-error-dialog-title"
+          PaperProps={{
+            style: {
+              borderRadius: '15px',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #f6f9fc 0%, #eef5fe 100%)',
+              boxShadow: '0 8px 32px rgba(31, 38, 135, 0.1)',
+              animation: 'jumpIn 0.6s ease',
+            },
+          }}
+        >
+          <DialogTitle 
+            id="fee-error-dialog-title" 
+            style={{ 
+              color: '#d32f2f', 
+              fontWeight: 'bold',
+              textAlign: 'center'
+            }}
+          >
+            <span style={{ marginRight: '10px' }}>⚠️</span>
+            Fee Limit Exceeded
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText style={{ color: '#333', textAlign: 'center' }}>
+              {feeErrorMessage}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions style={{ justifyContent: 'center' }}>
+            <Button
+              onClick={handleFeeErrorClose}
+              style={{
+                backgroundColor: '#d32f2f',
+                color: '#fff',
+                borderRadius: '8px',
+                padding: '8px 20px',
+                textTransform: 'none',
+                fontWeight: 'bold',
+                '&:hover': {
+                  backgroundColor: '#b71c1c',
+                },
+              }}
+            >
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Add Map Dialog */}
+        <Dialog
+          open={mapDialogOpen}
+          onClose={handleCloseMap}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            style: {
+              borderRadius: '15px',
+              padding: '20px',
+              height: '80vh'
+            }
+          }}
+        >
+          <DialogTitle style={styles.mapDialogTitle}>
+            Select Office Location
+            <IconButton
+              onClick={handleCloseMap}
+              style={styles.closeButton}
+              aria-label="close"
+            >
+              ✕
+            </IconButton>
+          </DialogTitle>
+          <DialogContent style={styles.mapDialogContent}>
+            <LocationPicker
+              value={lawyerData.location}
+              onChange={(newLocation) => {
+                setLawyerData(prev => ({
+                  ...prev,
+                  location: newLocation
+                }));
+              }}
+            />
+          </DialogContent>
+          <DialogActions style={styles.mapDialogActions}>
+            <Button 
+              onClick={handleCloseMap}
+              variant="contained"
+              style={styles.confirmLocationButton}
+            >
+              Confirm Location
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Add new Dialog for office location picker */}
+        <Dialog
+          open={showOfficeLocationPicker}
+          onClose={handleOfficeLocationPickerClose}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            style: {
+              borderRadius: '15px',
+              padding: '20px',
+              height: '80vh'
+            }
+          }}
+        >
+          <DialogTitle style={styles.mapDialogTitle}>
+            Select Office Location
+            <IconButton
+              onClick={handleOfficeLocationPickerClose}
+              style={styles.closeButton}
+            >
+              ✕
+            </IconButton>
+          </DialogTitle>
+          <DialogContent style={styles.mapDialogContent}>
+            <LocationPicker
+              value={lawyerData.officeLocation}
+              onChange={handleOfficeLocationChange}
+            />
+          </DialogContent>
+          <DialogActions style={styles.mapDialogActions}>
+            <Button
+              onClick={handleOfficeLocationPickerClose}
+              variant="contained"
+              style={styles.confirmLocationButton}
+            >
+              Confirm Location
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
-      <Footer />
+      <div style={footerStyles}>
+        <Footer />
+      </div>
 
       <style jsx="true">{`
         @media (max-width: 768px) {
@@ -650,6 +1350,67 @@ const LawyerRegistration = () => {
             width: 95%;
             left: 25px;
           }
+        }
+
+        @keyframes jumpIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.5);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.1);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .icon-animation {
+          animation: scaleIn 0.5s ease forwards;
+        }
+
+        .title-animation {
+          animation: fadeIn 0.5s ease forwards;
+          animation-delay: 0.3s;
+          opacity: 0;
+        }
+
+        .content-animation {
+          animation: fadeIn 0.5s ease forwards;
+          animation-delay: 0.5s;
+          opacity: 0;
+        }
+
+        .button-animation {
+          animation: fadeIn 0.5s ease forwards;
+          animation-delay: 0.7s;
+          opacity: 0;
         }
       `}</style>
     </div>
@@ -664,7 +1425,9 @@ const styles = {
     padding: '20px 0',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center'
+    alignItems: 'center',
+    position: 'relative',
+    paddingBottom: '150px'
   },
   profileContainer: {
     maxWidth: '1100px',
@@ -676,7 +1439,8 @@ const styles = {
     backdropFilter: 'blur(10px)',
     width: '90%',
     position: 'relative',
-    left: '30px'
+    left: '30px',
+    marginBottom: '50px'
   },
   heading: {
     textAlign: 'center',
@@ -716,17 +1480,14 @@ const styles = {
     marginBottom: '40px',
   },
   formGroup: {
-    marginBottom: '25px',
-    position: 'relative',
+    marginBottom: '20px',
   },
   label: {
     display: 'block',
-    fontSize: '0.9rem',
-    fontWeight: '500',
-    color: '#333',
     marginBottom: '8px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: '#333',
   },
   input: {
     width: '100%',
@@ -751,10 +1512,19 @@ const styles = {
     transition: 'all 0.3s ease',
     backgroundColor: '#fff',
     cursor: 'pointer',
+    appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 1rem center',
+    backgroundSize: '1em',
     '&:focus': {
       outline: 'none',
       borderColor: '#3949ab',
       boxShadow: '0 0 0 3px rgba(57, 73, 171, 0.1)',
+    },
+    '&:disabled': {
+      backgroundColor: '#f5f5f5',
+      cursor: 'not-allowed',
     },
   },
   profileImageWrapper: {
@@ -845,19 +1615,19 @@ const styles = {
     zIndex: 1,
   },
   saveButton: {
-    background: 'linear-gradient(135deg, #1a237e 0%, #3949ab 100%)',
+    padding: '15px 30px',
+    fontSize: '1.1rem',
+    fontWeight: '600',
     color: '#fff',
-    padding: '15px 40px',
+    backgroundColor: '#3949ab',
     border: 'none',
     borderRadius: '10px',
-    fontSize: '1.1rem',
-    fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 8px 20px rgba(57, 73, 171, 0.3)',
-    },
+    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
+    border: '1px solid rgba(255, 255, 255, 0.18)'
   },
   registerButton: {
     background:
@@ -996,31 +1766,112 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
   },
-  errorMessage: {
-    background: '#ffebee',
+  errorAlert: {
+    backgroundColor: '#ffebee',
     color: '#c62828',
-    padding: '15px 20px',
-    borderRadius: '10px',
-    marginBottom: '30px',
-    fontSize: '0.9rem',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    marginBottom: '20px',
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
+    fontSize: '0.9rem',
+    animation: 'slideIn 0.3s ease',
+    border: '1px solid #ef9a9a',
   },
-  verificationBadge: {
-    display: 'inline-flex',
+  errorIcon: {
+    fontSize: '1.2rem',
+  },
+  '@keyframes slideIn': {
+    from: {
+      transform: 'translateY(-10px)',
+      opacity: 0,
+    },
+    to: {
+      transform: 'translateY(0)',
+      opacity: 1,
+    },
+  },
+  locationInputGroup: {
+    display: 'flex',
+    gap: '10px',
     alignItems: 'center',
-    padding: '8px 16px',
-    borderRadius: '20px',
+    width: '100%'
+  },
+  locationInput: {
+    flex: 1,
+    padding: '12px 16px',
+    fontSize: '1rem',
+    border: '2px solid #e0e0e0',
+    borderRadius: '10px',
+    transition: 'all 0.3s ease',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+    whiteSpace: 'pre-wrap', // Preserve line breaks and spaces
+    minHeight: '50px',
+    lineHeight: '1.5',
+    '&:hover': {
+      borderColor: '#3949ab',
+    }
+  },
+  mapButton: {
+    padding: '12px 20px',
+    backgroundColor: '#3949ab',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
     fontSize: '0.9rem',
     fontWeight: '500',
-    marginBottom: '30px',
-    background: (props) => 
-      props === 'Approved' 
-        ? 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)'
-        : 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
-    color: '#fff',
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    whiteSpace: 'nowrap',
+    '&:hover': {
+      backgroundColor: '#303f9f',
+      transform: 'translateY(-2px)',
+    }
   },
+  mapDialogTitle: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    color: '#1a237e',
+    fontSize: '1.5rem',
+    fontWeight: '600',
+  },
+  closeButton: {
+    color: '#666',
+    padding: '8px',
+    '&:hover': {
+      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    },
+  },
+  mapDialogContent: {
+    padding: '20px 0',
+    height: 'calc(100% - 130px)',
+  },
+  mapDialogActions: {
+    padding: '16px 24px',
+    borderTop: '1px solid #eee',
+  },
+  confirmLocationButton: {
+    backgroundColor: '#4caf50',
+    color: '#fff',
+    padding: '10px 24px',
+    '&:hover': {
+      backgroundColor: '#43a047',
+    },
+  },
+};
+
+const footerStyles = {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  width: '100%',
+  zIndex: 10
 };
 
 export default LawyerRegistration;

@@ -52,20 +52,25 @@ exports.getUserDetails = async (req, res) => {
     // Check if lawyer profile already exists
     const existingLawyer = await Lawyer.findOne({ email });
 
-    // Log the data being sent
-    console.log("Sending lawyer details:", {
-      ...userDetails,
-      ...existingLawyer?.toObject()
-    });
-
     if (existingLawyer) {
       return res.status(200).json({
         ...userDetails,
         ...existingLawyer.toObject(),
-        isExisting: true,
+        location: {
+          address: existingLawyer.location?.address || "",
+          lat: existingLawyer.location?.lat || null,
+          lng: existingLawyer.location?.lng || null
+        },
+        officeLocation: {
+          address: existingLawyer.officeLocation?.address || "",
+          lat: existingLawyer.officeLocation?.lat || null,
+          lng: existingLawyer.officeLocation?.lng || null
+        },
+        isExisting: true
       });
     }
 
+    // If no lawyer profile exists, return user details
     res.status(200).json({
       ...userDetails,
       isExisting: false,
@@ -92,20 +97,30 @@ exports.registerLawyer = async (req, res) => {
       AEN,
       specialization,
       location,
-      fees,
+      appointmentFees,
+      consultationFees,
+      caseDetailsFees,
+      videoCallFees,
+      caseHandlingFees,
       availability,
-      visibleToClients
+      visibleToClients,
+      languagesSpoken,
+      practicingCourts
     } = req.body;
 
     // Validate required fields
-    if (!email || !fullname || !phone || !AEN || !fees) {
+    if (!email || !fullname || !phone || !AEN) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
-        required: ['email', 'fullname', 'phone', 'AEN', 'fees'],
-        received: { email, fullname, phone, AEN, fees }
+        required: ['email', 'fullname', 'phone', 'AEN'],
+        received: { email, fullname, phone, AEN }
       });
     }
+
+    // Parse JSON strings
+    const parsedLanguages = languagesSpoken ? JSON.parse(languagesSpoken) : [];
+    const parsedCourts = practicingCourts ? JSON.parse(practicingCourts) : [];
 
     // Find user in User schema
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -116,7 +131,11 @@ exports.registerLawyer = async (req, res) => {
       });
     }
 
-    // Create lawyer data object with correct field name mapping
+    // Parse the location data from the form
+    const locationData = JSON.parse(req.body.location || '{}');
+    const officeLocationData = JSON.parse(req.body.officeLocation || '{}');
+
+    // Create or update lawyer data
     const lawyerData = {
       userId: user._id,
       fullName: fullname,
@@ -124,14 +143,29 @@ exports.registerLawyer = async (req, res) => {
       phone,
       AEN,
       specialization: specialization || "",
-      location: location || "",
+      location: {
+        address: locationData.address || "",
+        lat: locationData.lat || null,
+        lng: locationData.lng || null
+      },
+      officeLocation: {
+        address: officeLocationData.address || "",
+        lat: officeLocationData.lat || null,
+        lng: officeLocationData.lng || null
+      },
       availability: availability || "Available",
-      fees: fees.toString(),
-      visibleToClients: visibleToClients === "true",
+      appointmentFees,
+      consultationFees,
+      caseDetailsFees,
+      videoCallFees,
+      caseHandlingFees,
+      visibleToClients: visibleToClients === 'true',
+      languagesSpoken: parsedLanguages,
+      practicingCourts: parsedCourts,
       isVerified: false
     };
 
-    // Handle file uploads if present
+    // Handle file uploads
     if (req.files) {
       if (req.files.profilePicture?.[0]) {
         lawyerData.profilePicture = req.files.profilePicture[0].filename;
@@ -144,55 +178,45 @@ exports.registerLawyer = async (req, res) => {
       }
     }
 
-    // Check if lawyer already exists
-    const existingLawyer = await Lawyer.findOne({ email: email.toLowerCase() });
-    let lawyer;
-
-    if (existingLawyer) {
-      // Update existing lawyer while preserving certain fields
+    // Create or update lawyer
+    let lawyer = await Lawyer.findOne({ email: email.toLowerCase() });
+    if (lawyer) {
+      // Update existing lawyer
       lawyer = await Lawyer.findOneAndUpdate(
         { email: email.toLowerCase() },
-        {
-          ...lawyerData,
-          isVerified: existingLawyer.isVerified,
-          // Only update file fields if new files are uploaded
-          profilePicture: lawyerData.profilePicture || existingLawyer.profilePicture,
-          lawDegreeCertificate: lawyerData.lawDegreeCertificate || existingLawyer.lawDegreeCertificate,
-          barCouncilCertificate: lawyerData.barCouncilCertificate || existingLawyer.barCouncilCertificate,
-          additionalCertificates: existingLawyer.additionalCertificates
-        },
+        lawyerData,
         { new: true }
       );
     } else {
-      // Validate required certificates for new registration
-      if (!req.files?.lawDegreeCertificate?.[0] || !req.files?.barCouncilCertificate?.[0]) {
-        return res.status(400).json({
-          success: false,
-          message: "Law Degree Certificate and Bar Council Certificate are required for registration"
-        });
-      }
-
       // Create new lawyer
       lawyer = new Lawyer(lawyerData);
       await lawyer.save();
-
-      // Update user role
-      await User.findByIdAndUpdate(user._id, { role: "Lawyer" });
     }
 
     res.status(200).json({
       success: true,
-      message: existingLawyer ? "Lawyer profile updated successfully" : "Lawyer registered successfully",
-      lawyer
+      message: lawyer ? "Lawyer profile updated successfully" : "Lawyer registered successfully",
+      lawyer: {
+        ...lawyer.toObject(),
+        location: {
+          address: lawyer.location?.address || "",
+          lat: lawyer.location?.lat || null,
+          lng: lawyer.location?.lng || null
+        },
+        officeLocation: {
+          address: lawyer.officeLocation?.address || "",
+          lat: lawyer.officeLocation?.lat || null,
+          lng: lawyer.officeLocation?.lng || null
+        }
+      }
     });
 
   } catch (error) {
     console.error("Error in lawyer registration:", error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
       message: "Error registering lawyer: " + error.message,
-      error: error.message,
-      stack: error.stack
+      error: error.message
     });
   }
 };

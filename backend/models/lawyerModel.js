@@ -13,7 +13,16 @@ const lawyerSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   AEN: { type: String, required: true },
   specialization: { type: String, required: true },
-  location: { type: String, required: true },
+  location: {
+    address: { type: String, required: true },
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true }
+  },
+  officeLocation: {
+    address: { type: String },
+    lat: { type: Number },
+    lng: { type: Number }
+  },
   availability: { type: [String], default: [] }, // Changed to an array for multiple slots
   fees: {
     type: String,
@@ -58,6 +67,94 @@ const lawyerSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  languagesSpoken: { type: [String], default: [] },
+  caseHistory: { type: String },
+  bio: { type: String },
+  officeAddress: { type: String },
+  city: { type: String },
+  state: { type: String },
+  yearsOfExperience: { type: Number },
+  lawFirm: { type: String },
+  appointmentFees: {
+    type: String,
+    required: true,
+    set: function(value) {
+      const cleanValue = value.toString().replace(/[₹\s]/g, "");
+      return `₹${cleanValue}`;
+    },
+    get: function(value) {
+      if (!value) return "";
+      if (!value.startsWith("₹")) {
+        return `₹${value}`;
+      }
+      return value;
+    },
+  },
+  consultationFees: {
+    type: String,
+    required: true,
+    set: function(value) {
+      const cleanValue = value.toString().replace(/[₹\s]/g, "");
+      return `₹${cleanValue}`;
+    },
+    get: function(value) {
+      if (!value) return "";
+      if (!value.startsWith("₹")) {
+        return `₹${value}`;
+      }
+      return value;
+    },
+  },
+  caseDetailsFees: {
+    type: String,
+    required: true,
+    set: function(value) {
+      const cleanValue = value.toString().replace(/[₹\s]/g, "");
+      return `₹${cleanValue}`;
+    },
+    get: function(value) {
+      if (!value) return "";
+      if (!value.startsWith("₹")) {
+        return `₹${value}`;
+      }
+      return value;
+    },
+  },
+  videoCallFees: {
+    type: String,
+    required: true,
+    set: function(value) {
+      const cleanValue = value.toString().replace(/[₹\s]/g, "");
+      return `₹${cleanValue}`;
+    },
+    get: function(value) {
+      if (!value) return "";
+      if (!value.startsWith("₹")) {
+        return `₹${value}`;
+      }
+      return value;
+    },
+  },
+  caseHandlingFees: {
+    type: String,
+    required: true,
+    set: function(value) {
+      const cleanValue = value.toString().replace(/[₹\s]/g, "");
+      return `₹${cleanValue}`;
+    },
+    get: function(value) {
+      if (!value) return "";
+      if (!value.startsWith("₹")) {
+        return `₹${value}`;
+      }
+      return value;
+    },
+  },
+  practicingCourts: { 
+    type: [String], 
+    default: [],
+    required: true
   },
 });
 

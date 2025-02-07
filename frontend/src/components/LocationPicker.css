@@ -1,0 +1,24 @@
+.location-picker {
+  position: relative;
+  width: 100%;
+}
+
+.location-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  outline: none;
+}
+
+.location-search-input:focus {
+  border-color: #3949ab;
+  box-shadow: 0 0 0 2px rgba(57, 73, 171, 0.1);
+}
+
+.autocomplete-dropdown-container {
+  margin-top: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+} 
