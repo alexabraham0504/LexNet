@@ -23,43 +23,9 @@ const SPECIALIZATIONS = [
   "Criminal Law",
   "Corporate Law",
   "Family Law",
-  "Real Estate Law",
-  "Intellectual Property Law",
-  "Tax Law",
-  "Labor and Employment Law",
-  "Constitutional Law",
   "Environmental Law",
-  "Immigration Law",
-  "Bankruptcy Law",
-  "Consumer Protection Law",
-  "Human Rights Law",
-  "Medical Law",
-  "Maritime Law",
-  "International Law",
-  "Administrative Law",
-  "Banking and Finance Law",
-  "Competition Law",
   "Cyber Law",
-  "Education Law",
-  "Elder Law",
-  "Entertainment Law",
-  "Insurance Law",
-  "Juvenile Law",
-  "Media Law",
-  "Military Law",
-  "Patent Law",
-  "Personal Injury Law",
-  "Securities Law",
-  "Sports Law",
-  "Technology Law",
-  "Telecommunications Law",
-  "Transportation Law",
-  "Trust and Estate Law",
-  "White Collar Crime",
-  "Women and Child Rights",
-  "Alternative Dispute Resolution",
-  "Arbitration Law",
-  "Commercial Law"
+ 
 ];
 
 const COURTS = [
@@ -81,6 +47,11 @@ const LANGUAGES = [
   { value: "Malayalam", label: "Malayalam" },
   // Add more languages as needed
 ];
+
+const EXPERIENCE_OPTIONS = Array.from({ length: 50 }, (_, i) => ({
+  value: i + 1,
+  label: `${i + 1} ${i + 1 === 1 ? 'Year' : 'Years'}`
+}));
 
 const LawyerRegistration = () => {
   const [lawyerData, setLawyerData] = useState({
@@ -452,42 +423,70 @@ const LawyerRegistration = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    try {
-      setError("");
+    setIsLoading(true);
+    setError("");
 
-      // Validate required fields
+    try {
+      // Validate experience
+      if (!lawyerData.yearsOfExperience) {
+        throw new Error("Please select years of experience");
+      }
+
+      const yearsOfExperience = parseInt(lawyerData.yearsOfExperience);
+      if (isNaN(yearsOfExperience) || yearsOfExperience < 1 || yearsOfExperience > 50) {
+        throw new Error("Years of experience must be between 1 and 50");
+      }
+
+      // Add yearsOfExperience to required fields
       const requiredFields = [
-        'fullname', 
-        'phone', 
-        'AEN', 
+        'fullname',
+        'phone',
+        'AEN',
+        'yearsOfExperience',
         'appointmentFees',
         'consultationFees',
         'caseDetailsFees',
         'videoCallFees',
         'caseHandlingFees'
       ];
-      
+
       const missingFields = requiredFields.filter(field => !lawyerData[field]);
-      
       if (missingFields.length > 0) {
         throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
-      // Validate practicing courts
-      if (!lawyerData.practicingCourts || lawyerData.practicingCourts.length === 0) {
-        throw new Error('Please select at least one practicing court');
+      // Validate fee amounts (minimum ₹100)
+      const feeFields = [
+        'appointmentFees',
+        'consultationFees',
+        'caseDetailsFees',
+        'videoCallFees',
+        'caseHandlingFees'
+      ];
+
+      // Remove commas and convert to numbers for validation
+      const fees = {};
+      for (const field of feeFields) {
+        const amount = parseInt(lawyerData[field].replace(/,/g, ''), 10);
+        if (isNaN(amount) || amount < 100) {
+          throw new Error(`${field.replace('Fees', '')} fee must be at least ₹100`);
+        }
+        fees[field.replace('Fees', '')] = amount;
       }
 
       const formData = new FormData();
       
-      // Add existing form data
+      // Add basic information
       formData.append('fullname', lawyerData.fullname);
       formData.append('email', sessionStorage.getItem("email"));
       formData.append('phone', lawyerData.phone);
       formData.append('AEN', lawyerData.AEN);
       formData.append('specialization', lawyerData.specialization || '');
       
-      // Ensure location data is properly stringified
+      // Add fees as a structured object
+      formData.append('fees', JSON.stringify(fees));
+
+      // Add location data if present
       if (lawyerData.location) {
         formData.append('location', JSON.stringify({
           address: lawyerData.location.address || '',
@@ -496,20 +495,20 @@ const LawyerRegistration = () => {
         }));
       }
 
-      // Append all fee fields (remove commas before sending)
-      const feeFields = ['appointmentFees', 'consultationFees', 'caseDetailsFees', 'videoCallFees', 'caseHandlingFees'];
-      feeFields.forEach(field => {
-        const feeValue = lawyerData[field].replace(/,/g, '');
-        formData.append(field, feeValue);
-      });
+      // Add office location if present
+      if (lawyerData.officeLocation) {
+        formData.append('officeLocation', JSON.stringify({
+          address: lawyerData.officeLocation.address || '',
+          lat: lawyerData.officeLocation.lat || null,
+          lng: lawyerData.officeLocation.lng || null
+        }));
+      }
 
-      // Append languages spoken
+      // Add arrays as JSON strings
       formData.append('languagesSpoken', JSON.stringify(lawyerData.languagesSpoken || []));
-
-      // Append practicing courts
       formData.append('practicingCourts', JSON.stringify(lawyerData.practicingCourts || []));
 
-      // Append files if they exist and are new
+      // Add files if they exist
       if (lawyerData.profilePicture instanceof File) {
         formData.append('profilePicture', lawyerData.profilePicture);
       }
@@ -520,22 +519,16 @@ const LawyerRegistration = () => {
         formData.append('barCouncilCertificate', lawyerData.barCouncilCertificate);
       }
 
-      // Add availability and visibility
+      // Add other fields
       formData.append('availability', lawyerData.availability || 'Available');
       formData.append('visibleToClients', lawyerData.visibleToClients || false);
 
-      // Ensure office location data is properly stringified
-      if (lawyerData.officeLocation) {
-        formData.append('officeLocation', JSON.stringify({
-          address: lawyerData.officeLocation.address || '',
-          lat: lawyerData.officeLocation.lat || null,
-          lng: lawyerData.officeLocation.lng || null
-        }));
-      }
+      // Add experience to formData
+      formData.append('yearsOfExperience', lawyerData.yearsOfExperience);
 
-      // Log the data being sent
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
+      // Log formData for debugging
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
       }
 
       const response = await axios.post(
@@ -549,35 +542,24 @@ const LawyerRegistration = () => {
       );
 
       if (response.data.success) {
-        setAlertMessage(response.data.message);
+        setAlertMessage("Profile saved successfully!");
         setAlertOpen(true);
-        
-        // Update the state with the returned data, preserving location information
+        // Update lawyer data with response
         setLawyerData(prev => ({
           ...prev,
           ...response.data.lawyer,
-          id: response.data.lawyer._id,
-          location: {
-            address: response.data.lawyer.location?.address || prev.location.address,
-            lat: response.data.lawyer.location?.lat || prev.location.lat,
-            lng: response.data.lawyer.location?.lng || prev.location.lng
-          },
-          officeLocation: {
-            address: response.data.lawyer.officeLocation?.address || prev.officeLocation.address,
-            lat: response.data.lawyer.officeLocation?.lat || prev.officeLocation.lat,
-            lng: response.data.lawyer.officeLocation?.lng || prev.officeLocation.lng
-          }
+          id: response.data.lawyer._id
         }));
-      } else {
-        throw new Error(response.data.message || 'Failed to save lawyer profile');
       }
 
     } catch (error) {
       console.error("Error saving lawyer profile:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Failed to save lawyer profile";
+      const errorMessage = error.response?.data?.message || error.message;
       setError(errorMessage);
       setAlertMessage(errorMessage);
       setAlertOpen(true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -979,6 +961,34 @@ const LawyerRegistration = () => {
                   📍 Select
                 </button>
               </div>
+            </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Years of Experience*</label>
+              <Select
+                name="yearsOfExperience"
+                value={EXPERIENCE_OPTIONS.find(option => option.value === parseInt(lawyerData.yearsOfExperience))}
+                onChange={(selectedOption) => {
+                  setLawyerData(prevData => ({
+                    ...prevData,
+                    yearsOfExperience: selectedOption.value.toString()
+                  }));
+                }}
+                options={EXPERIENCE_OPTIONS}
+                placeholder="Select years of experience"
+                isSearchable={true}
+                required
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    minHeight: '50px',
+                    borderRadius: '10px',
+                    border: '2px solid #e0e0e0',
+                    '&:hover': {
+                      borderColor: '#3949ab'
+                    }
+                  })
+                }}
+              />
             </div>
           </div>
 

@@ -10,6 +10,7 @@ import {
   FaBalanceScale,
   FaScroll,
 } from "react-icons/fa";
+import { useLocation } from 'react-router-dom';
 
 const sectionTitles = {
   420: "Dishonesty and Cheating",
@@ -17,7 +18,10 @@ const sectionTitles = {
 };
 
 const IPC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const location = useLocation();
+  const [searchTerm, setSearchTerm] = useState(
+    location.state?.initialSearchTerm || ""
+  );
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sectionTitle, setSectionTitle] = useState("");
@@ -115,6 +119,16 @@ const IPC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (location.state?.autoSearch && location.state?.initialSearchTerm) {
+      // Clear the location state to prevent re-searching on page refresh
+      window.history.replaceState({}, document.title);
+      // Perform the search
+      const searchQuery = `IPC Section ${location.state.initialSearchTerm}`;
+      fetchIpcSections(searchQuery);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const styleSheet = document.createElement("style");

@@ -63,8 +63,10 @@ router.post("/", isAuthenticated, async (req, res) => {
     // Get the Socket.IO instance
     const io = req.app.get("io");
 
-    // Emit only to the receiver's room to prevent duplicate messages
+    // Emit to both sender's and receiver's rooms
+    io.to(chatRoomId).emit("new_message", populatedMessage);
     io.to(receiverId).emit("new_message", populatedMessage);
+    io.to(senderId).emit("new_message", populatedMessage);
 
     res.status(201).json(populatedMessage);
   } catch (error) {
@@ -377,6 +379,20 @@ router.delete("/clear-chat/:chatRoomId", isAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("Error clearing chat:", error);
     res.status(500).json({ message: "Error clearing chat" });
+  }
+});
+
+router.get('/', isAuthenticated, async (req, res) => {
+  try {
+    // Implement message fetching logic here
+    // For now, return empty array to prevent errors
+    res.json([]);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ 
+      message: 'Error fetching messages',
+      error: error.message 
+    });
   }
 });
 

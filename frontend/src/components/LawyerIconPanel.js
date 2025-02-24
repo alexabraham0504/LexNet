@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaCalendarAlt, FaUserCog, FaComments, FaClipboardList } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaUserCog, FaComments, FaClipboardList, FaGavel } from 'react-icons/fa';
 
 const LawyerIconPanel = () => {
   const location = useLocation();
@@ -8,11 +8,11 @@ const LawyerIconPanel = () => {
   return (
     <div className="icon-panel">
       <Link 
-        to="/lawyer-dashboard" 
-        className={`icon-link ${location.pathname === '/lawyer-dashboard' ? 'active' : ''}`} 
-        title="Dashboard"
+        to="/lawyerdashboard" 
+        className={`icon-link ${location.pathname === '/lawyerdashboard' ? 'active' : ''}`} 
+        title="Home"
       >
-        <FaClipboardList className="icon" />
+        <FaHome className="icon" />
       </Link>
       <Link 
         to="/lawyeravailability" 
@@ -34,6 +34,13 @@ const LawyerIconPanel = () => {
         title="Messages"
       >
         <FaComments className="icon" />
+      </Link>
+      <Link 
+        to="/ipc-sections" 
+        className={`icon-link ${location.pathname === '/ipc-sections' ? 'active' : ''}`} 
+        title="IPC Sections"
+      >
+        <FaGavel className="icon" />
       </Link>
 
       <style jsx="true">{`

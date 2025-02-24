@@ -7,7 +7,8 @@ import {
   faFileAlt,
   faChevronLeft,
   faChevronRight,
-  faChevronDown
+  faChevronDown,
+  faHome
 } from '@fortawesome/free-solid-svg-icons';
 
 const ClientSidebar = ({ onToggle }) => {
@@ -53,13 +54,16 @@ const ClientSidebar = ({ onToggle }) => {
       {/* Separate collapsed menu */}
       {isCollapsed && (
         <div className="collapsed-menu">
-          <Link to="/LawyerSearch" className="collapsed-item" title="Search">
+          <Link to="/clientdashboard" className="collapsed-item" title="Dashboard">
+            <FontAwesomeIcon icon={faHome} />
+          </Link>
+          <Link to="/client/lawyer-search" className="collapsed-item" title="Search">
             <FontAwesomeIcon icon={faSearch} />
           </Link>
           <Link to="/IPC" className="collapsed-item" title="IPC">
             <FontAwesomeIcon icon={faGavel} />
           </Link>
-          <Link to="/lawyeravailabilityclient" className="collapsed-item" title="Case Details">
+          <Link to="/case-details/${userId}`" className="collapsed-item" title="Case Details">
             <FontAwesomeIcon icon={faFileAlt} />
           </Link>
         </div>
@@ -74,7 +78,12 @@ const ClientSidebar = ({ onToggle }) => {
         </div>
 
         <div className="sidebar-menu">
-          <Link to="/LawyerSearch" className="menu-item">
+          <Link to="/client-dashboard" className="menu-item">
+            <FontAwesomeIcon icon={faHome} className="menu-icon" />
+            <span className="menu-text">Dashboard</span>
+          </Link>
+          
+          <Link to="/lawyer-search" className="menu-item">
             <FontAwesomeIcon icon={faSearch} className="menu-icon" />
             <span className="menu-text">Search</span>
           </Link>

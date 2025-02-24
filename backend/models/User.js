@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     enum: ["pending", "approved", "rejected", "suspended"],
     default: "pending",
   },
+  suspendedAt: {
+    type: Date,
+  },
+  suspensionReason: {
+    type: String,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

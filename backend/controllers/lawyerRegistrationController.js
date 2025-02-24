@@ -2,18 +2,41 @@ const Lawyer = require("../models/lawyerModel");
 const User = require("../models/User");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
 // Multer file upload configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Customize the path if needed
+    // Ensure the uploads directory exists
+    const uploadDir = 'uploads';
+    if (!fs.existsSync(uploadDir)){
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
+    // Generate a unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
 });
 
-const upload = multer({ storage });
+// Add file filter to ensure only images are uploaded
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image! Please upload only images.'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Setup the multer middleware for file uploads
 exports.uploadFiles = upload.fields([
@@ -96,12 +119,9 @@ exports.registerLawyer = async (req, res) => {
       phone,
       AEN,
       specialization,
+      yearsOfExperience,
       location,
-      appointmentFees,
-      consultationFees,
-      caseDetailsFees,
-      videoCallFees,
-      caseHandlingFees,
+      fees,
       availability,
       visibleToClients,
       languagesSpoken,
@@ -118,9 +138,29 @@ exports.registerLawyer = async (req, res) => {
       });
     }
 
+    // Validate yearsOfExperience
+    if (isNaN(yearsOfExperience) || yearsOfExperience < 1 || yearsOfExperience > 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Years of experience must be between 1 and 50"
+      });
+    }
+
     // Parse JSON strings
     const parsedLanguages = languagesSpoken ? JSON.parse(languagesSpoken) : [];
     const parsedCourts = practicingCourts ? JSON.parse(practicingCourts) : [];
+    const parsedFees = fees ? JSON.parse(fees) : null;
+
+    // Validate fees object
+    if (!parsedFees || !parsedFees.appointment || !parsedFees.consultation || 
+        !parsedFees.caseDetails || !parsedFees.videoCall || !parsedFees.caseHandling) {
+      return res.status(400).json({
+        success: false,
+        message: "All fee types are required",
+        required: ['appointment', 'consultation', 'caseDetails', 'videoCall', 'caseHandling'],
+        received: parsedFees
+      });
+    }
 
     // Find user in User schema
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -142,7 +182,7 @@ exports.registerLawyer = async (req, res) => {
       email: email.toLowerCase(),
       phone,
       AEN,
-      specialization: specialization || "",
+      specialization: specialization.trim(),
       location: {
         address: locationData.address || "",
         lat: locationData.lat || null,
@@ -154,11 +194,14 @@ exports.registerLawyer = async (req, res) => {
         lng: officeLocationData.lng || null
       },
       availability: availability || "Available",
-      appointmentFees,
-      consultationFees,
-      caseDetailsFees,
-      videoCallFees,
-      caseHandlingFees,
+      yearsOfExperience: yearsOfExperience,
+      // Set all fee fields
+      appointmentFees: `₹${parsedFees.appointment}`,
+      consultationFees: `₹${parsedFees.consultation}`,
+      caseDetailsFees: `₹${parsedFees.caseDetails}`,
+      videoCallFees: `₹${parsedFees.videoCall}`,
+      caseHandlingFees: `₹${parsedFees.caseHandling}`,
+      fees: `₹${parsedFees.consultation}`, // Set base fee as consultation fee
       visibleToClients: visibleToClients === 'true',
       languagesSpoken: parsedLanguages,
       practicingCourts: parsedCourts,
@@ -196,19 +239,7 @@ exports.registerLawyer = async (req, res) => {
     res.status(200).json({
       success: true,
       message: lawyer ? "Lawyer profile updated successfully" : "Lawyer registered successfully",
-      lawyer: {
-        ...lawyer.toObject(),
-        location: {
-          address: lawyer.location?.address || "",
-          lat: lawyer.location?.lat || null,
-          lng: lawyer.location?.lng || null
-        },
-        officeLocation: {
-          address: lawyer.officeLocation?.address || "",
-          lat: lawyer.officeLocation?.lat || null,
-          lng: lawyer.officeLocation?.lng || null
-        }
-      }
+      lawyer
     });
 
   } catch (error) {

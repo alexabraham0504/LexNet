@@ -8,6 +8,8 @@ import {
   faFileAlt,
   faUserCog,
   faMessage,
+  faGavel,
+  faCalendarAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
@@ -129,10 +131,10 @@ const LawyerDashboard = () => {
                     <Link to="/lawyeravailability">
                       <button
                         className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                        aria-label="Case Details"
+                        aria-label="Manage Availability"
                       >
                         <span className="p-3">
-                          <FontAwesomeIcon icon={faFileAlt} size="1x" />
+                          <FontAwesomeIcon icon={faCalendarAlt} size="1x" />
                         </span>
                         Availability
                       </button>
@@ -148,6 +150,19 @@ const LawyerDashboard = () => {
                           <FontAwesomeIcon icon={faMessage} size="1x" />
                         </span>
                         Messages
+                      </button>
+                    </Link>
+                  </div>
+                  <div className="col flex-grow-1">
+                    <Link to="/ipc-sections">
+                      <button
+                        className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                        aria-label="IPC Sections"
+                      >
+                        <span className="p-3">
+                          <FontAwesomeIcon icon={faGavel} size="1x" />
+                        </span>
+                        IPC Sections
                       </button>
                     </Link>
                   </div>

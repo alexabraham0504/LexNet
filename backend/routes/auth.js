@@ -156,6 +156,19 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // Update the suspension check to include more details
+    if (user.status === "suspended") {
+      return res.status(403).json({
+        success: false,
+        message: "Account Suspended",
+        details: {
+          reason: user.suspensionReason || "Account has been suspended by administrator",
+          suspendedAt: user.suspendedAt,
+          message: "Please contact the administrator for assistance."
+        }
+      });
+    }
+
     // Verify password using bcrypt
     const isValidPassword = await bcrypt.compare(password, user.password);
     
@@ -340,8 +353,38 @@ router.post("/users/:userId/:action", async (req, res) => {
 
     // Update status based on action
     user.status = action === "suspend" ? "suspended" : "approved";
+    
+    // Add suspension timestamp and reason if suspending
+    if (action === "suspend") {
+      user.suspendedAt = new Date();
+      user.suspensionReason = req.body.reason || "Account suspended by administrator";
+      
+      // Optionally send email notification to user
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL,
+          to: user.email,
+          subject: "Account Suspended - Lex Net",
+          html: `
+            <p>Dear ${user.fullName},</p>
+            <p>Your account has been suspended by the administrator.</p>
+            <p>Reason: ${user.suspensionReason}</p>
+            <p>If you believe this is an error, please contact support.</p>
+          `,
+        });
+      } catch (emailError) {
+        console.error("Failed to send suspension notification:", emailError);
+      }
+    } else {
+      // Clear suspension details when activating
+      user.suspendedAt = undefined;
+      user.suspensionReason = undefined;
+    }
 
     await user.save();
+
+    // Log the action
+    console.log(`User ${user.email} ${action}d at ${new Date().toISOString()}`);
 
     return res.status(200).json({
       success: true,
@@ -352,6 +395,8 @@ router.post("/users/:userId/:action", async (req, res) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        suspendedAt: user.suspendedAt,
+        suspensionReason: user.suspensionReason,
       },
     });
   } catch (error) {
@@ -389,6 +434,70 @@ router.post("/google-login", async (req, res) => {
   } catch (error) {
     console.error("Error verifying user data:", error);
     res.status(500).json({ message: "Authentication failed" });
+  }
+});
+
+// Add this new route to check user status
+router.get("/check-status", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    if (user.status === "suspended") {
+      return res.status(403).json({
+        status: "suspended",
+        message: "Your account has been suspended",
+        suspensionReason: user.suspensionReason,
+        suspendedAt: user.suspendedAt
+      });
+    }
+
+    res.json({ status: user.status });
+  } catch (error) {
+    console.error("Status check error:", error);
+    res.status(401).json({ message: "Invalid token" });
+  }
+});
+
+// Add this route to your auth.js
+router.get("/verify-token", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      return res.status(401).json({ valid: false, message: "No token provided" });
+    }
+
+    // Verify the token (use your JWT verification logic here)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Check if user still exists and is not suspended
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(401).json({ valid: false, message: "User not found" });
+    }
+
+    if (user.status === "suspended") {
+      return res.status(403).json({ 
+        valid: false, 
+        message: "Account suspended",
+        suspensionReason: user.suspensionReason,
+        suspendedAt: user.suspendedAt
+      });
+    }
+
+    res.json({ valid: true, user: { role: user.role } });
+  } catch (error) {
+    res.status(401).json({ valid: false, message: "Invalid token" });
   }
 });
 

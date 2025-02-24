@@ -1,4 +1,5 @@
-const express = require("express");
+require('dotenv').config();
+const express = require('express');
 const mongoose = require("mongoose");
 const cors = require("cors");
 const session = require("express-session");
@@ -6,12 +7,12 @@ const passport = require("passport");
 const http = require("http");
 const socketIO = require("socket.io");
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
-const { initializeSocket } = require("./services/analyticsSocket");
-const { updateAnalytics } = require("./services/analyticsService");
-const User = require("./models/User");
-const Lawyer = require("./models/Lawyer");
+const path = require('path');
+const multer = require('multer');
+const Case = require("./models/caseModel");
 const { isAuthenticated } = require("./middleware/auth");
+const { visionService } = require('./services/visionService');
+const { bertService } = require('./services/bertService');
 
 // Import your routes
 const authRoutes = require("./routes/auth");
@@ -24,6 +25,9 @@ const appointmentRoutes = require("./routes/appointments");
 const lawyerRoutes = require("./routes/lawyerRoutes");
 const messageRoutes = require("./routes/messages");
 const lawyerVerificationRoutes = require("./routes/lawyers.js");
+const caseRoutes = require('./routes/caseRoutes');
+const translationRoutes = require('./routes/translationRoutes');
+const documentRoutes = require("./routes/documents");
 
 // Initialize Express app
 const app = express();
@@ -40,8 +44,11 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.text({ limit: '50mb' }));
 app.use("/uploads", express.static("./uploads"));
+app.use('/uploads', express.static('uploads'));
 
 // Session setup
 app.use(
@@ -66,7 +73,9 @@ app.use("/api/lawyer/availability", lawyerAvailabilityRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/messages", messageRoutes);
-
+app.use('/api/cases', caseRoutes);
+app.use('/api/translation', translationRoutes);
+app.use("/api/documents", documentRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -124,6 +133,50 @@ io.on("connection", (socket) => {
 // Store io instance in app
 app.set("io", io);
 
+// Analytics function
+async function updateAnalytics() {
+  try {
+    // Get total cases
+    const totalCases = await Case.countDocuments({ isDeleted: false });
+    
+    // Get cases by type
+    const casesByType = await Case.aggregate([
+      { $match: { isDeleted: false } },
+      { $group: { _id: '$caseType', count: { $sum: 1 } } }
+    ]);
+
+    // Get recent activity
+    const recentActivity = await Case.find({ isDeleted: false })
+      .sort({ updatedAt: -1 })
+      .limit(5);
+
+    console.log('Analytics updated:', {
+      totalCases,
+      casesByType,
+      recentActivity: recentActivity.length
+    });
+
+    return {
+      totalCases,
+      casesByType,
+      recentActivity
+    };
+  } catch (error) {
+    console.error('Error updating analytics:', error);
+    throw error;
+  }
+}
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    error: true,
+    message: err.message || 'Internal server error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
 // Update the server startup code
 const startServer = async () => {
   try {
@@ -135,8 +188,10 @@ const startServer = async () => {
 
     server.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
-      updateAnalytics().catch(error => {
-        console.error("Error updating initial analytics:", error);
+      updateAnalytics().then(analytics => {
+        console.log('Initial analytics loaded');
+      }).catch(error => {
+        console.error('Failed to load initial analytics:', error);
       });
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
@@ -153,4 +208,17 @@ const startServer = async () => {
   }
 };
 
+// Periodic analytics updates (every 5 minutes)
+setInterval(() => {
+  updateAnalytics()
+    .then(analytics => {
+      console.log('Analytics updated successfully');
+    })
+    .catch(error => {
+      console.error('Failed to update analytics:', error);
+    });
+}, 5 * 60 * 1000);
+
 startServer();
+
+module.exports = app;

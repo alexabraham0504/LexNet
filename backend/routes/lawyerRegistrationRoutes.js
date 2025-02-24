@@ -222,8 +222,15 @@ router.put("/toggle-visibility/:lawyerId", async (req, res) => {
 
 // Update this route to handle lawyer details fetch
 router.get("/:lawyerId", async (req, res) => {
-  console.log("Fetching lawyer details for ID:");
+  console.log("Fetching lawyer details for ID:", req.params.lawyerId);
   try {
+    // Handle special routes
+    if (req.params.lawyerId === "list" || req.params.lawyerId === "list-by-specialization") {
+      return res.status(400).json({ 
+        message: "Invalid lawyer ID. Use the appropriate endpoints for listing lawyers." 
+      });
+    }
+
     const lawyer = await Lawyer.findById(req.params.lawyerId);
 
     if (!lawyer) {

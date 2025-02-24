@@ -384,15 +384,25 @@ const AdminUserManagement = () => {
     const action = currentStatus === "suspended" ? "activate" : "suspend";
 
     try {
+      let requestData = {};
+      
+      // If suspending, prompt for reason
+      if (action === "suspend") {
+        const reason = window.prompt("Please enter the reason for suspension:");
+        if (reason === null) return; // User cancelled
+        requestData.reason = reason;
+      }
+
       const response = await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/${action}`
+        `http://localhost:5000/api/auth/users/${userId}/${action}`,
+        requestData
       );
 
       if (response.data.success) {
         if (action === "activate") {
-          toast.success(response.data.message, toastStyles.success);
+          toast.success("User has been activated successfully", toastStyles.success);
         } else {
-          toast.warning(response.data.message, toastStyles.warning);
+          toast.warning("User has been suspended", toastStyles.warning);
         }
         await fetchUsers();
       } else {

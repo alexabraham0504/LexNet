@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { auth, googleProvider } from "./firebaseConfig.js";
 import { signInWithPopup } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/navbar/home-navbar";
+import SuspensionModal from '../components/SuspensionModal';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,6 +17,61 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const { login } = useAuth();
+  const [suspensionDetails, setSuspensionDetails] = useState(null);
+
+  useEffect(() => {
+    // Don't check authentication during logout
+    if (sessionStorage.getItem("isLoggingOut")) {
+      sessionStorage.removeItem("isLoggingOut");
+      return;
+    }
+
+    // Check if user is already logged in
+    const token = sessionStorage.getItem("token");
+    const role = sessionStorage.getItem("role");
+    
+    if (token && role) {
+      try {
+        // Verify token validity with backend before redirecting
+        const verifyToken = async () => {
+          try {
+            const response = await axios.get("http://localhost:5000/api/auth/verify-token", {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            
+            if (response.data.valid) {
+              // Token is valid, redirect based on role
+              switch(role.toLowerCase()) {
+                case "lawyer":
+                  navigate("/lawyerdashboard", { replace: true });
+                  break;
+                case "client":
+                  navigate("/clientdashboard", { replace: true });
+                  break;
+                case "admin":
+                  navigate("/admindashboard", { replace: true });
+                  break;
+                default:
+                  sessionStorage.clear();
+              }
+            } else {
+              sessionStorage.clear();
+            }
+          } catch (error) {
+            console.error("Token verification failed:", error);
+            sessionStorage.clear();
+          }
+        };
+
+        verifyToken();
+      } catch (error) {
+        console.error("Error during token verification:", error);
+        sessionStorage.clear();
+      }
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -61,11 +117,11 @@ const Login = () => {
       sessionStorage.setItem("email", user.email);
 
       if (data.role === "Admin") {
-        navigate("/AdminDashboard");
+        navigate("/AdminDashboard", { replace: true });
       } else if (data.role === "Lawyer") {
-        navigate("/LawyerDashboard");
+        navigate("/LawyerDashboard", { replace: true });
       } else if (data.role === "Client") {
-        navigate("/ClientDashboard");
+        navigate("/ClientDashboard", { replace: true });
       }
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -76,6 +132,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuspensionDetails(null);
     
     try {
       // Ensure email and password are not empty
@@ -115,17 +172,17 @@ const Login = () => {
           token,
         });
 
-        // Redirect based on role
+        // Redirect based on role with replace: true
         const userRole = user.role.toLowerCase();
         switch(userRole) {
           case "lawyer":
-            navigate("/lawyerdashboard");
+            navigate("/lawyerdashboard", { replace: true });
             break;
           case "client":
-            navigate("/clientdashboard");
+            navigate("/clientdashboard", { replace: true });
             break;
           case "admin":
-            navigate("/admindashboard");
+            navigate("/admindashboard", { replace: true });
             break;
           default:
             setError("Invalid user role");
@@ -134,30 +191,15 @@ const Login = () => {
         setError(response.data.message || "Login failed");
       }
     } catch (error) {
-      console.error("Login error details:", error);
-      
-      if (error.response) {
-        // Handle specific error cases
-        const status = error.response.status;
-        const errorMessage = error.response.data?.message;
-
-        switch (status) {
-          case 400:
-            setError(errorMessage || "Invalid email or password");
-            break;
-          case 401:
-            setError("Invalid credentials");
-            break;
-          case 403:
-            setError("Account not verified or pending approval");
-            break;
-          default:
-            setError("Failed to login. Please try again.");
-        }
-      } else if (error.request) {
-        setError("No response from server. Please check your connection.");
+      if (error.response?.status === 403) {
+        const suspensionData = error.response.data.details || error.response.data;
+        setSuspensionDetails({
+          reason: suspensionData.reason || suspensionData.message || "Your account has been suspended",
+          suspendedAt: suspensionData.suspendedAt || null,
+          message: suspensionData.message || "Please contact administrator for assistance."
+        });
       } else {
-        setError("Failed to login. Please try again.");
+        setError(error.response?.data?.message || "Login failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -208,12 +250,21 @@ const Login = () => {
                   Remember Me
                 </label>
               </div>
+              {error && <div className="error-message">{error}</div>}
+              
+              {suspensionDetails && (
+                <SuspensionModal 
+                  details={suspensionDetails} 
+                  onClose={() => setSuspensionDetails(null)}
+                />
+              )}
+
               <button
                 id="login"
                 type="submit"
                 style={styles.btnLogin}
-                className="btn-login glass-button"
-                disabled={loading}
+                className={`btn-login glass-button ${suspensionDetails ? 'disabled' : ''}`}
+                disabled={loading || suspensionDetails}
               >
                 {loading ? "Signing in..." : "Login"}
               </button>
@@ -226,10 +277,12 @@ const Login = () => {
               >
                 {loading ? "Signing in with Google..." : "Sign in with Google"}
               </button>
-              {error && <p style={{ color: "red" }}>{error}</p>}
 
               <Link to="/forgotpassword" style={styles.forgotPassword}>
                 Lost your password?
+              </Link>
+              <Link to="/register" style={styles.registerLink}>
+                Don't have an account? Register here
               </Link>
             </form>
           </div>
@@ -310,6 +363,41 @@ const Login = () => {
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             box-shadow: 0 4px 15px rgba(219, 68, 55, 0.2);
+          }
+
+          .suspension-notice {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            color: #991b1b;
+          }
+
+          .suspension-header {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+          }
+
+          .suspension-details {
+            font-size: 0.95rem;
+          }
+
+          .suspension-contact {
+            margin-top: 8px;
+            font-style: italic;
+          }
+
+          .login-button.disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+          }
+
+          .registerLink:hover, .forgotPassword:hover {
+            color: #e0e0e0;
+            text-decoration: underline;
+            transition: all 0.3s ease;
           }
         `}
       </style>
@@ -407,6 +495,7 @@ const styles = {
     textDecoration: "none",
     display: "block",
     marginTop: "1rem",
+    transition: "all 0.3s ease",
   },
 
   btnLogin: {
@@ -508,6 +597,15 @@ const styles = {
     border: "none",
     borderRadius: "5px",
     cursor: "pointer",
+  },
+
+  registerLink: {
+    fontSize: "0.9rem",
+    color: "#fff",
+    textDecoration: "none",
+    display: "block",
+    marginTop: "0.5rem",
+    transition: "all 0.3s ease",
   },
 };
 

@@ -50,90 +50,155 @@ const Chat = ({ chatRoomId, receiverId, receiverName }) => {
   });
 
   useEffect(() => {
-    if (!chatRoomId) return;
+    if (!chatRoomId || !user || !receiverId) {
+      console.log("Missing required data for socket connection:", { chatRoomId, userId: user?._id, receiverId });
+      return;
+    }
+
+    console.log("Initializing socket connection for chat:", {
+      chatRoomId,
+      userId: user._id,
+      receiverId,
+      role: sessionStorage.getItem("role")
+    });
 
     // Connect to Socket.IO
     const newSocket = io("http://localhost:5000", {
       auth: {
-        token: sessionStorage.getItem("token"),
+        token: sessionStorage.getItem("token")
       },
+      query: {
+        userId: user._id,
+        chatRoomId: chatRoomId,
+        receiverId: receiverId,
+        role: sessionStorage.getItem("role")
+      }
     });
+
     setSocket(newSocket);
 
-    // Join the chat room
+    // Join both the chat room and personal room
     newSocket.emit("join_room", chatRoomId);
+    newSocket.emit("join_room", user._id); // Join personal room
 
     // Socket event listeners
+    newSocket.on("connect", () => {
+      console.log(`Socket connected for chat ${chatRoomId}`);
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
     newSocket.on("new_message", (message) => {
-      console.log("Received new message in Chat:", message);
-      // Check if message belongs to this chat room and isn't already in the messages array
-      if (message.chatRoomId === chatRoomId) {
-        setMessages((prev) => {
-          // Check if message already exists
-          const messageExists = prev.some(m => m._id === message._id);
-          if (messageExists) return prev;
-          return [...prev, message];
-        });
-        scrollToBottom();
-      }
+      console.log("Received new message in chat:", message);
+      setMessages(prev => {
+        // Avoid duplicate messages
+        if (prev.some(m => m._id === message._id)) return prev;
+        const newMessages = [...prev, message];
+        // Sort messages by timestamp
+        return newMessages.sort((a, b) => 
+          new Date(a.timestamp) - new Date(b.timestamp)
+        );
+      });
+      scrollToBottom();
     });
 
     // Initial fetch of messages
     fetchMessages();
 
     return () => {
-      newSocket.disconnect();
+      console.log("Cleaning up socket connection for:", chatRoomId);
+      if (newSocket) {
+        newSocket.emit("leave_room", chatRoomId);
+        newSocket.emit("leave_room", user._id);
+        newSocket.disconnect();
+      }
     };
-  }, [chatRoomId]);
+  }, [chatRoomId, user, receiverId]);
 
   const fetchMessages = async () => {
-    if (!chatRoomId) return;
+    if (!chatRoomId || !user) return;
 
     try {
       console.log("Fetching messages for chatRoom:", chatRoomId);
       const response = await api.get(`/messages/${chatRoomId}`);
       console.log("Fetched messages:", response.data);
       
-      // Sort messages by timestamp
-      const sortedMessages = response.data.sort((a, b) => 
-        new Date(a.timestamp) - new Date(b.timestamp)
-      );
-      
-      setMessages(sortedMessages);
-      scrollToBottom();
+      if (Array.isArray(response.data)) {
+        // Ensure sender information is properly handled
+        const processedMessages = response.data.map(msg => ({
+          ...msg,
+          senderId: typeof msg.senderId === 'object' ? msg.senderId : { _id: msg.senderId }
+        }));
+        
+        // Sort messages by timestamp
+        const sortedMessages = processedMessages.sort((a, b) => 
+          new Date(a.timestamp) - new Date(b.timestamp)
+        );
+        
+        setMessages(sortedMessages);
+        scrollToBottom();
+      } else {
+        console.error("Invalid messages format received:", response.data);
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
       if (error.message === "Session expired. Please login again.") {
         return;
       }
       // Handle other errors
+      alert("Failed to load messages. Please try refreshing the page.");
     }
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user || !chatRoomId || !receiverId) return;
+    
+    if (!newMessage.trim()) return;
+    
+    if (!user?._id || !chatRoomId || !receiverId) {
+      console.error("Missing required data:", { 
+        userId: user?._id, 
+        chatRoomId, 
+        receiverId 
+      });
+      return;
+    }
 
     try {
       const messageData = {
         senderId: user._id,
         receiverId: receiverId,
-        content: newMessage,
+        content: newMessage.trim(),
         chatRoomId: chatRoomId,
       };
 
-      const response = await api.post("/messages", messageData);
+      console.log("Sending message:", messageData);
 
-      // Add message locally first
-      setMessages((prev) => [...prev, response.data]);
+      const response = await api.post("/messages", messageData);
+      console.log("Message sent successfully:", response.data);
+
+      // Remove the direct state update here since we'll receive the message through socket
       setNewMessage("");
       scrollToBottom();
 
-      // Emit the message through socket
-      socket?.emit("send_message", {
-        ...response.data,
-        chatRoomId: chatRoomId,
-      });
+      // Emit through socket
+      if (socket?.connected) {
+        console.log("Emitting message through socket:", {
+          ...response.data,
+          chatRoomId: chatRoomId
+        });
+        socket.emit("send_message", {
+          ...response.data,
+          chatRoomId: chatRoomId
+        });
+      } else {
+        console.warn("Socket not connected - message sent via HTTP only");
+        // Only update state directly if socket is not connected
+        setMessages(prev => [...prev, response.data]);
+      }
+
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Failed to send message. Please try again.");
@@ -225,7 +290,10 @@ const Chat = ({ chatRoomId, receiverId, receiverName }) => {
       <div className="messages-container" id="messages-container">
         <div className="messages-list">
           {messages.map((message) => {
-            const isSent = message.senderId._id === user._id;
+            const isSent = typeof message.senderId === 'object' 
+              ? message.senderId._id === user._id 
+              : message.senderId === user._id;
+            
             return (
               <div
                 key={message._id}
@@ -243,7 +311,16 @@ const Chat = ({ chatRoomId, receiverId, receiverName }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="message-input-form">
+      <form 
+        onSubmit={handleSend} 
+        className="message-input-form"
+        onKeyPress={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend(e);
+          }
+        }}
+      >
         <input
           type="text"
           value={newMessage}
@@ -251,7 +328,12 @@ const Chat = ({ chatRoomId, receiverId, receiverName }) => {
           onKeyPress={handleTyping}
           placeholder="Type a message..."
         />
-        <button type="submit">Send</button>
+        <button 
+          type="submit"
+          disabled={!newMessage.trim()}
+        >
+          Send
+        </button>
       </form>
     </div>
   );

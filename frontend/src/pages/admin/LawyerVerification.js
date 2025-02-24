@@ -23,15 +23,15 @@ const LawyerVerification = () => {
         
         console.log("Raw unverified lawyer data:", unverifiedRes.data[0]);
         
-        // Transform the data to directly use fullName from the model
+        // Transform the data to handle both fullName and fullname
         const transformedUnverified = unverifiedRes.data.map(lawyer => ({
           ...lawyer,
-          fullname: lawyer.fullname // Use fullName directly from the model
+          fullname: lawyer.fullName || lawyer.fullname || 'Unknown' // Handle both cases
         }));
 
         const transformedVerified = verifiedRes.data.map(lawyer => ({
           ...lawyer,
-          fullname: lawyer.fullname // Use fullName directly from the model
+          fullname: lawyer.fullName || lawyer.fullname || 'Unknown' // Handle both cases
         }));
         
         if (Array.isArray(unverifiedRes.data)) {
@@ -39,7 +39,6 @@ const LawyerVerification = () => {
         }
         
         if (Array.isArray(verifiedRes.data)) {
-          console.log()
           setVerifiedLawyers(transformedVerified);
         }
       } catch (error) {
@@ -58,10 +57,10 @@ const LawyerVerification = () => {
         "http://localhost:5000/api/lawyers/verified"
       );
       if (Array.isArray(response.data)) {
-        // Transform the data here as well
+        // Transform the data to handle both fullName and fullname
         const transformedData = response.data.map(lawyer => ({
           ...lawyer,
-          fullname: lawyer.fullName // Use fullName directly from the model
+          fullname: lawyer.fullName || lawyer.fullname || 'Unknown' // Handle both cases
         }));
         setVerifiedLawyers(transformedData);
       } else {

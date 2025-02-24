@@ -19,7 +19,6 @@ const Messages = () => {
     const fetchActiveChats = async () => {
       try {
         const userId = user?._id || sessionStorage.getItem("userid");
-
         if (!userId) {
           console.error("No user ID found");
           setError("User not authenticated");
@@ -28,7 +27,6 @@ const Messages = () => {
         }
 
         console.log("Fetching chats for lawyer:", userId);
-
         const response = await axios.get(
           `http://localhost:5000/api/messages/active-chats/${userId}`,
           {
@@ -38,8 +36,16 @@ const Messages = () => {
           }
         );
 
-        console.log("Fetched chats:", response.data);
-        setActiveChats(response.data);
+        // Ensure participants are properly populated
+        const chatsWithPopulatedData = response.data.map(chat => ({
+          ...chat,
+          participants: chat.participants.map(p => 
+            typeof p === 'object' ? p : { _id: p, fullName: 'Loading...' }
+          )
+        }));
+
+        console.log("Fetched chats with populated data:", chatsWithPopulatedData);
+        setActiveChats(chatsWithPopulatedData);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching chats:", error);
@@ -48,78 +54,72 @@ const Messages = () => {
       }
     };
 
-    fetchActiveChats();
-
-    // Set up real-time updates using WebSocket with error handling
     let socket;
-    try {
+    if (user?._id) {
+      // Initialize socket connection
       socket = io("http://localhost:5000", {
         auth: {
-          token: sessionStorage.getItem("token"),
+          token: sessionStorage.getItem("token")
         },
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+        query: {
+          userId: user._id,
+          role: 'lawyer' // Add role to identify lawyer connections
+        }
       });
 
       socket.on("connect", () => {
-        console.log("Socket connected:", socket.id);
-      });
-
-      socket.on("connect_error", (error) => {
-        console.error("Socket connection error:", error);
-        setError(
-          "Failed to connect to chat server. Please try refreshing the page."
-        );
+        console.log("Lawyer socket connected:", socket.id);
       });
 
       socket.on("new_message", (message) => {
-        console.log("Received new message:", message);
-        setActiveChats((prevChats) => {
-          const updatedChats = [...prevChats];
-          const chatIndex = updatedChats.findIndex(
-            (chat) => chat.chatRoomId === message.chatRoomId
-          );
-
-          if (chatIndex !== -1) {
-            // Update existing chat
-            updatedChats[chatIndex] = {
-              ...updatedChats[chatIndex],
-              lastMessage: message,
-              unreadCount:
-                selectedChat?.chatRoomId === message.chatRoomId
-                  ? 0
-                  : (updatedChats[chatIndex].unreadCount || 0) + 1,
-            };
+        console.log("Lawyer received new message:", message);
+        
+        setActiveChats(prevChats => {
+          const chatExists = prevChats.find(chat => chat.chatRoomId === message.chatRoomId);
+          
+          if (chatExists) {
+            return prevChats.map(chat => 
+              chat.chatRoomId === message.chatRoomId 
+                ? {
+                    ...chat,
+                    lastMessage: message,
+                    messages: [...(chat.messages || []), message].sort((a, b) => 
+                      new Date(a.timestamp) - new Date(b.timestamp)
+                    ),
+                    unreadCount: selectedChat?.chatRoomId === message.chatRoomId 
+                      ? 0 
+                      : (chat.unreadCount || 0) + 1
+                  }
+                : chat
+            );
           } else {
-            // Add new chat
-            updatedChats.push({
+            // Add new chat with properly structured data
+            return [...prevChats, {
               chatRoomId: message.chatRoomId,
+              participants: [
+                typeof message.senderId === 'object' ? message.senderId : { _id: message.senderId },
+                typeof message.receiverId === 'object' ? message.receiverId : { _id: message.receiverId }
+              ],
+              messages: [message],
               lastMessage: message,
-              participants: [message.senderId, message.receiverId],
-              unreadCount: 1,
-            });
+              unreadCount: 1
+            }];
           }
-
-          return updatedChats;
         });
+
+        // If this chat is currently selected, mark messages as read
+        if (selectedChat?.chatRoomId === message.chatRoomId) {
+          markMessagesAsRead(message.chatRoomId);
+        }
       });
 
       socket.on("error", (error) => {
         console.error("Socket error:", error);
       });
-
-      socket.on("disconnect", (reason) => {
-        console.log("Socket disconnected:", reason);
-        if (reason === "io server disconnect") {
-          // the disconnection was initiated by the server, reconnect manually
-          socket.connect();
-        }
-      });
-    } catch (error) {
-      console.error("Socket initialization error:", error);
-      setError("Failed to initialize chat connection");
     }
+
+    // Fetch initial chats
+    fetchActiveChats();
 
     return () => {
       if (socket) {
@@ -129,9 +129,16 @@ const Messages = () => {
   }, [user, selectedChat]);
 
   const handleChatSelect = async (chat) => {
-    setSelectedChat(chat);
+    console.log("Selected chat:", chat);
+    const otherParticipant = chat.participants.find(p => p._id !== user._id);
+    
+    setSelectedChat({
+      ...chat,
+      participants: chat.participants,
+      receiverId: otherParticipant?._id,
+      receiverName: otherParticipant?.fullName
+    });
 
-    // Mark messages as read when chat is selected
     if (chat.unreadCount > 0) {
       try {
         await axios.put(
@@ -144,15 +151,31 @@ const Messages = () => {
           }
         );
 
-        // Update unread count locally
-        setActiveChats((prevChats) =>
-          prevChats.map((c) =>
+        setActiveChats(prevChats =>
+          prevChats.map(c =>
             c.chatRoomId === chat.chatRoomId ? { ...c, unreadCount: 0 } : c
           )
         );
       } catch (error) {
         console.error("Error marking messages as read:", error);
       }
+    }
+  };
+
+  // Add this function to mark messages as read
+  const markMessagesAsRead = async (chatRoomId) => {
+    try {
+      await axios.post(
+        `http://localhost:5000/api/messages/read/${chatRoomId}`,
+        { userId: user._id },
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
     }
   };
 
@@ -165,40 +188,42 @@ const Messages = () => {
       <LawyerIconPanel />
       <div className="messages-container">
         <div className="chat-list">
-          <h2>Messages</h2>
-          {activeChats.map((chat) => {
-            const otherParticipant = chat.participants?.find(
-              (p) => p._id !== user._id
-            );
-
-            return (
-              <div
-                key={chat.chatRoomId}
-                className={`chat-item ${
-                  selectedChat?.chatRoomId === chat.chatRoomId ? "active" : ""
-                }`}
-                onClick={() => handleChatSelect(chat)}
-              >
-                <div className="chat-item-header">
-                  <span className="participant-name">
-                    {otherParticipant?.fullName || "Unknown User"}
-                  </span>
-                  {chat.unreadCount > 0 && (
-                    <span className="unread-badge">{chat.unreadCount}</span>
-                  )}
+          {activeChats.length === 0 ? (
+            <div className="no-messages">No messages yet</div>
+          ) : (
+            activeChats.map((chat) => {
+              const otherParticipant = chat.participants.find(
+                (p) => p._id !== user._id
+              );
+              
+              return (
+                <div
+                  key={chat.chatRoomId}
+                  className={`chat-item ${
+                    selectedChat?.chatRoomId === chat.chatRoomId ? "active" : ""
+                  }`}
+                  onClick={() => handleChatSelect(chat)}
+                >
+                  <div className="chat-item-header">
+                    <span className="participant-name">
+                      {otherParticipant?.fullName || "Unknown User"}
+                    </span>
+                    {chat.unreadCount > 0 && (
+                      <span className="unread-badge">{chat.unreadCount}</span>
+                    )}
+                  </div>
+                  <div className="last-message">
+                    {chat.lastMessage?.content || "No messages yet"}
+                  </div>
+                  <div className="timestamp">
+                    {chat.lastMessage?.timestamp
+                      ? new Date(chat.lastMessage.timestamp).toLocaleString()
+                      : ""}
+                  </div>
                 </div>
-                <div className="last-message">
-                  {chat.lastMessage?.content?.substring(0, 50)}
-                  {chat.lastMessage?.content?.length > 50 ? "..." : ""}
-                </div>
-                <div className="timestamp">
-                  {chat.lastMessage?.timestamp
-                    ? new Date(chat.lastMessage.timestamp).toLocaleString()
-                    : ""}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         <div className="chat-window">

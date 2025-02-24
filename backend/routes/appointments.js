@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Appointment = require("../models/Appointment");
 const LawyerAvailability = require("../models/LawyerAvailability");
+const { isAuthenticated } = require('../middleware/auth');
 
 // Create new appointment
 router.post("/", async (req, res) => {
@@ -331,6 +332,20 @@ router.put("/reschedule/:id/:action", async (req, res) => {
       success: false,
       message: "Error handling reschedule request",
       error: error.message
+    });
+  }
+});
+
+router.get('/', isAuthenticated, async (req, res) => {
+  try {
+    // Implement appointment fetching logic here
+    // For now, return empty array to prevent errors
+    res.json([]);
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    res.status(500).json({ 
+      message: 'Error fetching appointments',
+      error: error.message 
     });
   }
 });

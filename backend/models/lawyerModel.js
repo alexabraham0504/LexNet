@@ -74,7 +74,16 @@ const lawyerSchema = new mongoose.Schema({
   officeAddress: { type: String },
   city: { type: String },
   state: { type: String },
-  yearsOfExperience: { type: Number },
+  yearsOfExperience: { 
+    type: Number,
+    required: true,
+    min: 1,
+    max: 50,
+    validate: {
+      validator: Number.isInteger,
+      message: '{VALUE} is not an integer value for years of experience'
+    }
+  },
   lawFirm: { type: String },
   appointmentFees: {
     type: String,

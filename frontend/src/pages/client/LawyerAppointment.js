@@ -6,6 +6,7 @@ import axios from "axios";
 import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
 import ClientSidebar from '../../components/sidebar/ClientSidebar';
+import { useAuth } from "../../context/AuthContext";
 
 const BAD_WORDS = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'damn', 'cunt', 'dick', 'pussy', 
@@ -14,15 +15,16 @@ const BAD_WORDS = [
 
 const LawyerAppointment = () => {
   const { lawyerId } = useParams();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [lawyerDetails, setLawyerDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    clientName: "",
-    clientEmail: "",
-    clientPhone: "",
+    clientName: sessionStorage.getItem("name") || "",
+    clientEmail: sessionStorage.getItem("email") || "",
+    clientPhone: sessionStorage.getItem("phone") || "",
     notes: "",
   });
   const [error, setError] = useState(null);
@@ -123,6 +125,24 @@ const LawyerAppointment = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
+    if (name === "clientPhone") {
+      // Only allow numbers
+      const numbersOnly = value.replace(/[^\d]/g, '');
+      // Update form data with numbers only
+      setFormData(prev => ({
+        ...prev,
+        [name]: numbersOnly
+      }));
+      
+      // Validate phone number
+      const error = validatePhone(numbersOnly);
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+      return;
+    }
+
     // Real-time bad word filtering for name and notes
     if (name === "clientName" || name === "notes") {
       const containsBadWord = BAD_WORDS.some(word => 
@@ -300,16 +320,12 @@ const LawyerAppointment = () => {
     setError(null);
     setSuccess(false);
 
-    if (!validateForm()) {
-      return;
-    }
-
     try {
       const appointmentData = {
         lawyerId,
-        clientName: formData.clientName.trim(),
-        clientEmail: formData.clientEmail.trim(),
-        clientPhone: formData.clientPhone.trim(),
+        clientName: user?.fullName || user?.name,
+        clientEmail: user?.email,
+        clientPhone: user?.phone,
         appointmentDate: selectedDate.toISOString().split("T")[0],
         appointmentTime: selectedTimeSlot,
         notes: formData.notes.trim(),
@@ -323,9 +339,7 @@ const LawyerAppointment = () => {
       if (response.data.success) {
         setSuccess(true);
         setFormData({
-          clientName: "",
-          clientEmail: "",
-          clientPhone: "",
+          ...formData,
           notes: "",
         });
         setSelectedTimeSlot(null);
@@ -491,72 +505,84 @@ const LawyerAppointment = () => {
           <div className="appointment-container">
             <h2>Book Appointment with {lawyerDetails?.fullname}</h2>
 
-            <div className="booking-grid">
+            <div className="appointment-grid">
+              {/* Left Side - Calendar */}
               <div className="calendar-section">
-                <h3>Select Date</h3>
+                <h3>Select Date & Time</h3>
                 <Calendar
                   onChange={handleDateChange}
                   value={selectedDate}
                   minDate={new Date()}
                   className="custom-calendar"
                 />
-              </div>
 
-              <div className="time-slots-section">
-                <h3>Available Time Slots</h3>
-                {isLoading ? (
-                  <div className="loading-spinner">Loading time slots...</div>
-                ) : selectedDate ? (
-                  <>
-                    <div className="date-info">
-                      Selected Date: {selectedDate.toDateString()}
-                    </div>
-                    {availabilityStatus === 'available' && availableTimeSlots.length > 0 ? (
-                      <>
-                        <div className="availability-status available">
-                          {availableTimeSlots.length} time slots available
-                        </div>
-                        <div className="time-slots-grid">
-                          {availableTimeSlots.map((slot) => (
-                            <button
-                              key={slot}
-                              className={`time-slot ${
-                                selectedTimeSlot === slot ? "selected" : ""
-                              }`}
-                              onClick={() => handleTimeSlotSelect(slot)}
-                            >
-                              {slot}
-                            </button>
-                          ))}
-                        </div>
-                      </>
+                {selectedDate && (
+                  <div className="time-slots-section">
+                    <h4>Available Time Slots</h4>
+                    {isLoading ? (
+                      <div className="loading-spinner">Loading time slots...</div>
                     ) : (
-                      <div className={`availability-status ${availabilityStatus === 'fully-booked' ? 'booked' : 'unavailable'}`}>
-                        {availabilityStatus === 'fully-booked' 
-                          ? "All slots are booked for this date. Please select another date."
-                          : "Lawyer is not available on this date"}
+                      <div className="time-slots-grid">
+                        {availableTimeSlots.map((slot) => (
+                          <button
+                            key={slot}
+                            className={`time-slot ${selectedTimeSlot === slot ? "selected" : ""}`}
+                            onClick={() => handleTimeSlotSelect(slot)}
+                          >
+                            {slot}
+                          </button>
+                        ))}
                       </div>
                     )}
-                  </>
-                ) : (
-                  <div className="select-date-message">
-                    Please select a date to view available time slots
                   </div>
                 )}
               </div>
 
-              <div className="booking-form-section">
-                <h3>Appointment Details</h3>
+              {/* Right Side - Form */}
+              <div className="appointment-form-section">
+                <h3>Your Information</h3>
                 <form onSubmit={handleSubmit}>
-                  {renderFormGroup("Name", "clientName", "text", 50)}
-                  {renderFormGroup("Email", "clientEmail", "email", 100)}
-                  {renderFormGroup("Phone", "clientPhone", "tel", 10)}
                   <div className="form-group">
-                    <label>Notes <span className="optional">(Optional)</span></label>
+                    <label>Name <span className="required">*</span></label>
+                    <div className="info-display">
+                      {formData.clientName || "Not available"}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Email <span className="required">*</span></label>
+                    <div className="info-display">
+                      {formData.clientEmail || "Not available"}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Phone <span className="required">*</span></label>
+                    <input
+                      type="tel"
+                      name="clientPhone"
+                      value={formData.clientPhone}
+                      onChange={handleInputChange}
+                      className={validationErrors.clientPhone ? "error" : ""}
+                      placeholder="Enter your 10-digit phone number"
+                      maxLength={10}
+                      pattern="[6-9][0-9]{9}"
+                      title="Please enter a valid 10-digit Indian phone number"
+                    />
+                    {validationErrors.clientPhone && (
+                      <span className="error-text">{validationErrors.clientPhone}</span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Notes <span className="optional">(Optional)</span>
+                    </label>
                     <textarea
                       name="notes"
                       value={formData.notes}
                       onChange={handleInputChange}
+                      placeholder="Add any additional notes or specific concerns..."
                       maxLength={500}
                       className={validationErrors.notes ? "error" : ""}
                     />
@@ -748,7 +774,7 @@ const LawyerAppointment = () => {
         }
 
         .appointment-container {
-          max-width: 800px;
+          max-width: 1200px;
           margin: 2rem auto;
           padding: 2rem;
           background: white;
@@ -756,22 +782,29 @@ const LawyerAppointment = () => {
           box-shadow: 0 0 20px rgba(0,0,0,0.05);
         }
 
-        @media (max-width: 768px) {
-          .main-content.sidebar-expanded {
-            margin-left: 240px;
-          }
-
-          .appointment-container {
-            margin: 1rem;
-            padding: 1rem;
-          }
-        }
-
-        .booking-grid {
+        .appointment-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          grid-template-columns: 1fr 1fr;
           gap: 2rem;
           margin-top: 2rem;
+        }
+
+        .calendar-section {
+          padding: 1.5rem;
+          background: #f8f9fa;
+          border-radius: 10px;
+          border: 1px solid #e9ecef;
+        }
+
+        .appointment-form-section {
+          padding: 1.5rem;
+          background: #fff;
+          border-radius: 10px;
+          border: 1px solid #e9ecef;
+        }
+
+        .time-slots-section {
+          margin-top: 1.5rem;
         }
 
         .time-slots-grid {
@@ -779,6 +812,27 @@ const LawyerAppointment = () => {
           grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
           gap: 0.5rem;
           margin-top: 1rem;
+        }
+
+        .custom-calendar {
+          width: 100%;
+          max-width: none;
+          border: none;
+          background: white;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 768px) {
+          .appointment-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .appointment-container {
+            margin: 1rem;
+            padding: 1rem;
+          }
         }
 
         .time-slot {
@@ -876,12 +930,6 @@ const LawyerAppointment = () => {
           display: block;
         }
 
-        @media (max-width: 768px) {
-          .booking-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
         .date-info {
           margin-bottom: 1rem;
           font-weight: 500;
@@ -920,29 +968,6 @@ const LawyerAppointment = () => {
           text-align: center;
           color: #666;
           padding: 1rem;
-        }
-
-        .custom-calendar {
-          width: 100%;
-          max-width: 400px;
-          margin: 0 auto;
-        }
-
-        .availability-status.booked {
-          background-color: #fff3cd;
-          color: #856404;
-          border: 1px solid #ffeeba;
-        }
-
-        .time-slot.booked {
-          background-color: #e9ecef;
-          color: #6c757d;
-          cursor: not-allowed;
-          opacity: 0.7;
-        }
-
-        .time-slot.booked:hover {
-          background-color: #e9ecef;
         }
 
         .status-button-container {
@@ -1263,13 +1288,13 @@ const LawyerAppointment = () => {
 
         .required {
           color: #dc3545;
-          margin-left: 2px;
+          margin-left: 4px;
         }
 
         .optional {
           color: #6c757d;
           font-size: 0.875rem;
-          font-weight: normal;
+          margin-left: 4px;
         }
 
         .char-count {
@@ -1289,6 +1314,53 @@ const LawyerAppointment = () => {
         .form-group input.error:focus,
         .form-group textarea.error:focus {
           box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .info-display {
+          padding: 12px;
+          background: #f8f9fa;
+          border-radius: 6px;
+          border: 1px solid #e0e0e0;
+          color: #333;
+          font-size: 1rem;
+          margin-top: 5px;
+          font-weight: 500;
+        }
+
+        .info-display:empty::before {
+          content: "Not available";
+          color: #6c757d;
+          font-style: italic;
+        }
+
+        .form-group input[type="tel"] {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          font-size: 1rem;
+          transition: border-color 0.3s ease;
+          background-color: #fff;
+        }
+
+        .form-group input[type="tel"]:focus {
+          outline: none;
+          border-color: #1a237e;
+          box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+        }
+
+        .form-group input[type="tel"].error {
+          border-color: #dc3545;
+          background-color: #fff8f8;
+        }
+
+        .form-group input[type="tel"].error:focus {
+          box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-group input[type="tel"]::placeholder {
+          color: #6c757d;
+          font-size: 0.9rem;
         }
       `}</style>
     </>

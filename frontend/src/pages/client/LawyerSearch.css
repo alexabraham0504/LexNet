@@ -1,0 +1,78 @@
+.chat-windows-container {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 20px;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.chat-modal {
+  position: fixed;
+  bottom: 20px;
+  width: 350px;
+  height: 500px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chat-modal.minimized {
+  height: 50px;
+}
+
+.chat-header {
+  background: #1a237e;
+  color: white;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.chat-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.minimize-chat,
+.close-chat {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 5px;
+  transition: color 0.3s ease;
+}
+
+.minimize-chat:hover,
+.close-chat:hover {
+  color: #ddd;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chat-windows-container {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .chat-modal {
+    width: 100%;
+    right: 0 !important;
+    bottom: 0;
+    border-radius: 0;
+  }
+
+  .chat-modal:not(:last-child) {
+    display: none;
+  }
+} 

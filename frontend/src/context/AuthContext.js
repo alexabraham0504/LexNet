@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const AuthContext = createContext(null);
 
@@ -6,38 +8,61 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const initializeAuth = () => {
+  const checkUserStatus = async () => {
+    try {
       const token = sessionStorage.getItem("token");
-      if (token) {
-        try {
-          // Verify token hasn't expired
-          const decodedToken = JSON.parse(atob(token.split(".")[1]));
-          if (decodedToken.exp * 1000 < Date.now()) {
-            console.log("Token expired, logging out");
-            logout();
-            return;
-          }
+      if (!token) return false;
 
-          const userData = {
-            _id: sessionStorage.getItem("userid"),
-            fullName: sessionStorage.getItem("name"),
-            email: sessionStorage.getItem("email"),
-            role: sessionStorage.getItem("role"),
-            token,
-          };
-          console.log("Restoring auth state:", userData);
-          setUser(userData);
-        } catch (error) {
-          console.error("Error parsing token:", error);
-          logout();
+      const response = await axios.get("http://localhost:5000/api/auth/check-status", {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
+      });
+      
+      if (response.data.status === "suspended") {
+        handleSuspension(response.data);
+        return false;
       }
+      return true;
+    } catch (error) {
+      if (error.response?.status === 403) {
+        handleSuspension(error.response.data);
+      }
+      return false;
+    }
+  };
+
+  const handleSuspension = (data) => {
+    logout();
+    toast.error(
+      <div>
+        <h4>Account Suspended</h4>
+        <p>{data.message}</p>
+        {data.suspensionReason && <p>Reason: {data.suspensionReason}</p>}
+        <p>Please contact administrator for assistance.</p>
+      </div>,
+      {
+        duration: 10000,
+        position: "top-center",
+      }
+    );
+  };
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      await checkUserStatus();
       setLoading(false);
     };
-
-    initializeAuth();
+    checkAuth();
   }, []);
+
+  // Check status more frequently (every 30 seconds)
+  useEffect(() => {
+    if (user) {
+      const intervalId = setInterval(checkUserStatus, 30000);
+      return () => clearInterval(intervalId);
+    }
+  }, [user]);
 
   const login = (userData) => {
     if (!userData.token) {

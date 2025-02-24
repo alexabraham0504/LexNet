@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { logout: authLogout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const userName = sessionStorage.getItem("name");
@@ -21,10 +23,23 @@ const Navbar = () => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    sessionStorage.clear();
-    setShowDropdown(false);
-    window.location.href = "/";
+  const handleLogout = () => {
+    try {
+      sessionStorage.setItem("isLoggingOut", "true");
+      
+      if (authLogout) {
+        authLogout();
+      }
+      
+      sessionStorage.clear();
+      
+      setShowDropdown(false);
+      
+      window.location.replace('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = '/';
+    }
   };
 
   const links = [

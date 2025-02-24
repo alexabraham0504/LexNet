@@ -17,6 +17,7 @@ const LawyerAvailability = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [appointments, setAppointments] = useState([]);
   const [rescheduleRequests, setRescheduleRequests] = useState([]);
+  const [validationError, setValidationError] = useState("");
 
   // Fetch existing availability when date is selected
   useEffect(() => {
@@ -40,8 +41,22 @@ const LawyerAvailability = () => {
         );
 
         if (availabilityResponse.data.availability) {
-          setExistingAvailability(availabilityResponse.data.availability);
-          setTimeSlots(availabilityResponse.data.availability.timeSlots);
+          const availability = availabilityResponse.data.availability;
+          
+          // Filter out past time slots if it's today
+          const isToday = selectedDate.toDateString() === new Date().toDateString();
+          if (isToday) {
+            const currentHour = new Date().getHours();
+            const filteredSlots = availability.timeSlots.filter(slot => {
+              const slotHour = parseInt(slot.split(':')[0]);
+              return slotHour > currentHour;
+            });
+            setTimeSlots(filteredSlots);
+          } else {
+            setTimeSlots(availability.timeSlots);
+          }
+          
+          setExistingAvailability(availability);
         } else {
           setExistingAvailability(null);
           setTimeSlots([]);
@@ -78,7 +93,19 @@ const LawyerAvailability = () => {
     fetchAvailabilityAndAppointments();
   }, [selectedDate]);
 
+  // Add function to check if a date is a weekend
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+  };
+
+  // Update handleDateChange to prevent weekend selection
   const handleDateChange = (date) => {
+    if (isWeekend(date)) {
+      setValidationError("Appointments are not available on weekends");
+      return;
+    }
+    setValidationError("");
     setSelectedDate(date);
   };
 
@@ -114,13 +141,62 @@ const LawyerAvailability = () => {
     }
   };
 
-  const handleSaveSlots = async () => {
+  // Add validation before saving slots
+  const validateTimeSlots = () => {
     if (!selectedDate) {
-      alert("Please select a date.");
-      return;
+      setValidationError("Please select a date first");
+      return false;
     }
+
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(selectedDate);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    if (selectedDay < today) {
+      setValidationError("Cannot set availability for past dates");
+      return false;
+    }
+
+    // If it's today, check for past hours
+    if (selectedDay.getTime() === today.getTime()) {
+      const currentHour = new Date().getHours();
+      const hasPastSlots = timeSlots.some(slot => {
+        const slotHour = parseInt(slot.split(':')[0]);
+        return slotHour <= currentHour;
+      });
+
+      if (hasPastSlots) {
+        setValidationError("Cannot set availability for past hours");
+        return false;
+      }
+    }
+
+    // Check if at least one time slot is selected
     if (timeSlots.length === 0) {
-      alert("Please add at least one time slot.");
+      setValidationError("Please select at least one time slot");
+      return false;
+    }
+
+    // Check for any conflicting appointments
+    const hasConflict = appointments.some(appointment => {
+      return timeSlots.includes(appointment.appointmentTime) && 
+             appointment.status !== 'cancelled';
+    });
+
+    if (hasConflict) {
+      setValidationError("Some selected slots conflict with existing appointments");
+      return false;
+    }
+
+    setValidationError("");
+    return true;
+  };
+
+  // Update handleSaveSlots with validation
+  const handleSaveSlots = async () => {
+    if (!validateTimeSlots()) {
       return;
     }
 
@@ -128,8 +204,7 @@ const LawyerAvailability = () => {
       const lawyerEmail =
         localStorage.getItem("userEmail") || sessionStorage.getItem("email");
       if (!lawyerEmail) {
-        alert("Please login again.");
-        window.location.href = "/login";
+        setValidationError("Please login again");
         return;
       }
 
@@ -165,11 +240,7 @@ const LawyerAvailability = () => {
       );
       setExistingAvailability(response.data.availability);
     } catch (error) {
-      console.error("Error saving time slots:", error);
-      alert(
-        error.response?.data?.message ||
-          "An error occurred while saving time slots."
-      );
+      setValidationError(error.response?.data?.message || "Error saving time slots");
     }
   };
 
@@ -236,6 +307,52 @@ const LawyerAvailability = () => {
     }
   };
 
+  // Update generateTimeSlots to filter out past times for current day
+  const generateTimeSlots = () => {
+    const slots = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Check if selected date is today
+    const isToday = selectedDate && 
+      selectedDate.toDateString() === new Date().toDateString();
+
+    for (let hour = 9; hour <= 17; hour++) {
+      // Skip past hours if it's today
+      if (isToday && hour <= currentHour) {
+        continue;
+      }
+      
+      const formattedHour = hour.toString().padStart(2, '0');
+      slots.push(`${formattedHour}:00`);
+    }
+    return slots;
+  };
+
+  const availableTimeSlots = generateTimeSlots();
+
+  // Update handleSlotToggle with validation
+  const handleSlotToggle = (slot) => {
+    // Clear any previous validation errors
+    setValidationError("");
+
+    // Check if the slot has an existing appointment
+    const hasAppointment = appointments.some(
+      apt => apt.appointmentTime === slot && apt.status !== 'cancelled'
+    );
+
+    if (hasAppointment) {
+      setValidationError("Cannot remove slot with existing appointment");
+      return;
+    }
+
+    if (timeSlots.includes(slot)) {
+      setTimeSlots(timeSlots.filter((s) => s !== slot));
+    } else {
+      setTimeSlots([...timeSlots, slot].sort());
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -255,6 +372,10 @@ const LawyerAvailability = () => {
                 value={selectedDate}
                 minDate={new Date()}
                 className="modern-calendar"
+                tileDisabled={({date}) => isWeekend(date)}
+                tileClassName={({date}) => 
+                  isWeekend(date) ? 'weekend-tile' : ''
+                }
               />
             </div>
 
@@ -279,33 +400,45 @@ const LawyerAvailability = () => {
           <div className="right-section">
             <div className="time-slots-box">
               <div className="section-header">
-                <h2>Manage Time Slots</h2>
-                <div className="time-input-container">
-                  <input
-                    type="time"
-                    value={newTimeSlot}
-                    onChange={(e) => setNewTimeSlot(e.target.value)}
-                    className="time-input"
-                  />
-                  <button onClick={handleAddTimeSlot} className="add-btn">
-                    Add Slot
-                  </button>
-                </div>
+                <h2>Select Available Hours</h2>
+                <p className="time-info">Select your available time slots (1-hour intervals)</p>
               </div>
 
-              <div className="slots-container">
-                {timeSlots.map((slot, index) => (
-                  <div key={index} className="slot-item">
-                    <span>{slot}</span>
-                    <button
-                      onClick={() => handleRemoveTimeSlot(slot)}
-                      className="remove-btn"
+              <div className="time-slots-grid">
+                {availableTimeSlots.map((slot) => {
+                  const hasAppointment = appointments.some(
+                    apt => apt.appointmentTime === slot && apt.status !== 'cancelled'
+                  );
+                  
+                  const isToday = selectedDate && 
+                    selectedDate.toDateString() === new Date().toDateString();
+                  const slotHour = parseInt(slot.split(':')[0]);
+                  const currentHour = new Date().getHours();
+                  const isPastSlot = isToday && slotHour <= currentHour;
+                  
+                  return (
+                    <div
+                      key={slot}
+                      className={`time-slot 
+                        ${timeSlots.includes(slot) ? 'selected' : ''} 
+                        ${hasAppointment ? 'has-appointment' : ''}
+                        ${isPastSlot ? 'past-slot' : ''}`}
+                      onClick={() => !isPastSlot && handleSlotToggle(slot)}
+                      title={isPastSlot ? "Past time slot" : 
+                             hasAppointment ? "Slot has existing appointment" : ""}
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                      {slot}
+                      {hasAppointment && <span className="appointment-indicator">📅</span>}
+                    </div>
+                  );
+                })}
               </div>
+
+              {validationError && (
+                <div className="validation-error">
+                  {validationError}
+                </div>
+              )}
 
               <div className="action-buttons">
                 <button onClick={handleSaveSlots} className="save-btn">
@@ -479,35 +612,37 @@ const LawyerAvailability = () => {
           color: #0f172a;
         }
 
-        .time-input-container {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .time-input {
-          flex: 1;
-          padding: 0.75rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 0.875rem;
-        }
-
-        .slots-container {
+        .time-slots-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-          gap: 0.75rem;
-          margin-bottom: 1.5rem;
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          gap: 1rem;
+          margin: 1.5rem 0;
         }
 
-        .slot-item {
+        .time-slot {
           background: #f8fafc;
-          padding: 0.75rem;
+          padding: 1rem;
           border-radius: 8px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          text-align: center;
+          cursor: pointer;
+          border: 2px solid transparent;
+          transition: all 0.2s ease;
+        }
+
+        .time-slot:hover {
+          background: #e2e8f0;
+        }
+
+        .time-slot.selected {
+          background: #2563eb;
+          color: white;
+          border-color: #1e40af;
+        }
+
+        .time-info {
+          color: #64748b;
           font-size: 0.875rem;
+          margin: 0;
         }
 
         .appointments-tabs {
@@ -666,6 +801,64 @@ const LawyerAvailability = () => {
             margin-left: 50px;
             padding: 15px;
           }
+        }
+
+        .validation-error {
+          color: #dc2626;
+          background: #fee2e2;
+          padding: 0.75rem;
+          border-radius: 6px;
+          margin: 1rem 0;
+          font-size: 0.875rem;
+        }
+
+        .time-slot.has-appointment {
+          position: relative;
+          background: #f0f9ff;
+          border-color: #0ea5e9;
+        }
+
+        .appointment-indicator {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          font-size: 12px;
+        }
+
+        .time-slot.has-appointment.selected {
+          background: #0ea5e9;
+          color: white;
+        }
+
+        .time-slot:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .time-slot.past-slot {
+          opacity: 0.5;
+          background: #e5e7eb;
+          cursor: not-allowed;
+          color: #9ca3af;
+        }
+
+        .time-slot.past-slot.selected {
+          background: #9ca3af;
+          border-color: #6b7280;
+        }
+
+        .weekend-tile {
+          background-color: #f3f4f6;
+          color: #9ca3af;
+        }
+
+        .weekend-tile:hover {
+          background-color: #f3f4f6 !important;
+          cursor: not-allowed;
+        }
+
+        .weekend-tile abbr {
+          text-decoration: line-through;
         }
       `}</style>
     </>

@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
 import { navbarStyles } from "./navbar-styles";
+import { useAuth } from "../../context/AuthContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { logout: authLogout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const userName = sessionStorage.getItem("name");
@@ -64,22 +66,28 @@ const Navbar = () => {
     };
   }, [lastScrollY]);
 
-  const handleLogout = async () => {
-    // First, clear all sessionStorage items
-    sessionStorage.clear();
-    // Or if you prefer to remove specific items:
-    // sessionStorage.removeItem("name");
-    // sessionStorage.removeItem("role");
-    // sessionStorage.removeItem("userid");
-    // sessionStorage.removeItem("token");
-
-    // Close the dropdown
-    setShowDropdown(false);
-
-    // Force navigation to home page
-    window.location.href = "/";
-    // Alternative approach:
-    // navigate("/", { replace: true });
+  const handleLogout = () => {
+    try {
+      // Set a flag to prevent login page redirect
+      sessionStorage.setItem("isLoggingOut", "true");
+      
+      // Clear auth context first
+      if (authLogout) {
+        authLogout();
+      }
+      
+      // Clear session storage
+      sessionStorage.clear();
+      
+      // Close dropdown
+      setShowDropdown(false);
+      
+      // Navigate to home page immediately
+      window.location.replace('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = '/';
+    }
   };
 
   const links = [

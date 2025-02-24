@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Chat from "../../components/Chat";
 import { useAuth } from "../../context/AuthContext";
 import ClientSidebar from "../../components/sidebar/ClientSidebar";
+// import './LawyerSearch.css';
 
 const LawyerSearch = () => {
   const [lawyers, setLawyers] = useState([]);
@@ -28,6 +29,8 @@ const LawyerSearch = () => {
   const [selectedLawyerId, setSelectedLawyerId] = useState(null);
   const { user } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [activeChats, setActiveChats] = useState([]);
+  const MAX_ACTIVE_CHATS = 3;
 
   useEffect(() => {
     const fetchLawyers = async () => {
@@ -39,6 +42,7 @@ const LawyerSearch = () => {
             searchTerm ? `?search=${searchTerm}` : ""
           }`
         );
+        console.log("Lawyers data:", response.data);
         setLawyers(response.data);
       } catch (err) {
         console.error("Error fetching lawyers:", err);
@@ -92,13 +96,13 @@ const LawyerSearch = () => {
 
   const filteredLawyers = lawyers.filter((lawyer) => {
     const searchTermMatch = searchTerm
-      ? lawyer.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ? (lawyer.fullname || lawyer.fullName)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lawyer.AEN?.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
     const matchName =
       !filters.name ||
-      lawyer.fullname?.toLowerCase().includes(filters.name.toLowerCase());
+      (lawyer.fullname || lawyer.fullName)?.toLowerCase().includes(filters.name.toLowerCase());
 
     const matchAEN =
       !filters.AEN ||
@@ -112,7 +116,7 @@ const LawyerSearch = () => {
 
     const matchLocation =
       !filters.location ||
-      lawyer.location?.toLowerCase().includes(filters.location.toLowerCase());
+      lawyer.location?.address?.toLowerCase().includes(filters.location.toLowerCase());
 
     const matchFees =
       !filters.maxFees || lawyer.fees <= parseInt(filters.maxFees);
@@ -141,14 +145,60 @@ const LawyerSearch = () => {
       return;
     }
 
-    const chatRoomId = `chat_${user._id}_${lawyer.userid}`;
-    console.log("Starting chat with lawyer:", {
-      lawyerId: lawyer.userid,
-      chatRoomId,
+    // Make sure we have the correct lawyer ID
+    const lawyerId =  lawyer.userid;
+    if (!lawyerId) {
+      console.error("No lawyer ID found:", lawyer);
+      return;
+    }
+
+    console.log("Opening chat with lawyer:", {
+      lawyerId,
+      lawyerName: lawyer.fullname || lawyer.fullName,
+      userId: user._id
     });
 
-    setSelectedLawyerId(lawyer.userid);
-    setShowChat(true);
+    const chatRoomId = `chat_${user._id}_${lawyerId}`;
+    
+    const chatExists = activeChats.find(chat => chat.chatRoomId === chatRoomId);
+    
+    if (!chatExists) {
+      if (activeChats.length >= MAX_ACTIVE_CHATS) {
+        setActiveChats(prevChats => [{
+          chatRoomId,
+          lawyerId,
+          lawyerName: lawyer.fullname || lawyer.fullName,
+          minimized: false
+        }, ...prevChats.slice(0, MAX_ACTIVE_CHATS - 1)]);
+      } else {
+        setActiveChats(prevChats => [{
+          chatRoomId,
+          lawyerId,
+          lawyerName: lawyer.fullname || lawyer.fullName,
+          minimized: false
+        }, ...prevChats]);
+      }
+    } else {
+      setActiveChats(prevChats => {
+        const otherChats = prevChats.filter(chat => chat.chatRoomId !== chatRoomId);
+        return [{
+          ...chatExists,
+          minimized: false
+        }, ...otherChats];
+      });
+    }
+  };
+
+  const handleCloseChat = (chatRoomId) => {
+    setActiveChats(prevChats => prevChats.filter(chat => chat.chatRoomId !== chatRoomId));
+  };
+
+  const handleToggleMinimize = (chatRoomId) => {
+    setActiveChats(prevChats => prevChats.map(chat => 
+      chat.chatRoomId === chatRoomId 
+        ? { ...chat, minimized: !chat.minimized }
+        : chat
+    ));
   };
 
   if (loading) return <div>Loading...</div>;
@@ -208,7 +258,7 @@ const LawyerSearch = () => {
                     {lawyer.profilePicture ? (
                       <img
                         src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
-                        alt={`${lawyer.fullname}'s profile`}
+                        alt={`${lawyer.fullname || lawyer.fullName}'s profile`}
                         className="profile-picture"
                       />
                     ) : (
@@ -216,12 +266,15 @@ const LawyerSearch = () => {
                     )}
                   </div>
                   <div className="info-section">
-                    <h3>{lawyer.fullname}</h3>
+                    <h3>{lawyer.fullname || lawyer.fullName}</h3>
                     <p>
                       <strong>Specialization:</strong> {lawyer.specialization}
                     </p>
                     <p>
-                      <strong>Location:</strong> {lawyer.location}
+                      <strong>Location:</strong> {lawyer.location?.address || 'Location not specified'}
+                    </p>
+                    <p>
+                      <strong>Email:</strong> {lawyer.email}
                     </p>
                   </div>
                 </motion.div>
@@ -256,14 +309,14 @@ const LawyerSearch = () => {
                       {selectedLawyer.profilePicture ? (
                         <img
                           src={`http://localhost:5000/uploads/${selectedLawyer.profilePicture}`}
-                          alt={`${selectedLawyer.fullname}'s profile`}
+                          alt={`${selectedLawyer.fullname || selectedLawyer.fullName}'s profile`}
                           className="profile-picture"
                         />
                       ) : (
                         <div className="no-profile-picture">No Image</div>
                       )}
                     </div>
-                    <h2>{selectedLawyer.fullname}</h2>
+                    <h2>{selectedLawyer.fullname || selectedLawyer.fullName}</h2>
                     <p className="aen">
                       <strong>AEN:</strong> {selectedLawyer.AEN}
                     </p>
@@ -276,7 +329,7 @@ const LawyerSearch = () => {
                     </div>
                     <div className="info-item">
                       <strong>Location:</strong>
-                      <span>{selectedLawyer.location}</span>
+                      <span>{selectedLawyer.location?.address || 'Location not specified'}</span>
                     </div>
                     <div className="info-item">
                       <strong>Phone:</strong>
@@ -414,22 +467,51 @@ const LawyerSearch = () => {
             </motion.div>
           )}
 
-          {showChat && selectedLawyerId && (
-            <div className="chat-modal">
-              <Chat
-                chatRoomId={`chat_${
-                  user?._id || sessionStorage.getItem("userid")
-                }_${selectedLawyerId}`}
-                receiverId={selectedLawyerId}
-                receiverName={
-                  lawyers.find((l) => l.userid === selectedLawyerId)?.fullName
-                }
-              />
-              <button className="close-chat" onClick={() => setShowChat(false)}>
-                Close Chat
-              </button>
-            </div>
-          )}
+          <div className="chat-windows-container">
+            {activeChats.map((chat, index) => (
+              <div 
+                key={chat.chatRoomId}
+                className={`chat-modal ${chat.minimized ? 'minimized' : ''}`}
+                style={{ 
+                  right: `${20 + (index * 370)}px`,
+                  zIndex: 1000 - index
+                }}
+              >
+                <div className="chat-header">
+                  <span>{chat.lawyerName}</span>
+                  <div className="chat-controls">
+                    <button 
+                      className="minimize-chat"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleMinimize(chat.chatRoomId);
+                      }}
+                    >
+                      {chat.minimized ? '□' : '−'}
+                    </button>
+                    <button 
+                      className="close-chat"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseChat(chat.chatRoomId);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                {!chat.minimized && (
+                  <Chat
+                    key={chat.chatRoomId}
+                    chatRoomId={chat.chatRoomId}
+                    receiverId={chat.lawyerId}
+                    receiverName={chat.lawyerName}
+                    hideHeader={true}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
 
           <style jsx="true">{`
             .page-container {
@@ -534,9 +616,28 @@ const LawyerSearch = () => {
               box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
               backdrop-filter: blur(5px);
               border: 1px solid rgba(255, 255, 255, 0.2);
-              max-width: 350px;
+              width: 100%;
               cursor: pointer;
               transition: all 0.3s ease;
+              display: flex;
+              gap: 25px;
+              align-items: center;
+            }
+
+            .profile-section {
+              flex-shrink: 0;
+            }
+
+            .info-section {
+              flex: 1;
+              text-align: left;
+            }
+
+            .lawyer-list {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+              gap: 2rem;
+              padding: 20px;
             }
 
             .lawyer-card:hover {
@@ -636,15 +737,6 @@ const LawyerSearch = () => {
               font-size: 0.95rem;
             }
 
-            .profile-picture {
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              object-fit: cover;
-              border: 4px solid #fff;
-              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            }
-
             .close-button {
               position: absolute;
               top: 15px;
@@ -712,20 +804,6 @@ const LawyerSearch = () => {
             .certificates a:hover {
               background: #0056b3;
               transform: translateY(-2px);
-            }
-
-            .lawyer-list {
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-              gap: 2rem;
-              padding: 20px;
-              justify-items: center;
-            }
-
-            .lawyer-card {
-              width: 100%;
-              max-width: 350px;
-              margin: 0;
             }
 
             .search-controls {
@@ -1110,30 +1188,83 @@ const LawyerSearch = () => {
               }
             }
 
+            .chat-windows-container {
+              position: fixed;
+              bottom: 0;
+              right: 0;
+              display: flex;
+              flex-direction: row-reverse;
+              gap: 20px;
+              padding: 20px;
+              z-index: 1000;
+            }
+
             .chat-modal {
               position: fixed;
-              right: 20px;
               bottom: 20px;
               width: 350px;
               height: 500px;
               background: white;
               border-radius: 8px;
               box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-              z-index: 1000;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              transition: all 0.3s ease;
             }
 
+            .chat-modal.minimized {
+              height: 50px;
+            }
+
+            .chat-header {
+              background: #1a237e;
+              color: white;
+              padding: 10px 15px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              cursor: pointer;
+            }
+
+            .chat-controls {
+              display: flex;
+              gap: 10px;
+            }
+
+            .minimize-chat,
             .close-chat {
-              position: absolute;
-              top: 10px;
-              right: 10px;
               background: none;
               border: none;
+              color: white;
               cursor: pointer;
-              color: #666;
+              font-size: 18px;
+              padding: 0 5px;
+              transition: color 0.3s ease;
             }
 
+            .minimize-chat:hover,
             .close-chat:hover {
-              color: #333;
+              color: #ddd;
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+              .chat-windows-container {
+                flex-direction: column;
+                width: 100%;
+              }
+
+              .chat-modal {
+                width: 100%;
+                right: 0 !important;
+                bottom: 0;
+                border-radius: 0;
+              }
+
+              .chat-modal:not(:last-child) {
+                display: none;
+              }
             }
           `}</style>
         </div>
