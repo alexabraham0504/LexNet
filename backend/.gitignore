@@ -2,4 +2,5 @@
 # Don't ignore uploads directory anymore
 /uploads
 
+
 /config/credentials/gen-lang-client-0211780297-e10ebf9f18e8.json
