@@ -452,6 +452,12 @@ const cleanupOldAnalysis = () => {
   }
 };
 
+// Add this function to handle errors
+const handleError = (error) => {
+  console.error('An error occurred:', error);
+  toast.error('An error occurred. Please try again later.');
+};
+
 const CaseDetails = () => {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);

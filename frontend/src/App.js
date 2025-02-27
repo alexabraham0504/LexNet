@@ -42,6 +42,7 @@ import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
 import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 import Messages from "./pages/lawyer/Messages";
 import IPCSection from "./pages/lawyer/IPCSection";
+import VideoCall from './components/VideoCall';
 
 function App() {
   return (
@@ -114,6 +115,8 @@ function App() {
           <Route path="/lawyeravailability" element={<LawyerAvailability />} />
           <Route path="/message" element={<Messages />} />
           <Route path="/ipc-sections" element={<IPCSection />} />
+          <Route path="/lawyer/video-call" element={<VideoCall onClose={() => window.history.back()} />} />
+          <Route path="/client/video-call" element={<VideoCall onClose={() => window.history.back()} />} />
         </Routes>
       </Router>
     </AuthProvider>

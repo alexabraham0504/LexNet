@@ -28,6 +28,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Chat from "../../components/Chat";
 import { useAuth } from "../../context/AuthContext";
+import VideoCall from '../../components/VideoCall';
 
 const FindLawyers = () => {
   const location = useLocation();
@@ -48,6 +49,7 @@ const FindLawyers = () => {
   const { user } = useAuth();
   const [activeChats, setActiveChats] = useState([]);
   const [selectedLawyerDetails, setSelectedLawyerDetails] = useState(null);
+  const [videoCallActive, setVideoCallActive] = useState(null);
 
   // IPC to Specialization mapping
   const IPC_SPECIALIZATION_MAP = {
@@ -253,6 +255,33 @@ const FindLawyers = () => {
         ? { ...chat, minimized: !chat.minimized }
         : chat
     ));
+  };
+
+  const handleVideoCall = async (lawyer) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    const roomName = `consultation_${user._id}_${lawyer.userid}_${Date.now()}`;
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/lawyers/sendMeetingId', {
+        lawyerId: lawyer.userid,
+        roomName: roomName,
+        clientName: user.fullName,
+        clientId: user._id
+      });
+
+      console.log("Response from server:", response.data);
+      
+      // Navigate to the video call page instead of lawyer dashboard
+      navigate(`/client/video-call?roomName=${roomName}`);
+      toast.success(`Connecting to video call with ${lawyer.fullName}`);
+    } catch (error) {
+      console.error("Error sending meeting ID:", error.response ? error.response.data : error.message);
+      toast.error("Failed to initiate video call.");
+    }
   };
 
   const containerVariants = {
@@ -520,12 +549,12 @@ const FindLawyers = () => {
                       
                       <button 
                         className="booking-btn video-call"
-                        onClick={() => toast.info("Video call feature coming soon!")}
+                        onClick={() => handleVideoCall(selectedLawyer)}
                       >
                         <FontAwesomeIcon icon={faVideo} />
                         <span>Video Consultation</span>
                         <span className="fee-label">
-                          {(selectedLawyer.videoCallFees || selectedLawyer.consultationFees).replace('₹', '')}
+                          {selectedLawyer.videoCallFees}
                         </span>
                       </button>
 
@@ -644,6 +673,16 @@ const FindLawyers = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {videoCallActive && (
+              <div className="video-call-modal">
+                <VideoCall
+                  roomName={videoCallActive.roomName}
+                  lawyerName={videoCallActive.lawyerName}
+                  onClose={() => setVideoCallActive(null)}
+                />
               </div>
             )}
           </div>
@@ -1078,5 +1117,50 @@ export default FindLawyers;
     .booking-btn {
       width: 100%;
     }
+  }
+
+  .video-call-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .video-call-container {
+    position: relative;
+    width: 95%;
+    height: 95%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .close-video-call {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 2001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .close-video-call:hover {
+    background: rgba(0, 0, 0, 0.8);
   }
 `}</style> 

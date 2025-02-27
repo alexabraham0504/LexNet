@@ -347,6 +347,7 @@ const LawyerSearch = () => {
                     </div>
                   </div>
 
+                  {/* Commenting out the modal actions section
                   <div className="modal-actions">
                     <Link
                       to={`/lawyer-appointment/${selectedLawyer._id}`}
@@ -363,6 +364,7 @@ const LawyerSearch = () => {
                       Chat Now
                     </button>
                   </div>
+                  */}
                 </div>
               </motion.div>
             </motion.div>

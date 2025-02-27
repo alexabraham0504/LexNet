@@ -7,6 +7,16 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/navbar/home-navbar";
 import SuspensionModal from '../components/SuspensionModal';
 
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const API_BASE_URL = isMobile 
+  ? `http://${window.location.hostname}:5000` // Use the same hostname for mobile
+  : window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : `http://${window.location.hostname}:5000`;
+
+// Debugging log
+console.log('API Base URL:', API_BASE_URL);
+
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -35,7 +45,7 @@ const Login = () => {
         // Verify token validity with backend before redirecting
         const verifyToken = async () => {
           try {
-            const response = await axios.get("http://localhost:5000/api/auth/verify-token", {
+            const response = await axios.get(`${API_BASE_URL}/api/auth/verify-token`, {
               headers: {
                 Authorization: `Bearer ${token}`
               }
@@ -100,7 +110,7 @@ const Login = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:5000/api/auth/google-login",
+        `${API_BASE_URL}/api/auth/google-login`,
         userData
       );
       const data = response.data.user;
@@ -123,6 +133,8 @@ const Login = () => {
       } else if (data.role === "Client") {
         navigate("/ClientDashboard", { replace: true });
       }
+
+      alert(`User role: ${data.role.toLowerCase()}`);
     } catch (error) {
       console.error("Error signing in with Google:", error);
     }
@@ -146,8 +158,10 @@ const Login = () => {
         password: formData.password
       };
 
+      console.log('Login Data:', loginData); // Log login data
+
       const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${API_BASE_URL}/api/auth/login`,
         loginData,
         {
           headers: {
@@ -155,6 +169,8 @@ const Login = () => {
           }
         }
       );
+
+      console.log('Login Response:', response.data); // Log response data
 
       if (response.data.success) {
         const { token, user } = response.data;
@@ -165,6 +181,14 @@ const Login = () => {
         sessionStorage.setItem("name", user.fullName);
         sessionStorage.setItem("email", user.email);
         sessionStorage.setItem("role", user.role);
+
+        console.log('Session Storage:', {
+          token: sessionStorage.getItem("token"),
+          userid: sessionStorage.getItem("userid"),
+          name: sessionStorage.getItem("name"),
+          email: sessionStorage.getItem("email"),
+          role: sessionStorage.getItem("role"),
+        });
 
         // Use the login function from AuthContext
         login({
@@ -191,6 +215,7 @@ const Login = () => {
         setError(response.data.message || "Login failed");
       }
     } catch (error) {
+      console.error("Login Error:", error); // Log any errors
       if (error.response?.status === 403) {
         const suspensionData = error.response.data.details || error.response.data;
         setSuspensionDetails({

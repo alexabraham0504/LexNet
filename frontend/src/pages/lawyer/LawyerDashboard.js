@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import Navbar from "../../components/navbar/navbar-lawyer";
 import Footer from "../../components/footer/footer-lawyer";
@@ -10,9 +10,17 @@ import {
   faMessage,
   faGavel,
   faCalendarAlt,
+  faVideo,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
+import io from "socket.io-client";
+
+// Ensure the URL matches your server's URL
+const socket = io("http://localhost:5000", {
+    transports: ['websocket'], // Use WebSocket transport
+    withCredentials: true // Include credentials if needed
+});
 
 const styles = {
   bannerImage: {
@@ -27,6 +35,12 @@ const styles = {
 const LawyerDashboard = () => {
   const [lawyerData, setLawyerData] = useState(null);
   const { user } = useAuth();
+  const [meetingIds, setMeetingIds] = useState([]);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const roomName = queryParams.get("roomName");
 
   useEffect(() => {
     const fetchLawyerData = async () => {
@@ -70,6 +84,74 @@ const LawyerDashboard = () => {
     fetchLawyerData();
   }, []);
 
+  useEffect(() => {
+    const fetchMeetingIds = async () => {
+      try {
+        // Only fetch active meetings (less than 10 minutes old)
+        const response = await axios.get(`http://localhost:5000/api/lawyers/meetingIds/${user._id}`);
+        setMeetingIds(response.data.filter(meeting => {
+          const meetingTime = new Date(meeting.createdAt).getTime();
+          const currentTime = new Date().getTime();
+          const timeDifference = currentTime - meetingTime;
+          const minutesDifference = timeDifference / (1000 * 60);
+          return minutesDifference <= 10;
+        }));
+      } catch (error) {
+        console.error("Error fetching meeting IDs:", error);
+      }
+    };
+
+    // Initial fetch
+    fetchMeetingIds();
+
+    // Set up interval to check and update meetings every minute
+    const interval = setInterval(fetchMeetingIds, 60000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
+    socket.on("incomingCall", (data) => {
+      // Check if the call is less than 10 minutes old
+      const callTime = new Date(data.createdAt).getTime();
+      const currentTime = new Date().getTime();
+      const timeDifference = currentTime - callTime;
+      const minutesDifference = timeDifference / (1000 * 60);
+
+      if (minutesDifference <= 10) {
+        setIncomingCall(data);
+        console.log("Incoming call from:", data.clientName);
+      }
+    });
+
+    socket.on("connect", () => {
+        console.log("Socket.IO connected:", socket.id);
+    });
+
+    return () => {
+      socket.off("incomingCall");
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (roomName) {
+      console.log("Joining room:", roomName);
+      navigate(`/lawyer/video-call?roomName=${roomName}`);
+    }
+  }, [roomName, navigate]);
+
+  const handleAcceptCall = () => {
+    console.log("Call accepted:", incomingCall);
+    console.log("Room name to join:", incomingCall.roomName);
+    navigate(`/lawyer/video-call?roomName=${incomingCall.roomName}`);
+  };
+
+  const handleRejectCall = () => {
+    setIncomingCall(null);
+    console.log("Call rejected");
+  };
+
   const userName = sessionStorage.getItem("name") || "Lawyer";
 
   return (
@@ -100,6 +182,15 @@ const LawyerDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Incoming Call Notification */}
+          {incomingCall && (
+            <div className="incoming-call-notification">
+              <h4>Incoming Call from {incomingCall.clientName}</h4>
+              <button onClick={handleAcceptCall}>Accept</button>
+              <button onClick={handleRejectCall}>Reject</button>
+            </div>
+          )} */
 
           {/* HERO SECTION */}
           <div className="container-fluid">
@@ -166,8 +257,61 @@ const LawyerDashboard = () => {
                       </button>
                     </Link>
                   </div>
+                  <div className="col flex-grow-1">
+                    <Link to="/lawyer/video-call">
+                      <button className="btn btn-primary">Start Video Call</button>
+                    </Link>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="meetings-section container mt-4">
+            <div className="card">
+                <div className="card-header bg-primary text-white">
+                    <h3 className="mb-0">
+                        <FontAwesomeIcon icon={faVideo} className="me-2" />
+                        Pending Video Consultations
+                    </h3>
+                </div>
+                <div className="card-body">
+                    {meetingIds.length > 0 ? (
+                        <div className="table-responsive">
+                            <table className="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Client Name</th>
+                                        <th>Meeting ID</th>
+                                        <th>Created At</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {meetingIds.map(meeting => (
+                                        <tr key={meeting._id}>
+                                            <td>{meeting.clientName}</td>
+                                            <td>{meeting.roomName}</td>
+                                            <td>{new Date(meeting.createdAt).toLocaleString()}</td>
+                                            <td>
+                                                <Link 
+                                                    to={`/lawyer/video-call?roomName=${meeting.roomName}`}
+                                                    className="btn btn-primary btn-sm"
+                                                >
+                                                    Join Meeting
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="text-center py-4">
+                            <p className="mb-0">No pending video consultations</p>
+                        </div>
+                    )}
+                </div>
             </div>
           </div>
 
@@ -289,6 +433,35 @@ const LawyerDashboard = () => {
 
         img[alt="Law and Justice Concept"] {
           display: none;
+        }
+
+        .meetings-section {
+            margin-bottom: 2rem;
+        }
+        .meetings-section .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .meetings-section .card-header {
+            border-bottom: none;
+        }
+        .meetings-section .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        .meetings-section .btn-primary {
+            padding: 0.25rem 1rem;
+        }
+        .incoming-call-notification {
+          background-color: #f8d7da;
+          color: #721c24;
+          padding: 15px;
+          border: 1px solid #f5c6cb;
+          border-radius: 5px;
+          margin: 20px 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
       `}</style>
     </>

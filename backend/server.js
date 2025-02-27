@@ -13,6 +13,7 @@ const Case = require("./models/caseModel");
 const { isAuthenticated } = require("./middleware/auth");
 const { visionService } = require('./services/visionService');
 const { bertService } = require('./services/bertService');
+const Meeting = require('./models/meetingModel');
 
 // Import your routes
 const authRoutes = require("./routes/auth");
@@ -35,15 +36,16 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // Middleware setup
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
-};
+const allowedOrigins = [
+  'http://localhost:3000', // Adjust this to match your client URL
+  // Add other origins as needed
+];
 
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.text({ limit: '50mb' }));
@@ -77,6 +79,60 @@ app.use('/api/cases', caseRoutes);
 app.use('/api/translation', translationRoutes);
 app.use("/api/documents", documentRoutes);
 
+app.post('/api/lawyers/sendMeetingId', async (req, res) => {
+    const { lawyerId, roomName, clientName, clientId } = req.body;
+
+    try {
+        // Validate input
+        if (!lawyerId || !roomName || !clientName || !clientId) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Save meeting information to database
+        const newMeeting = new Meeting({
+            roomName,
+            lawyerId,
+            clientName,
+            clientId,
+            status: 'pending'
+        });
+
+        await newMeeting.save();
+
+        // Emit an event to notify the lawyer about the incoming call
+        const io = req.app.get("io");
+        io.to(lawyerId).emit("incomingCall", {
+            roomName,
+            clientName,
+            clientId: req.body.clientId
+        });
+
+        // Respond with success
+        res.status(200).json({ 
+            message: 'Meeting ID sent successfully',
+            meeting: newMeeting
+        });
+    } catch (error) {
+        console.error("Error sending meeting ID:", error);
+        res.status(500).json({ message: 'Failed to send meeting ID', error: error.message });
+    }
+});
+
+// Add new endpoint to fetch meetings for a lawyer
+app.get('/api/lawyers/meetingIds/:lawyerId', async (req, res) => {
+    try {
+        const meetings = await Meeting.find({ 
+            lawyerId: req.params.lawyerId,
+            status: 'pending'
+        }).sort({ createdAt: -1 });
+        
+        res.json(meetings);
+    } catch (error) {
+        console.error("Error fetching meeting IDs:", error);
+        res.status(500).json({ message: 'Failed to fetch meeting IDs' });
+    }
+});
+
 // Root route
 app.get("/", (req, res) => {
   res.send("Server is running.");
@@ -85,9 +141,9 @@ app.get("/", (req, res) => {
 // Initialize socket.io
 const io = socketIO(server, {
   cors: {
-    origin: corsOptions.origin,
-    methods: corsOptions.methods,
-    credentials: corsOptions.credentials
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true
   }
 });
 
@@ -123,6 +179,25 @@ io.on("connection", (socket) => {
     console.log("Received message through socket:", message);
     // Only emit to the receiver to prevent duplicates
     socket.to(message.receiverId).emit("new_message", message);
+  });
+
+  socket.on('offer', ({ offer, roomName }) => {
+    socket.to(roomName).emit('offer', { offer });
+  });
+
+  socket.on('answer', ({ answer, roomName }) => {
+    socket.to(roomName).emit('answer', { answer });
+  });
+
+  socket.on('ice-candidate', ({ candidate, roomName }) => {
+    socket.to(roomName).emit('ice-candidate', { candidate });
+  });
+
+  socket.on("incomingCall", ({ roomName, clientName, lawyerId }) => {
+    socket.to(lawyerId).emit("incomingCall", {
+      roomName,
+      clientName
+    });
   });
 
   socket.on("disconnect", () => {
@@ -218,6 +293,27 @@ setInterval(() => {
       console.error('Failed to update analytics:', error);
     });
 }, 5 * 60 * 1000);
+
+// Add this near your other server setup code
+const cleanupExpiredMeetings = async () => {
+  try {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    await Meeting.deleteMany({
+      createdAt: { $lt: tenMinutesAgo }
+    });
+    console.log('Cleaned up expired meetings');
+  } catch (error) {
+    console.error('Failed to cleanup meetings:', error);
+  }
+};
+
+// Run cleanup every minute
+setInterval(cleanupExpiredMeetings, 60000);
+
+// Add initial cleanup when server starts
+app.on('ready', () => {
+  cleanupExpiredMeetings();
+});
 
 startServer();
 
