@@ -85,7 +85,6 @@ const LawyerRegistration = () => {
     officeAddress: "",
     yearsOfExperience: "",
     lawFirm: "",
-    appointmentFees: "",
     consultationFees: "",
     caseDetailsFees: "",
     videoCallFees: "",
@@ -443,10 +442,8 @@ const LawyerRegistration = () => {
         'phone',
         'AEN',
         'yearsOfExperience',
-        'appointmentFees',
         'consultationFees',
         'caseDetailsFees',
-        'videoCallFees',
         'caseHandlingFees'
       ];
 
@@ -457,10 +454,8 @@ const LawyerRegistration = () => {
 
       // Validate fee amounts (minimum ₹100)
       const feeFields = [
-        'appointmentFees',
         'consultationFees',
         'caseDetailsFees',
-        'videoCallFees',
         'caseHandlingFees'
       ];
 
@@ -768,11 +763,11 @@ const LawyerRegistration = () => {
               </select>
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Appointment Fees (₹)*</label>
+              <label style={styles.label}>Video Call Fees (₹)*</label>
               <input
                 type="text"
-                name="appointmentFees"
-                value={lawyerData.appointmentFees}
+                name="videoCallFees"
+                value={lawyerData.videoCallFees}
                 onChange={handleChange}
                 style={styles.input}
                 placeholder="Enter amount (min ₹100)"
@@ -799,19 +794,6 @@ const LawyerRegistration = () => {
                 type="text"
                 name="caseDetailsFees"
                 value={lawyerData.caseDetailsFees}
-                onChange={handleChange}
-                style={styles.input}
-                placeholder="Enter amount (min ₹100)"
-                required
-              />
-              <small style={styles.helperText}>Enter amount without currency symbol</small>
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Video Call Fees (₹)*</label>
-              <input
-                type="text"
-                name="videoCallFees"
-                value={lawyerData.videoCallFees}
                 onChange={handleChange}
                 style={styles.input}
                 placeholder="Enter amount (min ₹100)"

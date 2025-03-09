@@ -2,6 +2,7 @@ const natural = require('natural');
 const tokenizer = new natural.WordTokenizer();
 const fetch = require('node-fetch');
 const TfIdf = natural.TfIdf;
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Expanded IPC patterns with more detailed keywords and sections
 const ipcPatterns = {
@@ -142,59 +143,38 @@ const extractStructuredInfo = (text) => {
   return result;
 };
 
-// Analyze document content with improved accuracy
-async function analyzeDocumentContent(text) {
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const analyzeDocumentContent = async (text) => {
   try {
-    const { sentences, terms } = extractKeyPhrases(text);
-    const structuredInfo = extractStructuredInfo(text);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
-    // Format key points in a clear structure
-    const keyPoints = [];
-    
-    // Add offence and section together if both exist
-    if (structuredInfo.offence || structuredInfo.section) {
-      let crimePoint = 'Crime: ';
-      if (structuredInfo.offence) crimePoint += structuredInfo.offence;
-      if (structuredInfo.section) crimePoint += ` (Section ${structuredInfo.section})`;
-      keyPoints.push(crimePoint);
-    }
+    const prompt = `
+      Analyze this legal document and provide:
+      1. Primary crime or legal issue
+      2. Relevant IPC sections with descriptions
+      3. Key evidence mentioned
+      4. Legal implications
 
-    // Add property and value together if both exist
-    if (structuredInfo.property || structuredInfo.value) {
-      let propertyPoint = 'Property: ';
-      if (structuredInfo.property) propertyPoint += structuredInfo.property;
-      if (structuredInfo.value) propertyPoint += ` (Value: Rs.${structuredInfo.value})`;
-      keyPoints.push(propertyPoint);
-    }
+      Document text:
+      ${text}
 
-    // Add location and date
-    if (structuredInfo.place) {
-      keyPoints.push(`Location: ${structuredInfo.place}`);
-    }
-    if (structuredInfo.date) {
-      keyPoints.push(`Date: ${structuredInfo.date}`);
-    }
+      Format the response as:
+      CRIME: [primary crime]
+      IPC SECTIONS: [comma-separated section numbers]
+      SECTION DETAILS:
+      Section [number]: [description]
+      EVIDENCE: [semicolon-separated evidence points]
+    `;
 
-    // Rest of your existing analysis code...
-    
-    return {
-      keyPoints: keyPoints.length > 0 ? keyPoints : ['No clear key points could be extracted'],
-      section: structuredInfo.section || null,
-      description: sentences[0] || '',
-      confidence: keyPoints.length > 0 ? 0.8 : 0.4,
-      alternativeSections: []
-    };
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
   } catch (error) {
-    console.error('Error in document analysis:', error);
-    return {
-      keyPoints: ['Error analyzing document'],
-      section: null,
-      description: '',
-      confidence: 0,
-      alternativeSections: []
-    };
+    console.error('Text analysis error:', error);
+    throw new Error('Failed to analyze document content');
   }
-}
+};
 
 // Enhanced Bing search for IPC sections
 async function searchIPCSectionsWithBing(text) {

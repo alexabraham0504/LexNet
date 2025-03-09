@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api, { API_BASE_URL } from '../config/api.config';
 import { auth, googleProvider } from "./firebaseConfig.js";
 import { signInWithPopup } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
@@ -8,11 +8,6 @@ import Navbar from "../components/navbar/home-navbar";
 import SuspensionModal from '../components/SuspensionModal';
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const API_BASE_URL = isMobile 
-  ? `http://${window.location.hostname}:5000` // Use the same hostname for mobile
-  : window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
-    : `http://${window.location.hostname}:5000`;
 
 // Debugging log
 console.log('API Base URL:', API_BASE_URL);
@@ -45,11 +40,7 @@ const Login = () => {
         // Verify token validity with backend before redirecting
         const verifyToken = async () => {
           try {
-            const response = await axios.get(`${API_BASE_URL}/api/auth/verify-token`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
+            const response = await api.get('/api/auth/verify-token');
             
             if (response.data.valid) {
               // Token is valid, redirect based on role
@@ -109,10 +100,7 @@ const Login = () => {
         role,
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/auth/google-login`,
-        userData
-      );
+      const response = await api.post('/api/auth/google-login', userData);
       const data = response.data.user;
 
       // Check if user is approved
@@ -147,7 +135,6 @@ const Login = () => {
     setSuspensionDetails(null);
     
     try {
-      // Ensure email and password are not empty
       if (!formData.email || !formData.password) {
         setError("Please provide both email and password");
         return;
@@ -160,15 +147,7 @@ const Login = () => {
 
       console.log('Login Data:', loginData); // Log login data
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/auth/login`,
-        loginData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
+      const response = await api.post('/api/auth/login', loginData);
 
       console.log('Login Response:', response.data); // Log response data
 

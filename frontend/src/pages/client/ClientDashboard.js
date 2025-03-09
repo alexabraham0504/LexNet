@@ -41,10 +41,10 @@ const ClientDashboard = () => {
 
         try {
           const casesResponse = await axios.get(
-            "http://localhost:5000/api/cases",
+            "http://localhost:5000/api/cases/list",
             config
           );
-          const transformedCases = casesResponse.data
+          const transformedCases = casesResponse.data.cases
             .filter(caseItem => !caseItem.isDeleted)
             .map(caseItem => ({
               ...caseItem,
@@ -53,6 +53,11 @@ const ClientDashboard = () => {
           setCases(transformedCases);
         } catch (error) {
           console.warn("Cases endpoint error:", error);
+          if (error.response?.status === 401) {
+            navigate('/login');
+          } else {
+            console.error("Error details:", error.response?.data);
+          }
           setCases([]);
         }
 

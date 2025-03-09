@@ -196,10 +196,10 @@ exports.registerLawyer = async (req, res) => {
       availability: availability || "Available",
       yearsOfExperience: yearsOfExperience,
       // Set all fee fields
-      appointmentFees: `₹${parsedFees.appointment}`,
+      // appointmentFees: `₹${parsedFees.appointment}`,
+      videoCallFees: `₹${parsedFees.videoCall}`,
       consultationFees: `₹${parsedFees.consultation}`,
       caseDetailsFees: `₹${parsedFees.caseDetails}`,
-      videoCallFees: `₹${parsedFees.videoCall}`,
       caseHandlingFees: `₹${parsedFees.caseHandling}`,
       fees: `₹${parsedFees.consultation}`, // Set base fee as consultation fee
       visibleToClients: visibleToClients === 'true',

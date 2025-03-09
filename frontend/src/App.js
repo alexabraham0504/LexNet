@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from './components/ProtectedRoute';
 import FindLawyers from './pages/client/FindLawyers';
 import IPCSectionDetails from './pages/client/IPCSectionDetails';
+import VideoCall from './pages/client/VideoCall';
 
 // General Pages
 import Home from "./pages/Home";
@@ -42,7 +43,6 @@ import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
 import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 import Messages from "./pages/lawyer/Messages";
 import IPCSection from "./pages/lawyer/IPCSection";
-import VideoCall from './components/VideoCall';
 
 function App() {
   return (
@@ -104,6 +104,7 @@ function App() {
           <Route path="/client/find-lawyers" element={<FindLawyers />} />
           <Route path="/ipc-section/:sectionNumber" element={<IPCSectionDetails />} />
           <Route path="/client/lawyer-profile/:lawyerId" element={<LawyerProfile />} />
+          <Route path="/video-call/:roomId" element={<VideoCall />} />
 
           {/* Lawyer Pages */}
           <Route path="/lawyerdashboard" element={
@@ -115,8 +116,6 @@ function App() {
           <Route path="/lawyeravailability" element={<LawyerAvailability />} />
           <Route path="/message" element={<Messages />} />
           <Route path="/ipc-sections" element={<IPCSection />} />
-          <Route path="/lawyer/video-call" element={<VideoCall onClose={() => window.history.back()} />} />
-          <Route path="/client/video-call" element={<VideoCall onClose={() => window.history.back()} />} />
         </Routes>
       </Router>
     </AuthProvider>

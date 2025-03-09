@@ -5,7 +5,16 @@ const path = require('path');
 const ipcRoutes = require("./routes/ipcRoutes");
 const extractionRoutes = require('./routes/extractionRoutes');
 const analysisHistoryRoutes = require('./routes/analysisHistory');
+const caseRoutes = require('./routes/caseRoutes');
+const casesRouter = require('./routes/cases');
+const http = require('http');
+const socketIo = require('socket.io');
 const lawyerRoutes = require('./routes/lawyerRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const lawyerRegistrationRoutes = require('./routes/lawyerRegistrationRoutes');
+
+
+
 
 // Add detailed error logging
 process.on('uncaughtException', (error) => {
@@ -44,61 +53,45 @@ try {
   const app = express();
 
   // Middleware setup - IMPORTANT: These must come before routes
-  app.use(cors());
+  app.use(cors({
+    origin: "http://localhost:3000", // Or use an array of allowed origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   // Serve static files
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-  // API Routes - Move this BEFORE error handlers
-  app.use('/api/ipc', ipcRoutes);
-  app.use('/api', extractionRoutes);
-  app.use('/api', analysisHistoryRoutes);
-  app.use('/api/lawyers', lawyerRoutes);
-  app.use('/api/v1/lawyers', lawyerRoutes);
-
-  // Socket.IO setup
-  const io = socketIo(server, {
-    cors: {
-      origin: "http://localhost:3000", // Update this to match your frontend port
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-  });
-
-  // Make io accessible to our router
-  app.set("io", io);
-
-  // Socket.IO connection handling
-  io.on("connection", (socket) => {
-    console.log("New client connected:", socket.id);
-    
-    socket.on("join_room", (roomId) => {
-      console.log("Client joining room:", roomId);
-      socket.join(roomId);
-    });
-
-    socket.on("send_message", (message) => {
-      console.log("Broadcasting message to room:", message.chatRoomId);
-      socket.to(message.chatRoomId).emit("new_message", message);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
-    });
-  });
-
-  // Add route logging middleware
+  // Add this before your routes
   app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
     next();
   });
 
-  // Error handling middleware - AFTER routes, but BEFORE 404
+  // Add request logging middleware before routes
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    next();
+  });
+
+  // API Routes - Move this BEFORE error handlers
+  app.use('/api/ipc', ipcRoutes);
+  app.use('/api', extractionRoutes);
+  app.use('/api', analysisHistoryRoutes);
+  app.use('/api/cases', caseRoutes);
+  app.use('/cases', casesRouter);
+  app.use('/api/lawyers', lawyerRoutes);
+  app.use('/api/lawyer-registration', lawyerRegistrationRoutes);
+ 
+
+  // Add error handling middleware
   app.use((err, req, res, next) => {
     console.error('Error:', err);
     res.status(err.status || 500).json({
+      success: false,
       message: err.message || 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? err : {}
     });

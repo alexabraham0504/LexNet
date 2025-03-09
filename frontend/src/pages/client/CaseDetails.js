@@ -1,25 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../../components/navbar/navbar-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faFile, faSpinner, faImage, faExclamationCircle, faChevronDown, faChevronUp, faFilter, faTrash, faInfoCircle, faUserTie, faCalendarPlus, faUserCircle, faGavel, faExternalLink, faEye, faBriefcase, faMoneyBill, faStar, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faFile, faSpinner, faImage, faExclamationCircle, faChevronDown, faChevronUp, faFilter, faTrash, faInfoCircle, faUserTie, faCalendarPlus, faUserCircle, faGavel, faExternalLink, faBriefcase, faMoneyBill, faStar, faCheck } from '@fortawesome/free-solid-svg-icons';
 import Footer from '../../components/footer/footer-admin';
 import ClientSidebar from '../../components/sidebar/ClientSidebar';
 import './CaseDetails.css';
 import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist';
 import { getDocument } from 'pdfjs-dist';
+import api from '../../config/api.config';
+// Import the utility functions
+import { IPC_SPECIALIZATION_MAP, getSpecializationForSection } from '../../utils/ipcUtils';
 
 // Set PDF.js workerSrc
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-const LEGAL_KEYWORDS = [
-  'section', 'act', 'court', 'judgment', 'petition', 'plaintiff', 'defendant',
-  'prosecution', 'accused', 'witness', 'evidence', 'hearing', 'trial',
-  'appeal', 'jurisdiction', 'law', 'legal', 'criminal', 'civil', 'judge',
-  'magistrate', 'advocate', 'complaint', 'case', 'ipc', 'penal', 'code'
-];
+const EXTENDED_IPC_MAP = {
+  ...IPC_SPECIALIZATION_MAP,
+  // Add any additional mappings specific to this component
+};
 
 const validateLegalContent = (text) => {
   if (!text || typeof text !== 'string') return false;
@@ -28,30 +29,35 @@ const validateLegalContent = (text) => {
   const words = text.toLowerCase().split(/\W+/);
   const uniqueWords = new Set(words);
   
-  // Count legal keywords
+  // Add more relevant keywords
+  const LEGAL_KEYWORDS = [
+    'section', 'act', 'court', 'judgment', 'petition', 'plaintiff', 'defendant',
+    'prosecution', 'accused', 'witness', 'evidence', 'hearing', 'trial',
+    'appeal', 'jurisdiction', 'law', 'legal', 'criminal', 'civil', 'judge',
+    'magistrate', 'advocate', 'complaint', 'case', 'ipc', 'penal', 'code',
+    'fir', 'police', 'investigation', 'report', 'statement', 'charge', 'offense',
+    'crime', 'victim', 'suspect', 'arrest', 'bail', 'warrant', 'court'
+  ];
+  
+  // Count legal keywords with more lenient threshold
   const legalTermCount = LEGAL_KEYWORDS.reduce((count, keyword) => {
     return uniqueWords.has(keyword) ? count + 1 : count;
   }, 0);
   
-  // Calculate percentage of legal terms (minimum 3 terms)
-  return legalTermCount >= 3;
+  // Reduce threshold to 2 terms
+  return legalTermCount >= 2;
 };
-
-// Create axios instance with base URL
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  timeout: 30000, // 30 seconds
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
 
 // Constants
 const BING_API_KEY = "21f82301b9544a57bd153b1b4d7f3a03";
-const GOOGLE_CLOUD_API_KEY = 'AIzaSyBLSAPqtZQ4KhCTNP9zkM2Dke9giqwhENc';
+// const GOOGLE_CLOUD_API_KEY = 'AIzaSyBLSAPqtZQ4KhCTNP9zkM2Dke9giqwhENc';
+const GOOGLE_CLOUD_API_KEY = 'AIzaSyAHYLe2DbpNl4NgY79sQtvcHEk-jSbh_SM';
+
 
 // Add Gemini API constant
-const GEMINI_API_KEY = 'AIzaSyBLSAPqtZQ4KhCTNP9zkM2Dke9giqwhENc';
+// const GEMINI_API_KEY = 'AIzaSyBLSAPqtZQ4KhCTNP9zkM2Dke9giqwhENc';
+const GEMINI_API_KEY = 'AIzaSyAHYLe2DbpNl4NgY79sQtvcHEk-jSbh_SM';
+
 
 // Add IPC section definitions
 const IPC_SECTIONS = {
@@ -72,43 +78,160 @@ const IPC_SECTIONS = {
   // Add more IPC sections as needed
 };
 
-// Add this mapping at the top of the file
-const IPC_SPECIALIZATION_MAP = {
-  // Environmental Laws
-  '268': 'Environmental Law',
-  '269': 'Environmental Law',
-  '277': 'Environmental Law',
-  '278': 'Environmental Law',
-  
-  // Criminal Laws
-  '302': 'Criminal Law',
-  '303': 'Criminal Law',
-  '304': 'Criminal Law',
-  '307': 'Criminal Law',
-  '324': 'Criminal Law',
-  '325': 'Criminal Law',
-  '326': 'Criminal Law',
-  '354': 'Criminal Law',
-  '376': 'Criminal Law',
-  '378': 'Criminal Law',
-  '379': 'Criminal Law',
-  '380': 'Criminal Law',
-  '392': 'Criminal Law',
-  '396': 'Criminal Law',
-  '420': 'Criminal Law',
-  '499': 'Criminal Law',
-  '500': 'Criminal Law',
-  
-  // Civil Laws
-  '406': 'Civil Law',
-  '415': 'Civil Law',
-  '418': 'Civil Law',
-  
-  // Family Laws
-  '494': 'Family Law',
-  '495': 'Family Law',
-  '496': 'Family Law',
-  '498A': 'Family Law'
+// Define IPC_SPECIALIZATION_MAP at the top level of your component
+// const IPC_SPECIALIZATION_MAP = {
+//   // Environmental violations
+//   '268': 'Environmental Law',
+//   // ...
+// };
+
+const analyzeWithGemini = async (text, file) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    // Create FormData object
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    if (text) {
+      formData.append('extractedText', text);
+    }
+
+    console.log('Sending file for analysis:', file.name);
+
+    // Add a more robust prompt that specifically asks for IPC sections
+    formData.append('prompt', `
+      Analyze this legal document and identify:
+      1. The primary crime or offense described
+      2. Applicable IPC (Indian Penal Code) sections with their descriptions
+      3. Key evidence mentioned in the document
+
+      The text may be unclear due to OCR issues. Do your best to interpret it.
+      If you cannot determine specific information, indicate that clearly.
+
+      Format your response exactly as follows:
+      CRIME IDENTIFIED: [primary crime or "Unable to determine from provided text"]
+
+      IPC SECTIONS:
+      - [section number] ([brief title]): [short description of the section]
+      - [section number] ([brief title]): [short description of the section]
+      - [section number] ([brief title]): [short description of the section]
+
+      EVIDENCE:
+      - [evidence point 1]
+      - [evidence point 2]
+      - [evidence point 3]
+
+      ANALYSIS CONFIDENCE: [High/Medium/Low/Very Low]
+
+      RECOMMENDATIONS: [Any recommendations for better document processing]
+    `);
+
+    // Use the analyze-direct endpoint with gemini-1.5-pro-latest
+    const response = await api.post('/api/cases/analyze-direct', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+      },
+      timeout: 180000 // 3 minutes
+    });
+
+    if (!response.data) {
+      throw new Error('No response received from server');
+    }
+
+    console.log("API response:", response.data);
+
+    // Extract the analysis text from the response
+    const analysisText = response.data.analysis.rawAnalysis;
+    console.log("Raw analysis text:", analysisText);
+    
+    // Parse the analysis to extract structured information with improved regex
+    const crimeMatch = analysisText.match(/CRIME(?:\sIDENTIFIED)?:\s*([\s\S]*?)(?=\n\n|\nIPC|$)/i);
+    
+    // Improved IPC sections parsing to handle the new format
+    const ipcSectionsMatch = analysisText.match(/IPC\sSECTIONS:(?:\n|)([\s\S]*?)(?=\n\n|\nEVIDENCE|$)/i);
+    let ipcSections = [];
+    
+    if (ipcSectionsMatch && ipcSectionsMatch[1]) {
+      // Extract each section line by line
+      const sectionLines = ipcSectionsMatch[1].split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('-') || /^\d+/.test(line));
+      
+      // Parse each section line
+      ipcSections = sectionLines.map(line => {
+        // Remove leading dash if present
+        line = line.replace(/^-\s*/, '');
+        
+        // Try to extract section number and description
+        const sectionMatch = line.match(/(\d+[A-Za-z]?)\s*(?:\(([^)]+)\))?:?\s*(.*)/);
+        
+        if (sectionMatch) {
+          return {
+            number: sectionMatch[1],
+            title: sectionMatch[2] || '',
+            description: sectionMatch[3] || ''
+          };
+        }
+        
+        // If the format doesn't match, just return the whole line
+        return { number: 'Unknown', title: '', description: line };
+      });
+    } else if (response.data.parsedAnalysis?.ipcSections) {
+      // Use the backend-parsed sections if available
+      ipcSections = response.data.parsedAnalysis.ipcSections.map(section => {
+        if (typeof section === 'string') {
+          const sectionMatch = section.match(/(\d+[A-Za-z]?)\s*(?:\(([^)]+)\))?/);
+          if (sectionMatch) {
+            return {
+              number: sectionMatch[1],
+              title: sectionMatch[2] || '',
+              description: ''
+            };
+          }
+          return { number: section, title: '', description: '' };
+        }
+        return section;
+      });
+    }
+    
+    const evidenceMatch = analysisText.match(/EVIDENCE:(?:\n|)([\s\S]*?)(?=\n\n|\nANALYSIS|$)/i);
+    const confidenceMatch = analysisText.match(/ANALYSIS\sCONFIDENCE:\s*([\s\S]*?)(?=\n\n|\nRECOMMENDATIONS|$)/i);
+    const recommendationsMatch = analysisText.match(/RECOMMENDATIONS:\s*([\s\S]*?)(?=\n\n|$)/i);
+    
+    // Create a structured result with the improved IPC sections
+    const parsedAnalysis = {
+      crimeIdentified: crimeMatch?.[1]?.trim() || 'Unable to determine from provided text',
+      ipcSections: ipcSections,
+      evidence: evidenceMatch?.[1]
+        ? evidenceMatch[1].split('\n')
+            .map(line => line.trim())
+            .filter(line => line.startsWith('-') || line.startsWith('•'))
+            .map(line => line.replace(/^[-•]\s*/, ''))
+        : ['Unable to extract clear evidence points'],
+      confidence: confidenceMatch?.[1]?.trim() || 'Very Low',
+      recommendations: recommendationsMatch?.[1]?.trim() || 'Consider uploading a clearer document or manually entering key details'
+    };
+    
+    console.log("Parsed analysis:", parsedAnalysis);
+    
+    // Return the structured analysis
+    return {
+      ...response.data,
+      parsedAnalysis,
+      analysisText
+    };
+
+  } catch (error) {
+    console.error('Analysis error:', error);
+    if (error.response?.data?.message) {
+      throw new Error(`Analysis failed: ${error.response.data.message}`);
+    }
+    throw new Error(`Analysis failed: ${error.message}`);
+  }
 };
 
 const extractTextFromDocument = async (file) => {
@@ -119,16 +242,12 @@ const extractTextFromDocument = async (file) => {
       try {
         console.log('Processing PDF:', file.name);
         
-        // Convert file to ArrayBuffer
         const arrayBuffer = await file.arrayBuffer();
-        
-        // Load PDF document using pdf.js
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
         
         console.log('PDF loaded, pages:', pdf.numPages);
         
-        // Extract text from all pages
         const textContent = [];
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
@@ -138,13 +257,6 @@ const extractTextFromDocument = async (file) => {
         }
 
         extractedText = textContent.join('\n');
-        
-        if (!extractedText || extractedText.trim().length === 0) {
-          throw new Error('No text content found in PDF');
-        }
-
-        console.log('Successfully extracted text from PDF:', 
-          extractedText.substring(0, 200) + '...');
 
       } catch (error) {
         console.error('PDF extraction error:', error);
@@ -152,29 +264,26 @@ const extractTextFromDocument = async (file) => {
       }
     } 
     else if (file.type.includes('image')) {
-      // Keep existing image handling code
-      const reader = new FileReader();
-      extractedText = await new Promise((resolve, reject) => {
-        reader.onload = async (e) => {
-          try {
-            const base64Image = e.target.result.split(',')[1];
-            const response = await axios.post(
-              `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_CLOUD_API_KEY}`,
-              {
-                requests: [{
-                  image: { content: base64Image },
-                  features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
-                }]
-              }
-            );
-            resolve(response.data.responses[0]?.fullTextAnnotation?.text || '');
-          } catch (error) {
-            reject(error);
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await api.post('/api/cases/extract-image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
           }
-        };
-        reader.onerror = () => reject(new Error('Failed to read image file'));
-        reader.readAsDataURL(file);
-      });
+        });
+
+        if (!response.data || !response.data.text) {
+          throw new Error('No text extracted from image');
+        }
+
+        extractedText = response.data.text;
+
+      } catch (error) {
+        console.error('Image extraction error:', error);
+        throw new Error(`Failed to extract text from image: ${error.message}`);
+      }
     }
 
     if (!extractedText || extractedText.trim().length === 0) {
@@ -183,13 +292,24 @@ const extractTextFromDocument = async (file) => {
 
     console.log('Extracted text:', extractedText.substring(0, 200) + '...');
 
-    // Send extracted text to Gemini for analysis
-    const geminiResponse = await analyzeWithGemini(extractedText);
-    
-    return {
-      text: extractedText,
-      analysis: geminiResponse
-    };
+    try {
+      // Pass both text and original file to analyzeWithGemini
+      const analysisResult = await analyzeWithGemini(extractedText, file);
+      
+      return {
+        text: extractedText,
+        analysis: analysisResult
+      };
+    } catch (analysisError) {
+      console.error('Analysis error:', analysisError);
+      return {
+        text: extractedText,
+        analysis: {
+          error: analysisError.message,
+          partialResults: true
+        }
+      };
+    }
 
   } catch (error) {
     console.error('Error in extractTextFromDocument:', error);
@@ -197,144 +317,160 @@ const extractTextFromDocument = async (file) => {
   }
 };
 
-// Update the analyzeWithGemini function to better handle the extracted text
-const analyzeWithGemini = async (text) => {
-  try {
-    const prompt = `
-      You are a legal expert specializing in Indian Criminal Law. 
-      Analyze this text and provide detailed information:
-
-      TEXT TO ANALYZE:
-      "${text}"
-
-      Please provide your analysis in this exact format:
-
-      CRIME IDENTIFIED:
-      [Main crime identified from the text]
-
-      IPC SECTIONS APPLICABLE:
-      Section [number]: [section title]
-
-      SECTION DETAILS:
-      Definition: [Official IPC section definition]
-      Key Elements: 
-      - [List key components of the offense]
-      - [What must be proved]
-      Punishment: [Prescribed punishment]
-
-      EVIDENCE FROM TEXT:
-      [Quote relevant parts from the input text that support the crime identification]
-
-      ANALYSIS:
-      [Explain how the evidence matches this section]
-
-      SEVERITY: [High/Medium/Low]
-      CATEGORY: [Crime category]
-    `;
-
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          topK: 1,
-          topP: 1,
-          maxOutputTokens: 2048
-        }
-      }
-    );
-
-    return response.data.candidates[0].content.parts[0].text;
-  } catch (error) {
-    console.error('Gemini API Error:', error);
-    throw new Error('Failed to analyze text with Gemini');
-  }
-};
-
-// Add a function to parse and format the analysis results
+// Update the parseAnalysisResults function to handle non-string inputs
 const parseAnalysisResults = (analysisText) => {
+  // Check if analysisText is a string, if not try to extract it from the object
+  if (!analysisText) return {};
+  
+  // If analysisText is an object, try to extract the text property
+  if (typeof analysisText === 'object') {
+    if (analysisText.text) {
+      analysisText = analysisText.text;
+    } else if (analysisText.analysisText) {
+      analysisText = analysisText.analysisText;
+    } else {
+      console.error("Unable to extract text from analysis object:", analysisText);
+      return {
+        crimeIdentified: "Unknown Crime",
+        ipcSections: [],
+        evidence: "No evidence extracted",
+        legalReasoning: ""
+      };
+    }
+  }
+  
+  // Ensure analysisText is a string before using substring
+  if (typeof analysisText !== 'string') {
+    console.error("Analysis text is not a string:", typeof analysisText, analysisText);
+    return {
+      crimeIdentified: "Unknown Crime",
+      ipcSections: [],
+      evidence: "No evidence extracted",
+      legalReasoning: ""
+    };
+  }
+  
+  console.log("Raw analysis text:", analysisText.substring(0, 500) + "...");
+  
   const sections = {
-    crimeIdentified: analysisText.match(/CRIME IDENTIFIED:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim(),
+    crimeIdentified: analysisText.match(/CRIME(?:\sIDENTIFIED)?:\s*([\s\S]*?)(?=\n\n|\nIPC|$)/i)?.[1]?.trim(),
     ipcSections: [],
-    evidence: analysisText.match(/EVIDENCE ANALYSIS:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim(),
-    legalReasoning: analysisText.match(/LEGAL REASONING:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim(),
+    evidence: analysisText.match(/EVIDENCE(?:\sANALYSIS)?:\s*([\s\S]*?)(?=\n\n|$)/i)?.[1]?.trim(),
+    legalReasoning: analysisText.match(/LEGAL\sREASONING:\s*([\s\S]*?)(?=\n\n|$)/i)?.[1]?.trim(),
   };
 
-  // Extract IPC sections and their details
-  const ipcSectionMatches = analysisText.matchAll(/Section (\d+):[^\n]*\n\nSECTION DETAILS:\s*([\s\S]*?)(?=\n\nEVIDENCE|$)/g);
-  for (const match of ipcSectionMatches) {
-    const sectionNumber = match[1];
-    const sectionDetails = match[2];
+  // Extract IPC sections with more flexible pattern matching
+  let ipcSectionMatches;
+  
+  // Try different patterns to extract IPC sections
+  const patterns = [
+    // Pattern 1: Section X: Title\n\nSECTION DETAILS:
+    /Section\s+(\d+[A-Z]?)(?:\s*:\s*([^\n]*))?(?:\n\n)?SECTION\s+DETAILS:\s*([\s\S]*?)(?=\n\nSection\s+\d|EVIDENCE|$)/gi,
     
-    sections.ipcSections.push({
-      number: sectionNumber,
-      title: sectionDetails.match(/Definition:\s*(.*?)(?=\n|$)/)?.[1]?.trim(),
-      definition: sectionDetails.match(/Definition:\s*([\s\S]*?)(?=\nKey Elements|$)/)?.[1]?.trim(),
-      keyElements: sectionDetails.match(/Key Elements:\s*([\s\S]*?)(?=\nPunishment|$)/)?.[1]?.trim(),
-      punishment: sectionDetails.match(/Punishment:\s*([\s\S]*?)(?=\nNotable Cases|$)/)?.[1]?.trim(),
-      notableCases: sectionDetails.match(/Notable Cases:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim()
-    });
+    // Pattern 2: Just look for Section numbers
+    /Section\s+(\d+[A-Z]?)(?:\s*:\s*([^\n]*))?(?:\n\n)?([\s\S]*?)(?=\n\nSection\s+\d|EVIDENCE|$)/gi,
+    
+    // Pattern 3: IPC SECTIONS: list format
+    /IPC\s+SECTIONS:\s*([\s\S]*?)(?=\n\n|$)/i
+  ];
+  
+  // Try each pattern until we find matches
+  for (const pattern of patterns) {
+    if (pattern.toString().includes('IPC')) {
+      // Handle list format
+      const match = analysisText.match(pattern);
+      if (match && match[1]) {
+        const sectionsList = match[1].split(',').map(s => s.trim());
+        console.log("Found IPC sections list:", sectionsList);
+        
+        // For each section in the list, look for its details elsewhere in the text
+        sectionsList.forEach(sectionNum => {
+          // Clean up section number
+          const cleanSectionNum = sectionNum.replace(/^Section\s+/i, '').trim();
+          
+          // Look for details about this section
+          const sectionDetailRegex = new RegExp(`Section\\s+${cleanSectionNum}[^\\n]*\\n\\n([\\s\\S]*?)(?=\\n\\nSection|EVIDENCE|$)`, 'i');
+          const detailsMatch = analysisText.match(sectionDetailRegex);
+          
+          sections.ipcSections.push({
+            number: cleanSectionNum,
+            title: `Section ${cleanSectionNum} of IPC`,
+            definition: detailsMatch?.[1]?.trim() || "No detailed information available",
+            keyElements: "",
+            punishment: "",
+            notableCases: ""
+          });
+        });
+        
+        if (sections.ipcSections.length > 0) break;
+      }
+    } else {
+      // Handle detailed section format
+      ipcSectionMatches = [...analysisText.matchAll(pattern)];
+      if (ipcSectionMatches && ipcSectionMatches.length > 0) {
+        console.log("Found detailed IPC sections:", ipcSectionMatches.length);
+        
+        for (const match of ipcSectionMatches) {
+          const sectionNumber = match[1];
+          const sectionTitle = match[2] || `Section ${sectionNumber} of IPC`;
+          const sectionDetails = match[3];
+          
+          // Extract components from section details
+          const definition = sectionDetails.match(/Definition:\s*([\s\S]*?)(?=\nKey Elements|\nPunishment|\n\n|$)/i)?.[1]?.trim();
+          const keyElements = sectionDetails.match(/Key Elements:\s*([\s\S]*?)(?=\nPunishment|\n\n|$)/i)?.[1]?.trim();
+          const punishment = sectionDetails.match(/Punishment:\s*([\s\S]*?)(?=\nNotable Cases|\n\n|$)/i)?.[1]?.trim();
+          const notableCases = sectionDetails.match(/Notable Cases:\s*([\s\S]*?)(?=\n\n|$)/i)?.[1]?.trim();
+          
+          sections.ipcSections.push({
+            number: sectionNumber,
+            title: sectionTitle,
+            definition: definition || sectionDetails.trim(),
+            keyElements: keyElements || "",
+            punishment: punishment || "",
+            notableCases: notableCases || ""
+          });
+        }
+        
+        if (sections.ipcSections.length > 0) break;
+      }
+    }
   }
 
+  console.log("Parsed sections:", sections);
   return sections;
 };
 
-// Update the processDocument function
+// Update the processDocument function to use the improved parser
 const processDocument = async (file) => {
   try {
     const { text, analysis } = await extractTextFromDocument(file);
-    const userId = sessionStorage.getItem("userid");
-    const token = sessionStorage.getItem("token");
-
-    if (!userId || !token) {
-      throw new Error("Authentication required");
-    }
-
-    // Create case data with analysis results
-    const caseData = {
-      clientId: userId,
-      title: file.name,
-      description: "Document analysis results",
-      documents: [{
-        fileName: file.name,
-        fileType: file.type,
-        extractedText: text,
-        uploadDate: new Date()
-      }],
-      status: 'pending',
-      caseType: 'other',
-      analysisResults: analysis,
-      ipcSection: analysis.sections?.[0]?.number || null,
-      ipcDescription: analysis.sections?.[0]?.definition || null,
-      relatedSections: analysis.sections?.map(section => ({
-        section: section.number,
-        confidence: section.confidence || 0.5
-      })) || []
+    console.log('Extracted text length:', text?.length);
+    
+    // Parse the analysis text to extract structured information
+    const parsedAnalysis = parseAnalysisResults(analysis.analysisText || analysis);
+    
+    console.log('Parsed analysis:', parsedAnalysis);
+    
+    // Format the results for display
+    const formattedResults = {
+      fileName: file.name,
+      fileType: file.type,
+      analysis: {
+        originalText: text,
+        primaryCrime: parsedAnalysis.crimeIdentified || analysis.primaryCrime || 'Unknown Crime',
+        sections: parsedAnalysis.ipcSections.length > 0 ? parsedAnalysis.ipcSections : 
+                 (analysis.sections || []).map(section => ({
+                   number: section.section,
+                   title: section.title || `Section ${section.section}`,
+                   definition: section.description || section.definition || 'No description available',
+                   punishment: section.punishment || 'Not specified'
+                 })),
+        evidence: parsedAnalysis.evidence || analysis.evidence || 'No specific evidence provided',
+        timestamp: new Date().toISOString()
+      }
     };
 
-    // Save to database
-    const response = await axios.post(
-      'http://localhost:5000/api/cases',
-      caseData,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    if (response.data.success) {
-      toast.success('Analysis saved successfully');
-      return response.data.case;
-    } else {
-      throw new Error(response.data.message || 'Failed to save analysis');
-    }
+    return formattedResults;
   } catch (error) {
     console.error(`Error processing document ${file.name}:`, error);
     throw error;
@@ -439,25 +575,6 @@ const getIPCSectionInfoUrl = (sectionNumber) => {
   return legalUrls.default;
 };
 
-// Helper function can stay outside the component
-const cleanupOldAnalysis = () => {
-  try {
-    const savedResults = JSON.parse(localStorage.getItem('analysisResults') || '[]');
-    // Keep only last 10 analyses
-    const recentResults = savedResults.slice(-10);
-    localStorage.setItem('analysisResults', JSON.stringify(recentResults));
-  } catch (error) {
-    console.error('Error cleaning up analysis results:', error);
-    localStorage.removeItem('analysisResults');
-  }
-};
-
-// Add this function to handle errors
-const handleError = (error) => {
-  console.error('An error occurred:', error);
-  toast.error('An error occurred. Please try again later.');
-};
-
 const CaseDetails = () => {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -493,50 +610,70 @@ const CaseDetails = () => {
   const [matchInfo, setMatchInfo] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  // Move fetchData outside useEffect and memoize it
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = sessionStorage.getItem('token');
+      
+      if (!caseId) {
+        console.error('No case ID provided');
+        toast.error('Case ID is missing');
+        return;
+      }
+
+      console.log('Fetching case details for ID:', caseId);
+
       try {
-        const token = sessionStorage.getItem("token");
-        const userId = sessionStorage.getItem("userid");
-        
-        if (!token || !userId) {
-          toast.error('Authentication required. Please login again.');
-          navigate('/login');
-          return;
-        }
-
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-
-        // Fetch all cases for the client
-        const casesResponse = await axios.get(
-          `http://localhost:5000/api/cases/client/${userId}`,
-          config
-        );
-
-        if (casesResponse.data.success) {
-          setCases(casesResponse.data.cases);
-          
-          if (caseId) {
-            const selectedCase = casesResponse.data.cases.find(c => c._id === caseId);
-            if (selectedCase) {
-              setCaseDetails(selectedCase);
-            } else {
-              toast.error('Case not found');
+        // Update the API endpoint to match the backend route
+        const response = await axios.get(
+          `http://localhost:5000/api/cases/${caseId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
             }
           }
+        );
+        
+        console.log('Case details response:', response.data);
+        
+        if (response.data.success) {
+          setCaseDetails(response.data.case);
+          
+          // Only fetch lawyer suggestions if we have an IPC section
+          if (response.data.case?.ipcSection) {
+            await fetchLawyerSuggestions(response.data.case.ipcSection);
+          }
+        } else {
+          toast.error(response.data.message || 'Failed to fetch case details');
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        handleError(error);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        if (err.response?.status === 404) {
+          toast.error('Case not found');
+        } else if (err.response?.status === 401) {
+          navigate('/login');
+        } else {
+          toast.error(err.response?.data?.message || 'Failed to fetch case details');
+        }
       }
-    };
+    } catch (error) {
+      console.error('Error in fetchData:', error);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }, [caseId, navigate]); // Add dependencies here
 
-    fetchData();
-  }, [caseId, navigate]);
+  // Update the useEffect to use the memoized fetchData
+  useEffect(() => {
+    if (caseId) {
+      fetchData();
+    } else {
+      console.warn('No case ID available');
+      setLoading(false);
+    }
+  }, [caseId, fetchData]); // Include fetchData in dependencies
 
   useEffect(() => {
     if (analysisResults) {
@@ -549,7 +686,10 @@ const CaseDetails = () => {
   }, [analysisResults]);
 
   useEffect(() => {
-    cleanupOldAnalysis();
+    return () => {
+      // Optionally clear results when leaving the page
+      // localStorage.removeItem('analysisResults');
+    };
   }, []);
 
   const handleFileChange = (e) => {
@@ -564,21 +704,9 @@ const CaseDetails = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Add loading class to upload area instead of setting global loading state
-    const uploadArea = document.querySelector('.upload-area');
-    if (uploadArea) {
-      uploadArea.classList.add('loading');
-    }
-    
     setError(null);
     
     try {
-      const token = sessionStorage.getItem('token');
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
-
       if (!formData.documents || formData.documents.length === 0) {
         throw new Error('Please select at least one document');
       }
@@ -589,107 +717,11 @@ const CaseDetails = () => {
       const analysisPromises = formData.documents.map(async (file) => {
         try {
           console.log(`Processing file: ${file.name}`);
-          
-          // Extract text from document
-          const { text, analysis } = await extractTextFromDocument(file);
-          if (!text || text.trim().length === 0) {
-            throw new Error('No text could be extracted from the document');
-          }
-          console.log('Extracted text:', text);
-
-          // Update the Gemini prompt to be more specific
-          const prompt = `
-            You are a legal expert specializing in Indian Criminal Law. Analyze the following text and provide:
-            1. The exact IPC section number that applies to this case
-            2. The complete official definition of that IPC section from the Indian Penal Code
-            3. The evidence from the text that supports this section
-
-            Text to analyze:
-            "${text}"
-
-            Provide your response in this exact format:
-            CRIME: [State the main crime identified]
-            IPC SECTIONS: [List only the most relevant IPC section numbers]
-            SECTION DETAILS:
-            Section [number]: [Provide the exact official IPC section definition as written in the Indian Penal Code]
-            EVIDENCE: [Quote the relevant parts from the text that match this section]
-
-            Note: Please provide the exact, official IPC section definition, not a summary or paraphrase.
-          `;
-
-          // Call Gemini API
-          const geminiResponse = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-            {
-              contents: [{
-                parts: [{
-                  text: prompt
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.1, // Very low temperature for more deterministic output
-                topK: 1,
-                topP: 1,
-                maxOutputTokens: 2048 // Increased for full definitions
-              }
-            }
-          );
-
-          console.log('Gemini Response:', geminiResponse.data);
-
-          if (!geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text) {
-            throw new Error('Invalid response from Gemini API');
-          }
-
-          const analysisText = geminiResponse.data.candidates[0].content.parts[0].text;
-          console.log('Analysis Text:', analysisText);
-
-          // Improved parsing of the analysis text
-          const crimeMatch = analysisText.match(/CRIME:\s*(.+?)(?=\n|$)/);
-          const ipcMatch = analysisText.match(/IPC SECTIONS:\s*(.+?)(?=\n|$)/);
-          const sectionDetailsMatch = analysisText.match(/SECTION DETAILS:\n([\s\S]+?)(?=\nEVIDENCE:|$)/);
-          const evidenceMatch = analysisText.match(/EVIDENCE:\s*(.+?)(?=\n|$)/);
-
-          // Parse section details into structured format
-          const sectionDetails = {};
-          if (sectionDetailsMatch && sectionDetailsMatch[1]) {
-            const sectionTexts = sectionDetailsMatch[1].split(/\nSection /);
-            sectionTexts.forEach(text => {
-              if (text.trim()) {
-                const [sectionNum, ...descParts] = text.split(':');
-                const description = descParts.join(':').trim();
-                sectionDetails[sectionNum.trim()] = description;
-              }
-            });
-          }
-
-          // Create structured analysis object
-          const analysisResult = {
-            primaryCrime: crimeMatch?.[1]?.trim() || 'Unknown Crime',
-            ipcSections: ipcMatch?.[1]?.trim().split(',').map(s => s.trim()) || [],
-            sectionDetails: sectionDetails,
-            evidence: evidenceMatch?.[1]?.trim().split(';').map(e => e.trim()) || []
-          };
-
-          // Create sections array with descriptions
-          const sections = analysisResult.ipcSections.map(section => ({
-            section: section,
-            description: sectionDetails[section] || 'Description not available',
-            confidence: 0.9
-          }));
-
+          const analysisResult = await analyzeWithGemini(null, file);
           return {
             fileName: file.name,
-            fileType: file.type,
-            analysis: {
-              primaryCrime: analysisResult.primaryCrime,
-              description: sections[0]?.description || '',
-              evidence: analysisResult.evidence
-            },
-            sections: sections,
-            timestamp: new Date().toISOString()
+            analysis: analysisResult
           };
-
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
           throw error;
@@ -697,23 +729,12 @@ const CaseDetails = () => {
       });
 
       const results = await Promise.all(analysisPromises);
-      console.log('Analysis Results:', results);
-
-      // Update state and localStorage atomically
-      setAnalysisResults(prevResults => {
-        const newResults = [...prevResults, ...results];
-        localStorage.setItem('analysisResults', JSON.stringify(newResults));
-        return newResults;
-      });
-
-      toast.success('Document analysis completed successfully');
-
+      setAnalysisResults(results);
+      
     } catch (error) {
       console.error('Analysis error:', error);
-      setError(error.message || 'Failed to analyze document');
-      toast.error(error.message || 'Failed to analyze document');
+      setError(error.message);
     } finally {
-      // Remove loading class instead of setting global loading state
       const uploadArea = document.querySelector('.upload-area');
       if (uploadArea) {
         uploadArea.classList.remove('loading');
@@ -820,29 +841,60 @@ const CaseDetails = () => {
     }
   };
 
-  const handleIPCSectionClick = async (section) => {
+  const handleIPCSectionClick = (sectionNum, result) => {
     try {
-      // Get specialization directly from IPC_SPECIALIZATION_MAP first
-      const specialization = IPC_SPECIALIZATION_MAP[section];
-      
-      console.log('Section:', section);
-      console.log('Mapped Specialization:', specialization);
+      // Get the crime type from the result
+      const crimeType = result?.parsedAnalysis?.crimeIdentified || 
+                       result?.analysis?.parsedAnalysis?.crimeIdentified;
 
-      if (!specialization) {
-        throw new Error('No matching specialization found for this IPC section');
+      // Determine specialization based on IPC section ranges and crime type
+      let specialization;
+      
+      // First check if section exists in the IPC_SPECIALIZATION_MAP
+      if (IPC_SPECIALIZATION_MAP[sectionNum]) {
+        specialization = IPC_SPECIALIZATION_MAP[sectionNum].specialization;
+      } else {
+        // If not in map, determine by section ranges
+        const section = parseInt(sectionNum);
+        
+        if (section >= 378 && section <= 462) {
+          specialization = 'Criminal Law'; // Property crimes including theft
+        } else if (section >= 299 && section <= 377) {
+          specialization = 'Criminal Law'; // Offenses against human body
+        } else if (section >= 268 && section <= 294) {
+          specialization = 'Environmental Law'; // Public nuisance and health
+        } else if (section >= 463 && section <= 489) {
+          specialization = 'Civil Law'; // Forgery and property documents
+        } else if (section >= 493 && section <= 498) {
+          specialization = 'Family Law'; // Marriage related offenses
+        } else {
+          // Fallback based on crime type
+          specialization = 
+            crimeType?.toLowerCase().includes('theft') ? 'Criminal Law' :
+            crimeType?.toLowerCase().includes('murder') ? 'Criminal Law' :
+            crimeType?.toLowerCase().includes('environment') ? 'Environmental Law' :
+            crimeType?.toLowerCase().includes('property') ? 'Civil Law' :
+            crimeType?.toLowerCase().includes('family') ? 'Family Law' : 'General Practice';
+        }
       }
 
-      // Navigate to find-lawyers with the correct specialization
-      navigate('/client/find-lawyers', {
-        state: { 
-          ipcSection: section,
-          specialization: specialization // Pass the exact specialization string
-        }
-      });
+      console.log(`Navigating to FindLawyers with IPC section ${sectionNum} (${specialization})`);
       
+      navigate('/client/find-lawyers', { 
+        state: { 
+          ipcSection: sectionNum,
+          specialization: specialization,
+          crimeType: crimeType,
+          caseDetails: {
+            title: result?.fileName || 'Case Analysis',
+            description: result?.description || 'IPC Section Analysis',
+            analysisResults: [result]
+          }
+        } 
+      });
     } catch (error) {
       console.error('Error handling IPC section click:', error);
-      toast.error('Failed to find matching lawyers');
+      toast.error('Failed to navigate to lawyers page');
     }
   };
 
@@ -890,155 +942,59 @@ const CaseDetails = () => {
 
   const handleDeleteCase = async (caseId) => {
     try {
-      const token = sessionStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      // Call the soft delete endpoint
-      await axios.put(`http://localhost:5000/api/cases/${caseId}/delete`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      // Update local state to remove the deleted case
-      setCases(prevCases => prevCases.filter(c => c._id !== caseId));
-      toast.success('Case moved to trash');
-
-      // Refresh the cases list
-      fetchCases();
-
+      await api.delete(`/cases/${caseId}`);
+      toast.success('Case deleted successfully');
+      fetchData();
     } catch (error) {
       console.error('Error deleting case:', error);
       toast.error(error.response?.data?.message || 'Failed to delete case');
     }
   };
 
-  // Add this function to fetch cases
-  const fetchCases = async () => {
-    try {
-      const token = sessionStorage.getItem("token");
-      const userId = sessionStorage.getItem("userid");
-      
-      if (!token || !userId) {
-        toast.error('Authentication required. Please login again.');
-        navigate('/login');
-        return;
-      }
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-
-      // Fetch non-deleted cases
-      const casesResponse = await axios.get(
-        `http://localhost:5000/api/cases/client/${userId}`,
-        config
-      );
-
-      if (casesResponse.data.success) {
-        setCases(casesResponse.data.cases);
-      }
-    } catch (error) {
-      console.error('Error fetching cases:', error);
-      handleError(error);
-    }
-  };
-
-  const handleRestoreCase = async (caseId) => {
-    try {
-      const token = sessionStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      // Call restore endpoint
-      await axios.put(`http://localhost:5000/api/cases/${caseId}/restore`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      // Update local state
-      setCases(prevCases => prevCases.map(c => 
-        c._id === caseId ? { ...c, isDeleted: false, deletedAt: null } : c
-      ));
-
-      toast.success('Case restored successfully');
-      
-      // Refresh the cases list
-      fetchCases();
-
-    } catch (error) {
-      console.error('Error restoring case:', error);
-      toast.error(error.response?.data?.message || 'Failed to restore case');
-    }
-  };
-
   const handleDeleteAnalysis = async (index) => {
     try {
-      // Get the specific analysis to delete
-      const analysisToDelete = analysisResults[index];
+      const sortedResults = [...analysisResults].sort((a, b) => {
+        const timeA = a.timestamp || '0';
+        const timeB = b.timestamp || '0';
+        return timeB.localeCompare(timeA);
+      });
       
-      if (!analysisToDelete) {
-        toast.error('Analysis not found');
-        return;
-      }
+      const resultToDelete = sortedResults[index];
+      const originalIndex = analysisResults.findIndex(r => 
+        r.fileName === resultToDelete.fileName && r.timestamp === resultToDelete.timestamp
+      );
 
-      const token = sessionStorage.getItem('token');
-      const userId = sessionStorage.getItem('userid');
-
-      if (!token || !userId) {
-        toast.error('Authentication required. Please login again.');
-        navigate('/login');
-        return;
-      }
-
-      // Create case data for just this analysis
-      const caseData = {
-        title: analysisToDelete.fileName || 'Untitled Analysis',
+      const response = await api.post('/cases', {
+        title: resultToDelete.fileName || 'Untitled Analysis',
         description: 'Analysis result moved to deleted cases',
-        documents: [{
-          fileName: analysisToDelete.fileName || 'analysis.txt',
-          extractedText: analysisToDelete.analysis?.text || JSON.stringify(analysisToDelete),
-          fileType: 'text/plain',
-          uploadDate: new Date()
-        }],
+        documents: [
+          {
+            fileName: resultToDelete.fileName || 'analysis.txt',
+            extractedText: resultToDelete.analysis?.text || JSON.stringify(resultToDelete),
+            fileType: 'text/plain',
+            uploadDate: new Date()
+          }
+        ],
         caseType: formData.caseType || 'other',
-        ipcSection: analysisToDelete.sections?.[0]?.section || null,
-        ipcDescription: analysisToDelete.sections?.[0]?.description || '',
-        relatedSections: analysisToDelete.sections?.slice(1).map(section => ({
+        ipcSection: resultToDelete.sections?.[0]?.section || null,
+        ipcDescription: resultToDelete.sections?.[0]?.description || '',
+        relatedSections: resultToDelete.sections?.slice(1).map(section => ({
           section: section.section,
-          confidence: calculateSectionConfidence(section, analysisToDelete.analysis),
+          confidence: calculateSectionConfidence(section, resultToDelete.analysis),
           description: section.description
         })) || [],
         isDeleted: true,
-        analysisResults: analysisToDelete,
-        clientId: userId
-      };
-
-      const response = await axios.post(
-        'http://localhost:5000/api/cases',
-        caseData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+        analysisResults: resultToDelete
+      });
 
       if (response.data) {
-        // Remove only the selected analysis
+        // Remove from current analysis results
         setAnalysisResults(prevResults => 
-          prevResults.filter((_, i) => i !== index)
+          prevResults.filter((_, index) => index !== originalIndex)
         );
         
-        // Update localStorage with the filtered results
-        const updatedResults = analysisResults.filter((_, i) => i !== index);
+        // Update localStorage
+        const updatedResults = analysisResults.filter((_, index) => index !== originalIndex);
         localStorage.setItem('analysisResults', JSON.stringify(updatedResults));
         
         toast.success('Analysis moved to deleted cases');
@@ -1121,16 +1077,7 @@ const CaseDetails = () => {
           analysisResults: resultToDelete
         };
 
-        return axios.post(
-          'http://localhost:5000/api/cases',
-          caseData,
-          {
-            headers: {
-              'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        return api.post('/cases', caseData);
       });
 
       await Promise.all(deletePromises);
@@ -1171,7 +1118,6 @@ const CaseDetails = () => {
   const handleDeleteResults = (index) => {
     try {
       setAnalysisResults(prevResults => {
-        // Only remove the specific index that was selected
         const newResults = prevResults.filter((_, i) => i !== index);
         localStorage.setItem('analysisResults', JSON.stringify(newResults));
         toast.success('Analysis result deleted successfully');
@@ -1214,242 +1160,366 @@ const CaseDetails = () => {
     }
   };
 
-  const renderAnalysisAndCasesList = () => {
-    const filteredCases = getFilteredCases().sort((a, b) => {
-      const timeB = b.timestamp || '0';
-      const timeA = a.timestamp || '0';
-      return timeB.localeCompare(timeA);
+  const handleToggleSection = (index) => {
+    setExpandedSections(prev => {
+      const newExpandedSections = { ...prev };
+      newExpandedSections[index] = !newExpandedSections[index];
+      return newExpandedSections;
     });
+  };
+
+  const renderIpcSections = (result) => {
+    console.log("Rendering IPC sections for:", result);
     
-    const totalCount = analysisResults.length + filteredCases.length;
-
-    return (
-      <div className="analysis-panel mt-4">
-        <div className="panel-header">
-          <h4>Case Analysis Dashboard</h4>
-          <div className="panel-actions">
-            {selectedResults.size > 0 && (
-              <button 
-                className="btn btn-danger me-2"
-                onClick={handleDeleteSelected}
-              >
-                <FontAwesomeIcon icon={faTrash} className="me-2" />
-                Delete Selected ({selectedResults.size})
-              </button>
-            )}
-            <span className="case-count">
-              {totalCount} {totalCount === 1 ? 'Analysis' : 'Analyses'}
-            </span>
-          </div>
+    // Check if we have parsed sections from our frontend parser
+    let sections = result.parsedAnalysis?.ipcSections || [];
+    
+    // If no sections from our parser, try the backend parsed sections
+    if (!sections || sections.length === 0) {
+      sections = result.analysis?.parsedAnalysis?.ipcSections || [];
+    }
+    
+    console.log("Sections to render:", sections);
+    
+    if (!sections || sections.length === 0 || 
+        (sections.length === 1 && (sections[0] === 'Unable to determine' || sections[0].number === 'Unknown'))) {
+      return (
+        <div className="alert alert-warning text-center">
+          <FontAwesomeIcon icon={faExclamationCircle} className="me-2" />
+          No IPC sections identified in this document
         </div>
-        
-        <div className="scrollable-dashboard">
-          {analysisResults.map((result, index) => (
-            <div key={`analysis-${index}`} className="analysis-card mb-3">
-              <div className="card-header d-flex justify-content-between align-items-center">
-                <div className="d-flex align-items-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedResults.has(result._id)}
-                    onChange={() => toggleResultSelection(result)}
-                    className="me-2"
-                  />
-                  <h5 className="mb-0">{result.fileName}</h5>
-                </div>
-                <button 
-                  className="btn btn-outline-danger btn-sm"
-                  onClick={() => handleDeleteAnalysis(index)}
+      );
+    }
+    
+    return (
+      <div className="section-list">
+        {sections.map((section, sectionIndex) => {
+          const sectionNum = section.number;
+          return (
+            <div key={`section-${sectionIndex}`} className="section-item mb-3 p-3 border rounded shadow-sm">
+              <div className="section-header d-flex justify-content-between align-items-center mb-2">
+                <span 
+                  className="section-number badge bg-danger fs-5 p-2 me-2"
+                  onClick={() => handleIPCSectionClick(sectionNum, result)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
+                  Section {sectionNum}
+                </span>
+                <span className="section-title fs-5 fw-bold">{section.title || IPC_SECTIONS[sectionNum]?.title || ''}</span>
               </div>
-              <div className="card-body">
-                {/* Crime Identified */}
-                <div className="mb-4">
-                  <h6 className="text-primary">Crime Identified:</h6>
-                  <div className="alert alert-info">
-                    {result.analysis.primaryCrime}
-                  </div>
-                </div>
-
-                {/* IPC Sections */}
-                {result.sections && result.sections.length > 0 && (
-                  <div className="ipc-sections mb-4">
-                    <h6 className="text-primary">IPC Sections Identified:</h6>
-                    {result.sections.map((section, idx) => (
-                      <div key={idx} className="ipc-section-item">
-                        <div className="section-content">
-                          <h5>Section {section.section}</h5>
-                          <div className="section-description">
-                            {section.description}
-                          </div>
-                          <div className="section-actions mt-3">
-                            <button
-                              className="btn btn-outline-primary btn-sm me-2"
-                              onClick={() => handleIPCSectionClick(section.section)}
-                            >
-                              <FontAwesomeIcon icon={faUserTie} className="me-2" />
-                              Find Lawyers
-                            </button>
-                            <button
-                              className="btn btn-outline-info btn-sm"
-                              onClick={() => handleIPCSectionInfoClick(section)}
-                              title="View complete section details on legal reference website"
-                            >
-                              <FontAwesomeIcon icon={faExternalLink} className="me-2" />
-                              View Full Section Details
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              
+              <div className="section-details mt-3">
+                {section.description && (
+                  <p className="mb-2"><strong>Description:</strong> {section.description}</p>
                 )}
-
-                {/* Additional Analysis */}
-                <div className="case-metadata">
-                  {/* Remove these two lines
-                  <span className="badge bg-warning me-2">
-                    Severity: {result.analysis.severity || 'Not Specified'}
-                  </span>
-                  <span className="badge bg-info">
-                    Category: {result.analysis.category || 'Not Specified'}
-                  </span>
-                  */}
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {filteredCases.length > 0 ? (
-            filteredCases.map((caseItem) => (
-              <div key={`summary-${caseItem._id}`} className="analysis-card mb-3">
-                <div className="card">
-                  <div className="card-header d-flex justify-content-between align-items-center">
-                    <div className="d-flex align-items-center">
-                      <h5 className="mb-0 me-3">Analysis Summary</h5>
-                      <span className="case-type-badge">{caseItem.caseType}</span>
+                {IPC_SECTIONS[sectionNum] && (
+                  <div className="row">
+                    <div className="col-md-8">
+                      <p className="mb-2"><strong>Definition:</strong> {IPC_SECTIONS[sectionNum].definition}</p>
+                      <p className="mb-2"><strong>Punishment:</strong> {IPC_SECTIONS[sectionNum].punishment}</p>
+                      {IPC_SECTIONS[sectionNum].explanation && (
+                        <p className="mb-2"><strong>Explanation:</strong> {IPC_SECTIONS[sectionNum].explanation}</p>
+                      )}
                     </div>
-                    <div className="d-flex align-items-center">
-                      <small className="me-3">{new Date(caseItem.createdAt).toLocaleDateString()}</small>
-                      <button
-                        className="btn btn-link text-danger delete-btn"
-                        onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this case?')) {
-                            handleDeleteCase(caseItem._id);
-                          }
-                        }}
-                        title="Delete case"
+                    <div className="col-md-4 text-center">
+                      <button 
+                        className="btn btn-primary mt-2 view-lawyers-btn"
+                        onClick={() => handleIPCSectionClick(sectionNum, result)}
+                        disabled={loadingSuggestions}
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        {loadingSuggestions ? (
+                          <FontAwesomeIcon icon={faSpinner} spin className="me-2" />
+                        ) : (
+                          <FontAwesomeIcon icon={faUserTie} className="me-2" />
+                        )}
+                        View Specialized Lawyers
                       </button>
                     </div>
                   </div>
-                  <div className="card-body">
-                    {/* Debug information */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="debug-info mb-3" style={{color: '#666', fontSize: '0.8em'}}>
-                        <div>Has IPC Section: {caseItem.ipcSection ? 'Yes' : 'No'}</div>
-                        <div>IPC Section: {caseItem.ipcSection || 'None'}</div>
-                        <div>Related Sections: {caseItem.relatedSections?.length || 0}</div>
+                )}
+                {!section.description && !IPC_SECTIONS[sectionNum] && (
+                  <div className="row">
+                    <div className="col-md-8">
+                      <p className="text-muted">No detailed information available for this section.</p>
+                    </div>
+                    <div className="col-md-4 text-center">
+                      <button 
+                        className="btn btn-outline-primary mt-2 view-lawyers-btn"
+                        onClick={() => handleIPCSectionClick(sectionNum, result)}
+                        disabled={loadingSuggestions}
+                      >
+                        {loadingSuggestions ? (
+                          <FontAwesomeIcon icon={faSpinner} spin className="me-2" />
+                        ) : (
+                          <FontAwesomeIcon icon={faUserTie} className="me-2" />
+                        )}
+                        View Lawyers for Section {sectionNum}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderAnalysisAndCasesList = () => {
+    // Filter cases based on filter options
+    const filteredCases = cases.filter(caseItem => {
+      if (filterOptions.caseType !== 'all' && caseItem.caseType !== filterOptions.caseType) return false;
+      if (filterOptions.status !== 'all' && caseItem.status !== filterOptions.status) return false;
+      // Add more filters as needed
+      return true;
+    });
+
+    return (
+      <div className="analysis-results-container">
+        {/* Analysis Results */}
+        {analysisResults.length > 0 && (
+          <div className="analysis-results mb-4">
+            <h4>Document Analysis Results</h4>
+            <div className="results-list">
+              {analysisResults.map((result, index) => (
+                <div key={`analysis-${index}`} className="analysis-item">
+                  <div className="card">
+                    <div className="card-header d-flex justify-content-between align-items-center">
+                      <div>
+                        <h5 className="mb-0">
+                          {result.fileName || 'Document Analysis'}
+                        </h5>
+                        <small className="text-muted">
+                          {new Date(result.createdAt || Date.now()).toLocaleString()}
+                        </small>
+                      </div>
+                      <div>
+                        <button
+                          className="btn btn-outline-primary"
+                          onClick={() => handleToggleSection(index)}
+                        >
+                          <FontAwesomeIcon 
+                            icon={expandedSections[index] ? faChevronUp : faChevronDown} 
+                          />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {expandedSections[index] && (
+                      <div className="card-body">
+                        {/* Crime Identification Section */}
+                        <div className="crime-identification mb-3">
+                          <h5 className="analysis-subtitle">
+                            <FontAwesomeIcon icon={faGavel} className="me-2" />
+                            Crime Identified
+                          </h5>
+                          <div className="crime-badge">
+                            {result.parsedAnalysis?.crimeIdentified ? (
+                              <span className={`badge ${
+                                result.parsedAnalysis.crimeIdentified.includes('Unable') ? 
+                                'bg-secondary' : 'bg-danger'
+                              } fs-6 p-2`}>
+                                {result.parsedAnalysis.crimeIdentified}
+                              </span>
+                            ) : result.analysis?.parsedAnalysis?.crimeIdentified ? (
+                              <span className={`badge ${
+                                result.analysis.parsedAnalysis.crimeIdentified.includes('Unable') ? 
+                                'bg-secondary' : 'bg-danger'
+                              } fs-6 p-2`}>
+                                {result.analysis.parsedAnalysis.crimeIdentified}
+                              </span>
+                            ) : (
+                              <span className="badge bg-secondary fs-6 p-2">
+                                No crime identified
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* IPC Sections - Enhanced and Focused Display */}
+                        <div className="ipc-sections mb-4">
+                          <h5 className="analysis-subtitle text-center mb-3">
+                            <FontAwesomeIcon icon={faGavel} className="me-2" />
+                            Applicable IPC Sections
+                          </h5>
+                          
+                          {renderIpcSections(result)}
+                        </div>
+
+                        {/* Evidence Section */}
+                        {(result.parsedAnalysis?.evidence?.length > 0 || result.analysis?.parsedAnalysis?.evidence?.length > 0) && (
+                          <div className="evidence-section mb-3">
+                            <h5 className="analysis-subtitle">
+                              <FontAwesomeIcon icon={faCheck} className="me-2" />
+                              Key Evidence
+                            </h5>
+                            <ul className="evidence-list">
+                              {(result.parsedAnalysis?.evidence || result.analysis?.parsedAnalysis?.evidence || []).map((item, i) => (
+                                <li key={`evidence-${i}`} className="mb-1">{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {/* View Full Analysis Button */}
+                        <div className="text-center mt-4">
+                          <button 
+                            className="btn btn-outline-secondary" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target={`#fullAnalysis${index}`} 
+                            aria-expanded="false" 
+                            aria-controls={`fullAnalysis${index}`}
+                          >
+                            <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
+                            View Full Analysis
+                          </button>
+                          <div className="collapse mt-3" id={`fullAnalysis${index}`}>
+                            <div className="card card-body">
+                              <pre className="bg-light p-3" style={{whiteSpace: 'pre-wrap'}}>
+                                {result.analysis?.rawAnalysis || JSON.stringify(result.analysis, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Rest of your existing code for filtered cases */}
+        {filteredCases.length > 0 ? (
+          filteredCases.map((caseItem) => (
+            <div key={`summary-${caseItem._id}`} className="analysis-card mb-3">
+              <div className="card">
+                <div className="card-header d-flex justify-content-between align-items-center">
+                  <div className="d-flex align-items-center">
+                    <h5 className="mb-0 me-3">Analysis Summary</h5>
+                    <span className="case-type-badge">{caseItem.caseType}</span>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    <small className="me-3">{new Date(caseItem.createdAt).toLocaleDateString()}</small>
+                    <button
+                      className="btn btn-link text-danger delete-btn"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this case?')) {
+                          handleDeleteCase(caseItem._id);
+                        }
+                      }}
+                      title="Delete case"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </div>
+                </div>
+                <div className="card-body">
+                  {/* Debug information */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="debug-info mb-3" style={{color: '#666', fontSize: '0.8em'}}>
+                      <div>Has IPC Section: {caseItem.ipcSection ? 'Yes' : 'No'}</div>
+                      <div>IPC Section: {caseItem.ipcSection || 'None'}</div>
+                      <div>Related Sections: {caseItem.relatedSections?.length || 0}</div>
+                    </div>
+                  )}
+
+                  {/* Key Findings Section */}
+                  <div className="key-findings">
+                    {/* Primary IPC Section */}
+                    {caseItem.ipcSection && caseItem.ipcSection !== 'null' && (
+                      <div className="primary-finding">
+                        <div 
+                          className="highlight-badge"
+                          onClick={() => handleIPCSectionClick(caseItem.ipcSection, caseItem)}
+                          style={{ cursor: 'pointer' }}
+                          title="Click to view detailed IPC section information"
+                        >
+                          <FontAwesomeIcon icon={faExclamationCircle} className="me-2" />
+                          Primary IPC Section: {caseItem.ipcSection}
+                        </div>
+                        {caseItem.ipcDescription && caseItem.ipcDescription !== 'null' && (
+                          <div className="finding-description">
+                            {caseItem.ipcDescription}
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Key Findings Section */}
-                    <div className="key-findings">
-                      {/* Primary IPC Section */}
-                      {caseItem.ipcSection && caseItem.ipcSection !== 'null' && (
-                        <div className="primary-finding">
-                          <div 
-                            className="highlight-badge"
-                            onClick={() => handleIPCSectionClick(caseItem.ipcSection)}
-                            style={{ cursor: 'pointer' }}
-                            title="Click to view detailed IPC section information"
-                          >
-                            <FontAwesomeIcon icon={faExclamationCircle} className="me-2" />
-                            Primary IPC Section: {caseItem.ipcSection}
-                          </div>
-                          {caseItem.ipcDescription && caseItem.ipcDescription !== 'null' && (
-                            <div className="finding-description">
-                              {caseItem.ipcDescription}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Related IPC Sections */}
-                      {Array.isArray(caseItem.relatedSections) && caseItem.relatedSections.length > 0 && (
-                        <div className="related-findings mt-4">
-                          <h6>Related Sections:</h6>
-                          <div className="related-sections-list">
-                            {caseItem.relatedSections.map((related, index) => (
-                              <div key={index} className="related-section-item">
-                                <div className="section-header">
-                                  <span 
-                                    className="finding-chip"
-                                    onClick={() => handleIPCSectionClick(related.section)}
-                                    style={{ cursor: 'pointer' }}
-                                    title="Click to view detailed IPC section information"
-                                  >
-                                    Section {related.section}
-                                  </span>
-                                  <span className="confidence-badge">
-                                    {Math.round(related.confidence * 100)}% relevant
-                                  </span>
-                                </div>
+                    {/* Related IPC Sections */}
+                    {Array.isArray(caseItem.relatedSections) && caseItem.relatedSections.length > 0 && (
+                      <div className="related-findings mt-4">
+                        <h6>Related Sections:</h6>
+                        <div className="related-sections-list">
+                          {caseItem.relatedSections.map((related, index) => (
+                            <div key={index} className="related-section-item">
+                              <div className="section-header">
+                                <span 
+                                  className="finding-chip"
+                                  onClick={() => handleIPCSectionClick(related.section, caseItem)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Click to view detailed IPC section information"
+                                >
+                                  Section {related.section}
+                                </span>
+                                <span className="confidence-badge">
+                                  {Math.round(related.confidence * 100)}% relevant
+                                </span>
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
                         </div>
-                      )}
-
-                      {/* Evidence Context */}
-                      {Array.isArray(caseItem.evidenceContext) && caseItem.evidenceContext.length > 0 && (
-                        <div className="key-evidence mt-4">
-                          <h6>Key Evidence Points:</h6>
-                          <ul className="evidence-points">
-                            {caseItem.evidenceContext.map((evidence, index) => (
-                              <li key={index} className="evidence-point">
-                                {evidence}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Document List */}
-                    <div className="documents-list mt-4">
-                      <h6>Analyzed Documents:</h6>
-                      <div className="document-chips">
-                        {caseItem.documents.map((doc, index) => (
-                          <a
-                            key={index}
-                            href={`http://localhost:5000/${doc.filePath}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="document-chip"
-                          >
-                            <FontAwesomeIcon 
-                              icon={getFileIcon(doc.fileType)} 
-                              className="me-2"
-                            />
-                            {doc.fileName}
-                          </a>
-                        ))}
                       </div>
+                    )}
+
+                    {/* Evidence Context */}
+                    {Array.isArray(caseItem.evidenceContext) && caseItem.evidenceContext.length > 0 && (
+                      <div className="key-evidence mt-4">
+                        <h6>Key Evidence Points:</h6>
+                        <ul className="evidence-points">
+                          {caseItem.evidenceContext.map((evidence, index) => (
+                            <li key={index} className="evidence-point">
+                              {evidence}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Document List */}
+                  <div className="documents-list mt-4">
+                    <h6>Analyzed Documents:</h6>
+                    <div className="document-chips">
+                      {caseItem.documents.map((doc, index) => (
+                        <a
+                          key={index}
+                          href={`http://localhost:5000/${doc.filePath}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="document-chip"
+                        >
+                          <FontAwesomeIcon 
+                            icon={getFileIcon(doc.fileType)} 
+                            className="me-2"
+                          />
+                          {doc.fileName}
+                        </a>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              <FontAwesomeIcon icon={faFile} size="2x" className="text-muted mb-2" />
-              <p>No cases found matching the selected filters</p>
             </div>
-          )}
-        </div>
+          ))
+        ) : (
+          <div className="no-cases-message">
+            <p>No cases found matching the selected filters.</p>
+          </div>
+        )}
       </div>
     );
   };
@@ -1457,50 +1527,9 @@ const CaseDetails = () => {
   const fetchLawyerSuggestions = async (ipcSection) => {
     try {
       setLoadingSuggestions(true);
-      const response = await axios.get(`http://localhost:5000/api/cases/suggest-lawyers/${caseId}`);
+      const response = await api.get(`/cases/suggest-lawyers/${caseId}`);
       setSuggestedLawyers(response.data.lawyers);
       setShowSuggestions(true);
-    } catch (error) {
-      console.error('Error fetching lawyer suggestions:', error);
-      toast.error('Failed to fetch lawyer suggestions');
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
-  const handleLawyerSuggestions = async (ipcSection, caseDetails) => {
-    try {
-      setLoadingSuggestions(true);
-      
-      // Make API call with both IPC section and case details
-      const response = await axios.get(
-        `http://localhost:5000/api/cases/suggest-lawyers/${ipcSection}`,
-        {
-          params: { 
-            caseDetails: JSON.stringify(caseDetails)
-          }
-        }
-      );
-
-      if (response.data.lawyers.length === 0) {
-        toast.info(`No lawyers found specializing in ${response.data.specialization}`);
-      } else {
-        toast.success(`Found ${response.data.lawyers.length} lawyers specializing in ${response.data.specialization}`);
-      }
-
-      setSuggestedLawyers(response.data.lawyers);
-      setSpecialization(response.data.specialization);
-      setMatchInfo(response.data.matchInfo);
-      setShowSuggestions(true);
-
-      // Scroll to suggestions
-      setTimeout(() => {
-        document.querySelector('.lawyer-suggestions-container')?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start'
-        });
-      }, 100);
-
     } catch (error) {
       console.error('Error fetching lawyer suggestions:', error);
       toast.error('Failed to fetch lawyer suggestions');
@@ -1621,7 +1650,7 @@ const CaseDetails = () => {
     try {
       const section = caseItem.ipcSection;
       const crimeType = caseItem.analysisResults?.crimeIdentified;
-      const specialization = IPC_SPECIALIZATION_MAP[section] || 
+      const specialization = EXTENDED_IPC_MAP[section] || 
         (crimeType === 'Environmental Pollution' ? 'Environmental Law' :
          crimeType === 'Criminal' ? 'Criminal Law' :
          crimeType === 'Property' ? 'Real Estate Law' :

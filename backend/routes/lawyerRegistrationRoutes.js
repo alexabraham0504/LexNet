@@ -5,6 +5,7 @@ const lawyerController = require("../controllers/lawyerRegistrationController");
 const Lawyer = require("../models/lawyerModel");
 const User = require("../models/User");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 const router = express.Router();
 
@@ -224,10 +225,50 @@ router.put("/toggle-visibility/:lawyerId", async (req, res) => {
 router.get("/:lawyerId", async (req, res) => {
   console.log("Fetching lawyer details for ID:", req.params.lawyerId);
   try {
+    // Handle special routes first
+    if (req.params.lawyerId === "search") {
+      // Forward to search handler
+      const { specialization, ipcSection } = req.query;
+      let query = {
+        isVerified: true,
+        visibleToClients: true
+      };
+
+      if (specialization && specialization.toLowerCase() !== 'all') {
+        query.specialization = specialization;
+      }
+      
+      if (ipcSection) {
+        query.ipcSections = ipcSection;
+      }
+
+      const lawyers = await Lawyer.find(query)
+        .select('fullName email phone specialization location fees rating ipcSections')
+        .lean();
+
+      return res.status(200).json({
+        success: true,
+        data: lawyers.map(lawyer => ({
+          ...lawyer,
+          id: lawyer._id,
+          fullName: lawyer.fullName || 'Unknown',
+          specialization: lawyer.specialization || 'General Practice'
+        }))
+      });
+    }
+
     // Handle special routes
     if (req.params.lawyerId === "list" || req.params.lawyerId === "list-by-specialization") {
       return res.status(400).json({ 
         message: "Invalid lawyer ID. Use the appropriate endpoints for listing lawyers." 
+      });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.lawyerId)) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Invalid lawyer ID format" 
       });
     }
 
@@ -238,18 +279,25 @@ router.get("/:lawyerId", async (req, res) => {
     }
 
     res.status(200).json({
-      fullname: lawyer.fullname,
-      email: lawyer.email,
-      phone: lawyer.phone,
-      specialization: lawyer.specialization,
-      location: lawyer.location,
-      fees: lawyer.fees,
-      availability: lawyer.availability,
-      profilePicture: lawyer.profilePicture,
+      success: true,
+      data: {
+        fullName: lawyer.fullName,
+        email: lawyer.email,
+        phone: lawyer.phone,
+        specialization: lawyer.specialization,
+        location: lawyer.location,
+        fees: lawyer.fees,
+        availability: lawyer.availability,
+        profilePicture: lawyer.profilePicture,
+      }
     });
   } catch (error) {
     console.error("Error fetching lawyer details:", error);
-    res.status(500).json({ message: "Error fetching lawyer details" });
+    res.status(500).json({ 
+      success: false,
+      message: "Error fetching lawyer details",
+      error: error.message 
+    });
   }
 });
 

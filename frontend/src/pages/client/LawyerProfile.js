@@ -124,10 +124,6 @@ const LawyerProfile = () => {
                     <p>{lawyer.consultationFees}</p>
                   </div>
                   <div className="fee-item">
-                    <span>Video Call</span>
-                    <p>{lawyer.videoCallFees}</p>
-                  </div>
-                  <div className="fee-item">
                     <span>Case Handling</span>
                     <p>{lawyer.caseHandlingFees}</p>
                   </div>

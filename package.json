@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.6.0",
+    "@react-google-maps/api": "^2.19.2",
     "animated-backgrounds": "^1.0.11",
     "axios": "^1.7.7",
     "body-parser": "^1.20.3",
@@ -11,11 +12,10 @@
     "framer-motion": "^11.18.0",
     "react-bootstrap": "^2.10.7",
     "react-icons": "^5.4.0",
+    "react-places-autocomplete": "^7.3.0",
     "react-spring": "^9.7.4",
     "react-toastify": "^10.0.6",
-    "styled-components": "^6.1.14",
-    "@react-google-maps/api": "^2.19.2",
-    "react-places-autocomplete": "^7.3.0"
+    "styled-components": "^6.1.14"
   },
   "name": "lexnet",
   "version": "1.0.0",

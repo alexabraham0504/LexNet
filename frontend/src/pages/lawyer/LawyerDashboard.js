@@ -11,16 +11,13 @@ import {
   faGavel,
   faCalendarAlt,
   faVideo,
+  faPhoneSlash,
+  faBell
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-hot-toast";
 import io from "socket.io-client";
-
-// Ensure the URL matches your server's URL
-const socket = io("http://localhost:5000", {
-    transports: ['websocket'], // Use WebSocket transport
-    withCredentials: true // Include credentials if needed
-});
 
 const styles = {
   bannerImage: {
@@ -35,12 +32,11 @@ const styles = {
 const LawyerDashboard = () => {
   const [lawyerData, setLawyerData] = useState(null);
   const { user } = useAuth();
-  const [meetingIds, setMeetingIds] = useState([]);
-  const [incomingCall, setIncomingCall] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const roomName = queryParams.get("roomName");
+  const [incomingCalls, setIncomingCalls] = useState([]);
+  const [pendingMeetings, setPendingMeetings] = useState([]);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     const fetchLawyerData = async () => {
@@ -72,6 +68,11 @@ const LawyerDashboard = () => {
         );
         console.log("API Response:", response.data);
         setLawyerData(response.data);
+
+        // Fetch pending meetings
+        if (response.data._id) {
+          fetchPendingMeetings(response.data._id);
+        }
       } catch (error) {
         console.error("Error fetching lawyer data:", error);
         if (error.response) {
@@ -82,74 +83,186 @@ const LawyerDashboard = () => {
     };
 
     fetchLawyerData();
-  }, []);
 
-  useEffect(() => {
-    const fetchMeetingIds = async () => {
-      try {
-        // Only fetch active meetings (less than 10 minutes old)
-        const response = await axios.get(`http://localhost:5000/api/lawyers/meetingIds/${user._id}`);
-        setMeetingIds(response.data.filter(meeting => {
-          const meetingTime = new Date(meeting.createdAt).getTime();
-          const currentTime = new Date().getTime();
-          const timeDifference = currentTime - meetingTime;
-          const minutesDifference = timeDifference / (1000 * 60);
-          return minutesDifference <= 10;
-        }));
-      } catch (error) {
-        console.error("Error fetching meeting IDs:", error);
+    // Initialize socket connection
+    if (user?._id) {
+      const token = sessionStorage.getItem("token");
+      
+      if (!token) {
+        console.error("No authentication token found");
+        toast.error("Authentication error. Please log in again.");
+        navigate('/login');
+        return;
       }
-    };
+      
+      const newSocket = io("http://localhost:5000", {
+        auth: {
+          token: `Bearer ${token}` // Ensure proper token format
+        },
+        query: {
+          userId: user._id,
+          role: 'lawyer'
+        }
+      });
 
-    // Initial fetch
-    fetchMeetingIds();
+      setSocket(newSocket);
 
-    // Set up interval to check and update meetings every minute
-    const interval = setInterval(fetchMeetingIds, 60000);
+      // Join personal room
+      newSocket.emit("join_room", user._id);
 
-    return () => clearInterval(interval);
+      // Listen for incoming calls
+      newSocket.on("incomingCall", (callData) => {
+        console.log("Incoming call received:", callData);
+        toast.success(`Incoming call from ${callData.clientName}`);
+        
+        // Add to incoming calls list
+        setIncomingCalls(prev => {
+          // Avoid duplicates
+          if (prev.some(call => call.meetingId === callData.meetingId)) {
+            return prev;
+          }
+          return [...prev, callData];
+        });
+      });
+
+      // Handle connection errors
+      newSocket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        toast.error("Connection error. Please refresh the page.");
+      });
+
+      return () => {
+        if (newSocket) {
+          newSocket.disconnect();
+        }
+      };
+    }
   }, [user]);
 
-  useEffect(() => {
-    socket.on("incomingCall", (data) => {
-      // Check if the call is less than 10 minutes old
-      const callTime = new Date(data.createdAt).getTime();
-      const currentTime = new Date().getTime();
-      const timeDifference = currentTime - callTime;
-      const minutesDifference = timeDifference / (1000 * 60);
+  // Fetch pending meetings
+  const fetchPendingMeetings = async (lawyerId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/meetings/pending/${lawyerId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          }
+        }
+      );
 
-      if (minutesDifference <= 10) {
-        setIncomingCall(data);
-        console.log("Incoming call from:", data.clientName);
+      if (response.data.success) {
+        setPendingMeetings(response.data.meetings);
       }
-    });
-
-    socket.on("connect", () => {
-        console.log("Socket.IO connected:", socket.id);
-    });
-
-    return () => {
-      socket.off("incomingCall");
-      socket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (roomName) {
-      console.log("Joining room:", roomName);
-      navigate(`/lawyer/video-call?roomName=${roomName}`);
+    } catch (error) {
+      console.error("Error fetching pending meetings:", error);
     }
-  }, [roomName, navigate]);
-
-  const handleAcceptCall = () => {
-    console.log("Call accepted:", incomingCall);
-    console.log("Room name to join:", incomingCall.roomName);
-    navigate(`/lawyer/video-call?roomName=${incomingCall.roomName}`);
   };
 
-  const handleRejectCall = () => {
-    setIncomingCall(null);
-    console.log("Call rejected");
+  // Handle accepting a call
+  const handleAcceptCall = async (meetingId, roomName, clientName) => {
+    try {
+      // First check if camera and microphone are available
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // If successful, stop the tracks to release the devices
+        stream.getTracks().forEach(track => track.stop());
+      } catch (error) {
+        console.error('Device permission error:', error);
+        let errorMessage = 'Could not access camera or microphone';
+        
+        if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+          errorMessage = 'Camera or microphone is already in use by another application. Please close other video applications and try again.';
+        } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          errorMessage = 'Permission to use camera and microphone was denied. Please allow access in your browser settings.';
+        }
+        
+        toast.error(errorMessage);
+        return; // Don't proceed with accepting the call
+      }
+
+      const response = await axios.post(
+        'http://localhost:5000/api/meetings/accept',
+        {
+          meetingId,
+          lawyerId: lawyerData._id
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        // Remove from incoming calls
+        setIncomingCalls(prev => prev.filter(call => call.meetingId !== meetingId));
+        
+        // Encode lawyer name for URL
+        const lawyerName = encodeURIComponent(
+          lawyerData.fullName || 
+          lawyerData.name || 
+          user?.fullName || 
+          user?.name || 
+          sessionStorage.getItem('userName') || 
+          localStorage.getItem('userName') || 
+          'Lawyer'
+        );
+        const encodedRoomName = encodeURIComponent(roomName);
+        
+        // Open the video call directly in a new window with auto-filled name
+        const videoServiceUrl = `https://meet.jit.si/${encodedRoomName}#userInfo.displayName="${lawyerName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
+        
+        // Open in new window
+        const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800');
+        
+        // If window was blocked, show message and navigate to video call page as fallback
+        if (!videoWindow || videoWindow.closed || typeof videoWindow.closed === 'undefined') {
+          toast.error('Please allow pop-ups to open the video call');
+          
+          // Navigate to the video call page as fallback
+          navigate(`/video-call/${roomName}`, {
+            state: {
+              roomName: roomName,
+              meetingId: meetingId,
+              isLawyer: true,
+              lawyerName: lawyerName,
+              clientName: clientName,
+              autoJoin: true
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error accepting call:", error);
+      toast.error("Failed to accept call");
+    }
+  };
+
+  // Handle declining a call
+  const handleDeclineCall = async (meetingId) => {
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/meetings/decline',
+        {
+          meetingId
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        // Remove from incoming calls
+        setIncomingCalls(prev => prev.filter(call => call.meetingId !== meetingId));
+        toast.success("Call declined");
+      }
+    } catch (error) {
+      console.error("Error declining call:", error);
+      toast.error("Failed to decline call");
+    }
   };
 
   const userName = sessionStorage.getItem("name") || "Lawyer";
@@ -183,14 +296,88 @@ const LawyerDashboard = () => {
             </div>
           )}
 
-          {/* Incoming Call Notification */}
-          {incomingCall && (
-            <div className="incoming-call-notification">
-              <h4>Incoming Call from {incomingCall.clientName}</h4>
-              <button onClick={handleAcceptCall}>Accept</button>
-              <button onClick={handleRejectCall}>Reject</button>
+          {/* Incoming Call Notifications */}
+          {incomingCalls.length > 0 && (
+            <div className="incoming-calls-container">
+              {incomingCalls.map((call) => (
+                <div key={call.meetingId} className="incoming-call-notification">
+                  <div className="call-info">
+                    <FontAwesomeIcon icon={faVideo} className="call-icon" />
+                    <span>Incoming call from {call.clientName}</span>
+                  </div>
+                  <div className="call-actions">
+                    <button 
+                      className="accept-call-btn"
+                      onClick={() => handleAcceptCall(call.meetingId, call.roomName, call.clientName)}
+                    >
+                      <FontAwesomeIcon icon={faVideo} /> Accept
+                    </button>
+                    <button 
+                      className="decline-call-btn"
+                      onClick={() => handleDeclineCall(call.meetingId)}
+                    >
+                      <FontAwesomeIcon icon={faPhoneSlash} /> Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          )} */
+          )}
+
+          {/* Pending Meetings Section */}
+          {pendingMeetings.length > 0 && (
+            <div className="meetings-section container mt-4">
+              <div className="card">
+                <div className="card-header bg-light">
+                  <h5 className="mb-0">
+                    <FontAwesomeIcon icon={faBell} className="me-2" />
+                    Pending Video Call Requests
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <div className="table-responsive">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Client</th>
+                          <th>Requested At</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingMeetings.map(meeting => (
+                          <tr key={meeting._id}>
+                            <td>{meeting.clientName}</td>
+                            <td>{new Date(meeting.createdAt).toLocaleString()}</td>
+                            <td>
+                              <span className="badge bg-warning">Pending</span>
+                            </td>
+                            <td>
+                              <button 
+                                className="btn btn-sm btn-primary me-2"
+                                onClick={() => handleAcceptCall(meeting._id, meeting.roomName, meeting.clientName)}
+                              >
+                                <FontAwesomeIcon icon={faVideo} className="me-1" />
+                                Join
+                              </button>
+                              <button 
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDeclineCall(meeting._id)}
+                              >
+                                <FontAwesomeIcon icon={faPhoneSlash} className="me-1" />
+                                Decline
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* HERO SECTION */}
           <div className="container-fluid">
@@ -257,61 +444,8 @@ const LawyerDashboard = () => {
                       </button>
                     </Link>
                   </div>
-                  <div className="col flex-grow-1">
-                    <Link to="/lawyer/video-call">
-                      <button className="btn btn-primary">Start Video Call</button>
-                    </Link>
-                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="meetings-section container mt-4">
-            <div className="card">
-                <div className="card-header bg-primary text-white">
-                    <h3 className="mb-0">
-                        <FontAwesomeIcon icon={faVideo} className="me-2" />
-                        Pending Video Consultations
-                    </h3>
-                </div>
-                <div className="card-body">
-                    {meetingIds.length > 0 ? (
-                        <div className="table-responsive">
-                            <table className="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Client Name</th>
-                                        <th>Meeting ID</th>
-                                        <th>Created At</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {meetingIds.map(meeting => (
-                                        <tr key={meeting._id}>
-                                            <td>{meeting.clientName}</td>
-                                            <td>{meeting.roomName}</td>
-                                            <td>{new Date(meeting.createdAt).toLocaleString()}</td>
-                                            <td>
-                                                <Link 
-                                                    to={`/lawyer/video-call?roomName=${meeting.roomName}`}
-                                                    className="btn btn-primary btn-sm"
-                                                >
-                                                    Join Meeting
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="text-center py-4">
-                            <p className="mb-0">No pending video consultations</p>
-                        </div>
-                    )}
-                </div>
             </div>
           </div>
 
@@ -452,16 +586,81 @@ const LawyerDashboard = () => {
         .meetings-section .btn-primary {
             padding: 0.25rem 1rem;
         }
+        
+        .incoming-calls-container {
+          margin: 20px;
+        }
+        
         .incoming-call-notification {
           background-color: #f8d7da;
           color: #721c24;
           padding: 15px;
           border: 1px solid #f5c6cb;
           border-radius: 5px;
-          margin: 20px 0;
+          margin-bottom: 10px;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+          }
+        }
+        
+        .call-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .call-icon {
+          font-size: 1.2rem;
+        }
+        
+        .call-actions {
+          display: flex;
+          gap: 10px;
+        }
+        
+        .accept-call-btn {
+          background-color: #28a745;
+          color: white;
+          border: none;
+          padding: 5px 15px;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        
+        .decline-call-btn {
+          background-color: #dc3545;
+          color: white;
+          border: none;
+          padding: 5px 15px;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        
+        .accept-call-btn:hover {
+          background-color: #218838;
+        }
+        
+        .decline-call-btn:hover {
+          background-color: #c82333;
         }
       `}</style>
     </>

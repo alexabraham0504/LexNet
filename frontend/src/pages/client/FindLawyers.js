@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import './FindLawyers.css';
 import Navbar from '../../components/navbar/navbar-client';
 import ClientSidebar from '../../components/sidebar/ClientSidebar';
-import Footer from '../../components/footer/footer-admin';
+import Footer from '../../components/footer/footer-client';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUserCircle,
@@ -17,18 +17,12 @@ import {
   faBalanceScale,
   faClock,
   faLanguage,
-  faMoneyBill,
-  faUser,
-  faCalendar,
-  faVideo,
-  faFileAlt,
-  faComment
+  faMoneyBill
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import Chat from "../../components/Chat";
 import { useAuth } from "../../context/AuthContext";
-import VideoCall from '../../components/VideoCall';
+import Chat from "../../components/Chat";
 
 const FindLawyers = () => {
   const location = useLocation();
@@ -48,8 +42,7 @@ const FindLawyers = () => {
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const { user } = useAuth();
   const [activeChats, setActiveChats] = useState([]);
-  const [selectedLawyerDetails, setSelectedLawyerDetails] = useState(null);
-  const [videoCallActive, setVideoCallActive] = useState(null);
+  const MAX_ACTIVE_CHATS = 3;
 
   // IPC to Specialization mapping
   const IPC_SPECIALIZATION_MAP = {
@@ -59,24 +52,11 @@ const FindLawyers = () => {
     '277': 'Environmental Law',
     '278': 'Environmental Law',
     
-    // Criminal Laws - Add more IPC sections related to criminal law
+    // Criminal Laws
     '302': 'Criminal Law',
-    '303': 'Criminal Law',
-    '304': 'Criminal Law',
     '307': 'Criminal Law',
-    '324': 'Criminal Law',
-    '325': 'Criminal Law',
-    '326': 'Criminal Law',
-    '354': 'Criminal Law',
-    '376': 'Criminal Law',
     '378': 'Criminal Law',
     '379': 'Criminal Law',
-    '380': 'Criminal Law',
-    '392': 'Criminal Law',
-    '396': 'Criminal Law',
-    '420': 'Criminal Law',
-    '499': 'Criminal Law',
-    '500': 'Criminal Law',
     
     // Property Laws
     '441': 'Real Estate Law',
@@ -84,14 +64,11 @@ const FindLawyers = () => {
     '425': 'Property Law',
     
     // Civil Laws
+    '420': 'Civil Law',
     '406': 'Civil Law',
-    '415': 'Civil Law',
-    '418': 'Civil Law',
     
     // Family Laws
     '494': 'Family Law',
-    '495': 'Family Law',
-    '496': 'Family Law',
     '498A': 'Family Law'
   };
 
@@ -101,17 +78,15 @@ const FindLawyers = () => {
         setLoading(true);
         setError(null);
 
-        // Get specialization directly from IPC map or use case specialization
-        const requiredSpecialization = ipcSection ? 
-          IPC_SPECIALIZATION_MAP[ipcSection] : 
-          caseSpecialization;
+        // Determine the required specialization based on IPC section
+        const requiredSpecialization = ipcSection ? IPC_SPECIALIZATION_MAP[ipcSection] : caseSpecialization;
 
-        console.log('Fetching lawyers with params:', {
+        console.log('Fetching lawyers for:', {
           ipcSection,
-          requiredSpecialization,
-          caseSpecialization
+          requiredSpecialization
         });
 
+        // Fetch all verified lawyers
         const response = await axios.get('http://localhost:5000/api/lawyers/verified', {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('token')}`
@@ -119,30 +94,13 @@ const FindLawyers = () => {
         });
 
         if (response.data) {
-          let filteredLawyers = response.data;
+          // Filter lawyers based on specialization
+          const filteredLawyers = response.data.filter(lawyer => 
+            lawyer.specialization === requiredSpecialization
+          );
 
-          // Filter by specialization if specified
-          if (requiredSpecialization) {
-            filteredLawyers = filteredLawyers.filter(lawyer => {
-              // Normalize both strings for comparison
-              const lawyerSpec = (lawyer.specialization || '').trim().toLowerCase();
-              const requiredSpec = requiredSpecialization.trim().toLowerCase();
-              
-              console.log('Comparing:', {
-                lawyer: lawyer.fullName,
-                lawyerSpec,
-                requiredSpec,
-                matches: lawyerSpec === requiredSpec
-              });
-              
-              return lawyerSpec === requiredSpec;
-            });
-          }
-
-          console.log(`Found ${filteredLawyers.length} matching lawyers`);
           setLawyers(filteredLawyers);
 
-          // Update UI feedback
           if (filteredLawyers.length === 0) {
             toast.info(`No lawyers found specializing in ${requiredSpecialization}`);
           } else {
@@ -217,12 +175,8 @@ const FindLawyers = () => {
     setSelectedLawyer(lawyer);
   };
 
-  const handleViewProfile = (lawyer) => {
-    setSelectedLawyerDetails(lawyer);
-  };
-
-  const handleCloseDetails = () => {
-    setSelectedLawyerDetails(null);
+  const handleViewProfile = (lawyerId) => {
+    navigate(`/client/lawyer-profile/${lawyerId}`);
   };
 
   const handleChat = (lawyer) => {
@@ -231,17 +185,46 @@ const FindLawyers = () => {
       return;
     }
 
-    const chatRoomId = `chat_${user._id}_${lawyer.userid}`;
+    const lawyerId = lawyer._id;
+    if (!lawyerId) {
+      console.error("No lawyer ID found:", lawyer);
+      return;
+    }
+
+    console.log("Opening chat with lawyer:", {
+      lawyerId,
+      lawyerName: lawyer.fullName,
+      userId: user._id
+    });
+
+    const chatRoomId = `chat_${user._id}_${lawyerId}`;
     
     const chatExists = activeChats.find(chat => chat.chatRoomId === chatRoomId);
     
     if (!chatExists) {
-      setActiveChats(prevChats => [...prevChats, {
-        chatRoomId,
-        lawyerId: lawyer.userid,
-        lawyerName: lawyer.fullName || lawyer.fullname,
-        minimized: false
-      }]);
+      if (activeChats.length >= MAX_ACTIVE_CHATS) {
+        setActiveChats(prevChats => [{
+          chatRoomId,
+          lawyerId,
+          lawyerName: lawyer.fullName,
+          minimized: false
+        }, ...prevChats.slice(0, MAX_ACTIVE_CHATS - 1)]);
+      } else {
+        setActiveChats(prevChats => [{
+          chatRoomId,
+          lawyerId,
+          lawyerName: lawyer.fullName,
+          minimized: false
+        }, ...prevChats]);
+      }
+    } else {
+      setActiveChats(prevChats => {
+        const otherChats = prevChats.filter(chat => chat.chatRoomId !== chatRoomId);
+        return [{
+          ...chatExists,
+          minimized: false
+        }, ...otherChats];
+      });
     }
   };
 
@@ -257,31 +240,108 @@ const FindLawyers = () => {
     ));
   };
 
-  const handleVideoCall = async (lawyer) => {
+  const handleVideoCall = (lawyer) => {
     if (!user) {
       navigate("/login");
       return;
     }
 
-    const roomName = `consultation_${user._id}_${lawyer.userid}_${Date.now()}`;
-
-    try {
-      const response = await axios.post('http://localhost:5000/api/lawyers/sendMeetingId', {
-        lawyerId: lawyer.userid,
-        roomName: roomName,
-        clientName: user.fullName,
-        clientId: user._id
-      });
-
-      console.log("Response from server:", response.data);
-      
-      // Navigate to the video call page instead of lawyer dashboard
-      navigate(`/client/video-call?roomName=${roomName}`);
-      toast.success(`Connecting to video call with ${lawyer.fullName}`);
-    } catch (error) {
-      console.error("Error sending meeting ID:", error.response ? error.response.data : error.message);
-      toast.error("Failed to initiate video call.");
+    const lawyerId = lawyer._id;
+    if (!lawyerId) {
+      console.error("No lawyer ID found:", lawyer);
+      return;
     }
+
+    // Create a unique room name using timestamp and IDs
+    const timestamp = new Date().getTime();
+    const roomName = `meeting_${user._id}_${lawyerId}_${timestamp}`;
+
+    // Show loading toast
+    const loadingToastId = toast.loading("Initiating video call...");
+
+    // Get token from sessionStorage
+    const token = sessionStorage.getItem('token');
+    
+    if (!token) {
+      toast.dismiss(loadingToastId);
+      toast.error('Authentication error. Please log in again.');
+      navigate('/login');
+      return;
+    }
+
+    // Send meeting request to the lawyer
+    axios.post('http://localhost:5000/api/meetings/create', {
+      lawyerId: lawyerId,
+      roomName: roomName,
+      clientName: user.fullName || user.name || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Client',
+      clientId: user._id,
+      lawyerName: lawyer.fullName,
+      status: 'pending'
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      toast.dismiss(loadingToastId);
+      if (response.data.success) {
+        toast.success('Video call request sent to lawyer');
+        
+        // Create URL with encoded parameters for external video service
+        const clientName = encodeURIComponent(
+          user.fullName || 
+          user.name || 
+          sessionStorage.getItem('userName') || 
+          localStorage.getItem('userName') || 
+          'Client'
+        );
+        const encodedRoomName = encodeURIComponent(roomName);
+        
+        // Simplified URL with essential parameters for better compatibility
+        const videoServiceUrl = `https://meet.jit.si/${encodedRoomName}#userInfo.displayName="${clientName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
+        
+        // Open in new window with specific features
+        const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800,noopener,noreferrer');
+        
+        // If window was blocked, show message and navigate to video call page as fallback
+        if (!videoWindow || videoWindow.closed || typeof videoWindow.closed === 'undefined') {
+          toast.error('Please allow pop-ups to open the video call');
+          
+          // Navigate to the video call page as fallback
+          navigate(`/video-call/${roomName}`, {
+            state: {
+              roomName: roomName,
+              lawyerName: lawyer.fullName,
+              lawyerId: lawyerId,
+              meetingId: response.data.meeting._id,
+              clientName: clientName,
+              autoJoin: true
+            }
+          });
+        }
+      } else {
+        toast.error('Failed to initiate video call');
+      }
+    })
+    .catch(error => {
+      toast.dismiss(loadingToastId);
+      console.error('Error initiating video call:', error);
+      
+      if (error.response && error.response.status === 401) {
+        toast.error('Authentication error. Please log in again.');
+        sessionStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        toast.error('Error initiating video call. Please try again.');
+      }
+    });
+  };
+
+  const handleSendCaseDetails = (lawyer) => {
+    // Implement send case details functionality
+    console.log("Sending case details to:", lawyer.fullName);
+    // You can navigate to a case details form or open a modal
+    navigate(`/send-case-details/${lawyer._id}`);
   };
 
   const containerVariants = {
@@ -462,12 +522,8 @@ const FindLawyers = () => {
 
                     <div className="lawyer-details">
                       <p><strong>Experience:</strong> {lawyer.yearsOfExperience || 0} years</p>
-                      <p>
-                        <strong>Practicing Courts:</strong> {lawyer.practicingCourts?.join(', ') || 'Not specified'}
-                      </p>
-                      <p>
-                        <strong>Languages:</strong> {lawyer.languagesSpoken?.join(', ') || 'English'}
-                      </p>
+                      <p><strong>Expertise:</strong> {lawyer.expertise?.join(', ') || 'General Practice'}</p>
+                      <p><strong>Languages:</strong> {lawyer.languages?.join(', ') || 'English'}</p>
                     </div>
 
                     <div className="lawyer-actions">
@@ -479,7 +535,7 @@ const FindLawyers = () => {
                       </button>
                       <button 
                         className="btn-profile"
-                        onClick={() => handleViewProfile(lawyer)}
+                        onClick={() => handleViewProfile(lawyer._id)}
                       >
                         View Profile
                       </button>
@@ -507,8 +563,10 @@ const FindLawyers = () => {
                         e.target.src = '/default-lawyer-avatar.png';
                       }}
                     />
-                    <h3>{selectedLawyer.fullName}</h3>
-                    <p>AEN: {selectedLawyer.AEN}</p>
+                    <div className="lawyer-header-info">
+                      <h2>{selectedLawyer.fullName}</h2>
+                      <h3>AEN: {selectedLawyer.AEN}</h3>
+                    </div>
                   </div>
 
                   <div className="lawyer-info-grid">
@@ -533,161 +591,105 @@ const FindLawyers = () => {
                     </div>
                   </div>
 
-                  <div className="booking-card">
-                    <h4>Consultation Options</h4>
-                    <div className="booking-options">
-                      <button 
-                        className="booking-btn appointment"
-                        onClick={() => navigate(`/lawyer-appointment/${selectedLawyer._id}`)}
+                  <div className="action-buttons-container">
+                    <div className="primary-actions">
+                      <Link 
+                        to={`/lawyer-appointment/${selectedLawyer._id}`}
+                        className="modal-btn appointment"
                       >
-                        <FontAwesomeIcon icon={faCalendar} />
-                        <span>Book Appointment</span>
-                        <span className="fee-label">
-                          {selectedLawyer.consultationFees.replace('₹', '')}
-                        </span>
-                      </button>
-                      
+                        <i className="fas fa-calendar"></i>
+                        Set Appointment
+                        <span className="fee-label">{selectedLawyer.consultationFees || "₹100"}</span>
+                      </Link>
                       <button 
-                        className="booking-btn video-call"
-                        onClick={() => handleVideoCall(selectedLawyer)}
+                        className="modal-btn video"
+                        onClick={() => {
+                          handleVideoCall(selectedLawyer);
+                          setSelectedLawyer(null);
+                        }}
                       >
-                        <FontAwesomeIcon icon={faVideo} />
-                        <span>Video Consultation</span>
-                        <span className="fee-label">
-                          {selectedLawyer.videoCallFees}
-                        </span>
-                      </button>
-
-                      <button 
-                        className="booking-btn case-details"
-                        onClick={() => navigate(`/send-case-details/${selectedLawyer._id}`)}
-                      >
-                        <FontAwesomeIcon icon={faFileAlt} />
-                        <span>Send Case Details</span>
-                        <span className="fee-label">
-                          {(selectedLawyer.caseDetailsFees || selectedLawyer.consultationFees).replace('₹', '')}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="modal-actions">
-                    <button 
-                      className="modal-btn secondary"
-                      onClick={() => handleChat(selectedLawyer)}
-                    >
-                      <FontAwesomeIcon icon={faComment} />
-                      Chat Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="chat-windows-container">
-              {activeChats.map((chat, index) => (
-                <div 
-                  key={chat.chatRoomId}
-                  className={`chat-modal ${chat.minimized ? 'minimized' : ''}`}
-                  style={{ right: `${20 + index * 380}px` }}
-                >
-                  <div className="chat-header">
-                    <span>{chat.lawyerName}</span>
-                    <div className="chat-controls">
-                      <button 
-                        className="minimize-chat"
-                        onClick={() => handleToggleMinimize(chat.chatRoomId)}
-                      >
-                        {chat.minimized ? '□' : '−'}
+                        <i className="fas fa-video"></i>
+                        Video Call
+                        <span className="fee-label">{selectedLawyer.videoCallFees || "₹100"}</span>
                       </button>
                       <button 
-                        className="close-chat"
-                        onClick={() => handleCloseChat(chat.chatRoomId)}
+                        className="modal-btn case"
+                        onClick={() => {
+                          handleSendCaseDetails(selectedLawyer);
+                          setSelectedLawyer(null);
+                        }}
                       >
-                        ×
+                        <i className="fas fa-file-alt"></i>
+                        Send Case Details
+                        <span className="fee-label">{selectedLawyer.caseHandlingFees || "₹122"}</span>
                       </button>
                     </div>
-                  </div>
-                  {!chat.minimized && (
-                    <Chat
-                      chatRoomId={chat.chatRoomId}
-                      receiverId={chat.lawyerId}
-                      receiverName={chat.lawyerName}
-                      hideHeader={true}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
 
-            {selectedLawyerDetails && (
-              <div className="lawyer-details-modal" onClick={handleCloseDetails}>
-                <button className="lawyer-details-close" onClick={handleCloseDetails}>×</button>
-                <div className="lawyer-details-content" onClick={e => e.stopPropagation()}>
-                  <div className="lawyer-details-left">
-                    <img
-                      src={selectedLawyerDetails.profilePicture ? 
-                        `http://localhost:5000/uploads/${selectedLawyerDetails.profilePicture}` : 
-                        '/default-lawyer-avatar.png'
-                      }
-                      alt={selectedLawyerDetails.fullName}
-                      className="lawyer-details-avatar"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/default-lawyer-avatar.png';
-                      }}
-                    />
-                    <h2 className="lawyer-details-name">{selectedLawyerDetails.fullName}</h2>
-                    <p className="lawyer-details-specialization">{selectedLawyerDetails.specialization}</p>
-                  </div>
-                  
-                  <div className="lawyer-details-right">
-                    <div className="lawyer-details-section">
-                      <h3><FontAwesomeIcon icon={faUser} /> Professional Information</h3>
-                      <p><strong>Experience:</strong> {selectedLawyerDetails.yearsOfExperience} years</p>
-                      <p><strong>AEN Number:</strong> {selectedLawyerDetails.AEN}</p>
-                      <p><strong>Law Firm:</strong> {selectedLawyerDetails.lawFirm || 'Independent Practice'}</p>
-                      <p><strong>Practicing Courts:</strong> {selectedLawyerDetails.practicingCourts?.join(', ')}</p>
-                    </div>
-
-                    <div className="lawyer-details-section">
-                      <h3><FontAwesomeIcon icon={faMoneyBill} /> Fee Structure</h3>
-                      <p><strong>Consultation:</strong> {selectedLawyerDetails.consultationFees}</p>
-                      <p><strong>Video Call:</strong> {selectedLawyerDetails.videoCallFees}</p>
-                      <p><strong>Case Handling:</strong> {selectedLawyerDetails.caseHandlingFees}</p>
-                      <p><strong>Case Details:</strong> {selectedLawyerDetails.caseDetailsFees}</p>
-                    </div>
-
-                    <div className="lawyer-details-section">
-                      <h3><FontAwesomeIcon icon={faLanguage} /> Languages</h3>
-                      <div className="languages-list">
-                        {selectedLawyerDetails.languagesSpoken?.map((language, index) => (
-                          <span key={index} className="language-tag">{language}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="lawyer-details-section">
-                      <h3><FontAwesomeIcon icon={faUser} /> About</h3>
-                      <p>{selectedLawyerDetails.bio || 'No bio available'}</p>
+                    <div className="chat-action-container">
+                      <button 
+                        className="modal-btn chat"
+                        onClick={() => {
+                          handleChat(selectedLawyer);
+                          setSelectedLawyer(null);
+                        }}
+                      >
+                        <i className="fas fa-comment"></i>
+                        Chat Now
+                        <span className="fee-label">Free</span>
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {videoCallActive && (
-              <div className="video-call-modal">
-                <VideoCall
-                  roomName={videoCallActive.roomName}
-                  lawyerName={videoCallActive.lawyerName}
-                  onClose={() => setVideoCallActive(null)}
-                />
               </div>
             )}
           </div>
           <Footer />
         </div>
+      </div>
+      <div className="chat-windows-container">
+        {activeChats.map((chat, index) => (
+          <div 
+            key={chat.chatRoomId}
+            className={`chat-modal ${chat.minimized ? 'minimized' : ''}`}
+            style={{ 
+              right: `${20 + (index * 370)}px`,
+              zIndex: 1000 - index
+            }}
+          >
+            <div className="chat-header">
+              <span>{chat.lawyerName}</span>
+              <div className="chat-controls">
+                <button 
+                  className="minimize-chat"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleMinimize(chat.chatRoomId);
+                  }}
+                >
+                  {chat.minimized ? '□' : '−'}
+                </button>
+                <button 
+                  className="close-chat"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseChat(chat.chatRoomId);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            {!chat.minimized && (
+              <Chat
+                key={chat.chatRoomId}
+                chatRoomId={chat.chatRoomId}
+                receiverId={chat.lawyerId}
+                receiverName={chat.lawyerName}
+                hideHeader={true}
+              />
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -837,11 +839,20 @@ export default FindLawyers;
     font-weight: 500;
   }
 
-  .modal-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+  .action-buttons-container {
     margin-top: 2rem;
+    padding: 0 1.5rem;
+  }
+
+  .primary-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .chat-action-container {
+    margin-top: 1.5rem;
+    width: 100%;
   }
 
   .modal-btn {
@@ -849,22 +860,51 @@ export default FindLawyers;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
+    width: 100%;
+    color: white;
+    text-align: center;
+    text-decoration: none;
   }
 
-  .modal-btn.primary {
+  .modal-btn i {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+  }
+
+  .fee-label {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    font-weight: 600;
+  }
+
+  .modal-btn.appointment {
     background: #4CAF50;
-    color: white;
   }
 
-  .modal-btn.secondary {
+  .modal-btn.video {
+    background: #9C27B0;
+  }
+
+  .modal-btn.case {
+    background: #FF9800;
+  }
+
+  .modal-btn.chat {
     background: #2196F3;
-    color: white;
+  }
+
+  .modal-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
 
   @keyframes modalSlideIn {
@@ -876,291 +916,5 @@ export default FindLawyers;
       transform: translateY(0);
       opacity: 1;
     }
-  }
-
-  .chat-windows-container {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 400px;
-    height: 100vh;
-    overflow-y: auto;
-    padding: 20px;
-    z-index: 1000;
-  }
-
-  .chat-modal {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    flex-direction: column;
-    z-index: 1001;
-  }
-
-  .chat-header {
-    background: #222;
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .chat-controls {
-    display: flex;
-    gap: 10px;
-  }
-
-  .minimize-chat {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: #fff;
-    cursor: pointer;
-  }
-
-  .close-chat {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: #fff;
-    cursor: pointer;
-  }
-
-  .chat-content {
-    flex: 1;
-    padding: 20px;
-  }
-
-  .lawyer-details-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .lawyer-details-content {
-    background: white;
-    width: 90%;
-    height: 80%;
-    border-radius: 15px;
-    display: flex;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .lawyer-details-left {
-    width: 30%;
-    padding: 2rem;
-    background: #f8f9fa;
-    border-right: 1px solid #dee2e6;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .lawyer-details-right {
-    width: 70%;
-    padding: 2rem;
-    overflow-y: auto;
-  }
-
-  .lawyer-details-avatar {
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 1.5rem;
-    border: 4px solid white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .lawyer-details-name {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    text-align: center;
-  }
-
-  .lawyer-details-specialization {
-    color: #666;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .lawyer-details-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .lawyer-details-section h3 {
-    font-size: 1.2rem;
-    color: #333;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .lawyer-details-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #fff;
-    cursor: pointer;
-    z-index: 1001;
-  }
-
-  @media (max-width: 768px) {
-    .lawyer-details-content {
-      flex-direction: column;
-      height: 90%;
-    }
-
-    .lawyer-details-left,
-    .lawyer-details-right {
-      width: 100%;
-    }
-
-    .lawyer-details-left {
-      padding: 1rem;
-    }
-
-    .lawyer-details-avatar {
-      width: 150px;
-      height: 150px;
-    }
-  }
-
-  .booking-card {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  }
-
-  .booking-card h4 {
-    margin-bottom: 1rem;
-    color: #333;
-    font-size: 1.1rem;
-  }
-
-  .booking-options {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .booking-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    color: white;
-    position: relative;
-  }
-
-  .booking-btn svg {
-    margin-right: 10px;
-  }
-
-  .booking-btn.appointment {
-    background: #4CAF50;
-  }
-
-  .booking-btn.video-call {
-    background: #2196F3;
-  }
-
-  .booking-btn.case-details {
-    background: #FF9800;
-  }
-
-  .booking-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  }
-
-  .fee-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-    margin-left: auto;
-    padding-left: 1rem;
-  }
-
-  @media (max-width: 768px) {
-    .booking-options {
-      grid-template-columns: 1fr;
-    }
-    
-    .booking-btn {
-      width: 100%;
-    }
-  }
-
-  .video-call-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 2000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .video-call-container {
-    position: relative;
-    width: 95%;
-    height: 95%;
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .close-video-call {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    color: white;
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 2001;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-  }
-
-  .close-video-call:hover {
-    background: rgba(0, 0, 0, 0.8);
   }
 `}</style> 
