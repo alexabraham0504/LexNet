@@ -33,6 +33,15 @@ const MeetingSchema = new mongoose.Schema({
     },
     endTime: {
         type: Date
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'completed', 'failed'],
+        default: 'pending'
+    },
+    paymentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Payment'
     }
 }, { timestamps: true });
 

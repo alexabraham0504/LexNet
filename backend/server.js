@@ -28,6 +28,7 @@ const lawyerVerificationRoutes = require("./routes/lawyers.js");
 const caseRoutes = require('./routes/caseRoutes');
 const translationRoutes = require('./routes/translationRoutes');
 const meetingsRoutes = require('./routes/api/meetings');
+const paymentRoutes = require('./routes/payments');
 
 // Initialize Express app
 const app = express();
@@ -76,6 +77,7 @@ app.use("/api/messages", messageRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/translation', translationRoutes);
 app.use('/api/meetings', meetingsRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Root route
 app.get("/", (req, res) => {

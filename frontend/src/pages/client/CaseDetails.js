@@ -609,6 +609,10 @@ const CaseDetails = () => {
   const [specialization, setSpecialization] = useState('');
   const [matchInfo, setMatchInfo] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisHistory, setAnalysisHistory] = useState([]);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  // Add this state at the top with other state declarations
+  const [allCases, setAllCases] = useState([]);
 
   // Move fetchData outside useEffect and memoize it
   const fetchData = useCallback(async () => {
@@ -624,8 +628,9 @@ const CaseDetails = () => {
 
       console.log('Fetching case details for ID:', caseId);
 
+      // Comment out the API call that's causing 404 errors
+      /*
       try {
-        // Update the API endpoint to match the backend route
         const response = await axios.get(
           `http://localhost:5000/api/cases/${caseId}`,
           {
@@ -657,6 +662,7 @@ const CaseDetails = () => {
           toast.error(err.response?.data?.message || 'Failed to fetch case details');
         }
       }
+      */
     } catch (error) {
       console.error('Error in fetchData:', error);
       toast.error('An unexpected error occurred');
@@ -718,12 +724,59 @@ const CaseDetails = () => {
         try {
           console.log(`Processing file: ${file.name}`);
           const analysisResult = await analyzeWithGemini(null, file);
+
+          // Create case data object
+          const caseData = {
+            clientId: sessionStorage.getItem('userid'),
+            title: file.name,
+            description: 'Document analysis case',
+            caseType: formData.caseType,
+            documents: [{
+              fileName: file.name,
+              fileType: file.type,
+              uploadDate: new Date(),
+              extractedText: analysisResult.parsedAnalysis?.crimeIdentified || ''
+            }],
+            ipcSection: analysisResult.parsedAnalysis?.ipcSections?.[0]?.number || '',
+            ipcDescription: analysisResult.parsedAnalysis?.ipcSections?.[0]?.description || '',
+            relatedSections: analysisResult.parsedAnalysis?.ipcSections?.map(section => ({
+              section: section.number,
+              confidence: 0.8 // Default confidence score
+            })) || [],
+            evidenceContext: analysisResult.parsedAnalysis?.evidence || [],
+            analysisResults: {
+              rawAnalysis: analysisResult.analysisText,
+              parsedAnalysis: analysisResult.parsedAnalysis,
+              confidence: analysisResult.parsedAnalysis?.confidence || 'Low'
+            }
+          };
+
+          // Save the case and analysis
+          const userId = sessionStorage.getItem('userid');
+          if (!userId) {
+            throw new Error('User not authenticated');
+          }
+
+          const response = await api.post('/api/cases/save-analysis', caseData, {
+            headers: {
+              'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            }
+          });
+
+          if (!response.data.success) {
+            throw new Error(response.data.message || 'Failed to save analysis');
+          }
+
+          // Show success message
+          toast.success('Analysis saved successfully');
+
           return {
             fileName: file.name,
             analysis: analysisResult
           };
         } catch (error) {
-          console.error(`Error processing file ${file.name}:`, error);
+          console.error('Error saving analysis:', error);
+          toast.error(error.message || 'Failed to save analysis');
           throw error;
         }
       });
@@ -734,11 +787,6 @@ const CaseDetails = () => {
     } catch (error) {
       console.error('Analysis error:', error);
       setError(error.message);
-    } finally {
-      const uploadArea = document.querySelector('.upload-area');
-      if (uploadArea) {
-        uploadArea.classList.remove('loading');
-      }
     }
   };
 
@@ -1517,7 +1565,7 @@ const CaseDetails = () => {
           ))
         ) : (
           <div className="no-cases-message">
-            <p>No cases found matching the selected filters.</p>
+            {/* <p>No cases found matching the selected filters.</p> */}
           </div>
         )}
       </div>
@@ -1681,6 +1729,277 @@ const CaseDetails = () => {
     }
   };
 
+  const fetchAnalysisHistory = async () => {
+    // try {
+    //   const response = await api.get(`/api/analysis-history/cases/${caseId}/analysis-history`, {
+    //     headers: {
+    //       'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+    //     }
+    //   });
+
+    //   if (response.data.success) {
+    //     setAnalysisHistory(response.data.history);
+    //   }
+    // } catch (error) {
+    //   console.error('Error fetching analysis history:', error);
+    //   toast.error('Failed to fetch analysis history');
+    // }
+  };
+
+  // Comment out the useEffect that calls fetchAnalysisHistory
+  // useEffect(() => {
+  //   fetchAnalysisHistory();
+  // }, [caseId]);
+
+  const renderAnalysisHistory = () => {
+    if (!analysisHistory.length) {
+      return (
+        <div className="alert alert-info">
+          {/* No previous analyses found. */}
+        </div>
+      );
+    }
+
+    return (
+      <div className="analysis-history mt-4">
+        <h4>Analysis History</h4>
+        <div className="table-responsive">
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Document</th>
+                <th>Crime</th>
+                <th>IPC Sections</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysisHistory.map((analysis, index) => (
+                <tr key={index}>
+                  <td>{new Date(analysis.dateAnalyzed).toLocaleDateString()}</td>
+                  <td>{analysis.fileName}</td>
+                  <td>{analysis.crime}</td>
+                  <td>
+                    {analysis.sections?.map(section => 
+                      <span key={section.number} className="badge bg-secondary me-1">
+                        {section.number}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <button 
+                      className="btn btn-sm btn-info me-2"
+                      onClick={() => handleViewDetails(analysis)}
+                    >
+                      <FontAwesomeIcon icon={faInfoCircle} /> Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const handleViewDetails = (analysis) => {
+    setSelectedAnalysis(analysis);
+    // You can show this in a modal or expand the row
+  };
+
+  const renderAnalysisModal = () => {
+    if (!selectedAnalysis) return null;
+
+    return (
+      <div className="modal fade show" style={{ display: 'block' }}>
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Analysis Details</h5>
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={() => setSelectedAnalysis(null)}
+              />
+            </div>
+            <div className="modal-body">
+              <div className="analysis-details">
+                <h6>Document Information</h6>
+                <p><strong>File Name:</strong> {selectedAnalysis.fileName}</p>
+                <p><strong>Analyzed On:</strong> {new Date(selectedAnalysis.dateAnalyzed).toLocaleString()}</p>
+                
+                <h6 className="mt-3">Crime Analysis</h6>
+                <p><strong>Identified Crime:</strong> {selectedAnalysis.crime}</p>
+                
+                <h6 className="mt-3">IPC Sections</h6>
+                <div className="sections-list">
+                  {selectedAnalysis.sections?.map(section => (
+                    <div key={section.number} className="section-item">
+                      <strong>Section {section.number}</strong>
+                      <p>{section.description}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedAnalysis.documentText && (
+                  <>
+                    <h6 className="mt-3">Document Text</h6>
+                    <div className="document-text border p-3 bg-light">
+                      <pre style={{ whiteSpace: 'pre-wrap' }}>
+                        {selectedAnalysis.documentText}
+                      </pre>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setSelectedAnalysis(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="modal-backdrop fade show"></div>
+      </div>
+    );
+  };
+
+  // Add this function to fetch all cases for the current user
+  const fetchAllCases = async () => {
+    try {
+      const userId = sessionStorage.getItem('userid');
+      const response = await api.get(`/api/cases/client/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+
+      if (response.data.success) {
+        setAllCases(response.data.cases);
+      } else {
+        toast.error('Failed to fetch cases');
+      }
+    } catch (error) {
+      console.error('Error fetching cases:', error);
+      toast.error('Error loading cases');
+    }
+  };
+
+  // Add this useEffect to fetch cases when component mounts
+  useEffect(() => {
+    fetchAllCases();
+  }, []);
+
+  // Add this function to render all cases
+  const renderAllCases = () => {
+    if (!allCases.length) {
+      return (
+        <div className="alert alert-info">
+          No cases found.
+        </div>
+      );
+    }
+
+    return (
+      <div className="all-cases-section mt-4">
+        <h4>Your Cases</h4>
+        <div className="table-responsive">
+          <table className="table table-hover">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>IPC Sections</th>
+                <th>Documents</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allCases.map((caseItem) => (
+                <tr key={caseItem._id}>
+                  <td>{new Date(caseItem.createdAt).toLocaleDateString()}</td>
+                  <td>{caseItem.title}</td>
+                  <td>
+                    <span className={`badge bg-${getCaseTypeColor(caseItem.caseType)}`}>
+                      {caseItem.caseType}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`badge bg-${getStatusColor(caseItem.status)}`}>
+                      {caseItem.status || 'Pending'}
+                    </span>
+                  </td>
+                  <td>
+                    {caseItem.ipcSection && (
+                      <span className="badge bg-secondary me-1">
+                        {caseItem.ipcSection}
+                      </span>
+                    )}
+                    {caseItem.relatedSections?.map((section) => (
+                      <span key={section.section} className="badge bg-light text-dark me-1">
+                        {section.section}
+                      </span>
+                    ))}
+                  </td>
+                  <td>{caseItem.documents?.length || 0} files</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-info me-2"
+                      onClick={() => handleViewCaseDetails(caseItem._id)}
+                    >
+                      <FontAwesomeIcon icon={faInfoCircle} /> Details
+                    </button>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => handleFindLawyersButtonClick(caseItem)}
+                    >
+                      <FontAwesomeIcon icon={faUserTie} /> Find Lawyers
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // Add helper functions for badge colors
+  const getCaseTypeColor = (type) => {
+    const colors = {
+      criminal: 'danger',
+      civil: 'primary',
+      family: 'success',
+      corporate: 'warning',
+      other: 'secondary'
+    };
+    return colors[type] || 'secondary';
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'warning',
+      'in-progress': 'info',
+      resolved: 'success'
+    };
+    return colors[status] || 'secondary';
+  };
+
+  // Add this function to handle viewing case details
+  const handleViewCaseDetails = (caseId) => {
+    navigate(`/case/${caseId}`);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -1828,6 +2147,13 @@ const CaseDetails = () => {
 
             {/* Lawyer Suggestions Section */}
             {renderLawyerSuggestions()}
+
+            {renderAnalysisHistory()}
+
+            {renderAnalysisModal()}
+
+            {/* All Cases Section */}
+            {renderAllCases()}
           </div>
         </div>
         <Footer />

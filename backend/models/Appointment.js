@@ -47,6 +47,15 @@ const appointmentSchema = new mongoose.Schema({
       default: null
     }
   },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'completed', 'failed', 'not_initiated'],
+    default: 'not_initiated'
+  },
+  paymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Payment"
+  }
 });
 
 module.exports = mongoose.model("Appointment", appointmentSchema);

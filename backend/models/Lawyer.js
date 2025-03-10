@@ -59,8 +59,19 @@ const Lawyer = mongoose.models.Lawyer || mongoose.model('Lawyer', new mongoose.S
     default: "₹1000"
   },
   videoCallFees: {
-    type: String,
-    default: "₹800"
+    type: Number,
+    required: true,
+    default: 1000,
+    set: function(value) {
+      // If value is a string with ₹ symbol, convert it to number
+      if (typeof value === 'string') {
+        return Number(value.replace(/[^0-9.-]+/g, ""));
+      }
+      return value;
+    },
+    get: function(value) {
+      return value;
+    }
   },
   caseDetailsFees: {
     type: String,

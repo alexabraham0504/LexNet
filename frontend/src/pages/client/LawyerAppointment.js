@@ -7,6 +7,7 @@ import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
 import ClientSidebar from '../../components/sidebar/ClientSidebar';
 import { useAuth } from "../../context/AuthContext";
+import { loadScript } from '../../utils/razorpay';
 
 const BAD_WORDS = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'damn', 'cunt', 'dick', 'pussy', 
@@ -45,6 +46,10 @@ const LawyerAppointment = () => {
     proposedTime: ''
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [appointmentId, setAppointmentId] = useState(null);
 
   // Fetch lawyer details on component mount
   useEffect(() => {
@@ -315,21 +320,43 @@ const LawyerAppointment = () => {
     return Object.keys(errors).length === 0;
   };
 
+  const loadRazorpayScript = async () => {
+    const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+    if (!res) {
+      setPaymentError('Razorpay SDK failed to load. Please check your internet connection.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
+    setPaymentError(null);
+
+    // Add form validation before submission
+    if (!validateForm()) {
+      setError("Please fix the errors in the form before submitting");
+      return;
+    }
 
     try {
       const appointmentData = {
         lawyerId,
-        clientName: user?.fullName || user?.name,
-        clientEmail: user?.email,
-        clientPhone: user?.phone,
+        clientName: user?.fullName || user?.name || formData.clientName,
+        clientEmail: user?.email || formData.clientEmail,
+        clientPhone: user?.phone || formData.clientPhone,
         appointmentDate: selectedDate.toISOString().split("T")[0],
         appointmentTime: selectedTimeSlot,
         notes: formData.notes.trim(),
       };
+
+      // Check if required fields are present
+      if (!appointmentData.clientName || !appointmentData.clientEmail || !appointmentData.clientPhone) {
+        setError("Missing required client information. Please ensure your profile is complete.");
+        return;
+      }
 
       const response = await axios.post(
         "http://localhost:5000/api/appointments",
@@ -337,13 +364,11 @@ const LawyerAppointment = () => {
       );
 
       if (response.data.success) {
-        setSuccess(true);
-        setFormData({
-          ...formData,
-          notes: "",
-        });
-        setSelectedTimeSlot(null);
-        setSelectedDate(null);
+        // Store the appointment ID for payment processing
+        setAppointmentId(response.data.appointment._id);
+        
+        // Initiate payment
+        await initiatePayment(response.data.appointment._id);
       }
     } catch (error) {
       console.error("Error booking appointment:", error);
@@ -351,6 +376,106 @@ const LawyerAppointment = () => {
         error.response?.data?.message ||
           "Error occurred while booking appointment"
       );
+    }
+  };
+
+  const initiatePayment = async (appointmentId) => {
+    try {
+      setIsPaymentLoading(true);
+      
+      // Create order on the server
+      const orderResponse = await axios.post(
+        "http://localhost:5000/api/payments/create-order",
+        { appointmentId }
+      );
+      
+      if (!orderResponse.data.success) {
+        throw new Error(orderResponse.data.message || "Failed to create payment order");
+      }
+      
+      const orderData = orderResponse.data.data;
+      
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) return;
+      
+      // Configure Razorpay options
+      const options = {
+        key: "rzp_test_bD1Alu6Su7sKSO", // Hardcoded for now to ensure it works
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Lex Net Legal Services",
+        description: `Appointment with ${orderData.lawyerName} on ${new Date(orderData.appointmentDate).toLocaleDateString()} at ${orderData.appointmentTime}`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            // Verify payment on server
+            const verifyResponse = await axios.post(
+              "http://localhost:5000/api/payments/verify",
+              {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                appointmentId
+              }
+            );
+            
+            if (verifyResponse.data.success) {
+              setPaymentSuccess(true);
+              setSuccess(true);
+              
+              // Reset form data
+              setFormData({
+                ...formData,
+                notes: "",
+              });
+              setSelectedTimeSlot(null);
+              setSelectedDate(null);
+              
+              // Refresh bookings if needed
+              if (fetchMyBookings) {
+                fetchMyBookings();
+              }
+            } else {
+              setPaymentError("Payment verification failed. Please contact support.");
+            }
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            setPaymentError("Payment verification failed. Please contact support.");
+          } finally {
+            setIsPaymentLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.fullName || user?.name || formData.clientName,
+          email: user?.email || formData.clientEmail,
+          contact: user?.phone || formData.clientPhone
+        },
+        theme: {
+          color: "#1a237e"
+        },
+        modal: {
+          ondismiss: function() {
+            setIsPaymentLoading(false);
+            setPaymentError("Payment cancelled. You can try again.");
+          }
+        }
+      };
+      
+      // Create Razorpay instance and open payment modal
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      
+      // Handle payment modal close
+      razorpay.on('payment.failed', function (response) {
+        setPaymentError(`Payment failed: ${response.error.description}`);
+        setIsPaymentLoading(false);
+      });
+      
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      setPaymentError(error.response?.data?.message || error.message || "Failed to initiate payment");
+      setIsPaymentLoading(false);
     }
   };
 

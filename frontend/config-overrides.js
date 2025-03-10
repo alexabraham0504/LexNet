@@ -39,5 +39,8 @@ module.exports = function override(config, env) {
     })
   ];
 
+  // Ignore source-map-loader warnings
+  config.ignoreWarnings = [/Failed to parse source map/];
+
   return config;
 } 

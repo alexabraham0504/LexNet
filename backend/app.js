@@ -10,7 +10,6 @@ const casesRouter = require('./routes/cases');
 const http = require('http');
 const socketIo = require('socket.io');
 const lawyerRoutes = require('./routes/lawyerRoutes');
-const adminRoutes = require('./routes/adminRoutes');
 const lawyerRegistrationRoutes = require('./routes/lawyerRegistrationRoutes');
 
 

@@ -592,7 +592,7 @@ const FindLawyers = () => {
                   </div>
 
                   <div className="action-buttons-container">
-                    <div className="primary-actions">
+                    <div className="top-actions-row">
                       <Link 
                         to={`/lawyer-appointment/${selectedLawyer._id}`}
                         className="modal-btn appointment"
@@ -624,8 +624,7 @@ const FindLawyers = () => {
                         <span className="fee-label">{selectedLawyer.caseHandlingFees || "₹122"}</span>
                       </button>
                     </div>
-
-                    <div className="chat-action-container">
+                    <div className="bottom-actions-row">
                       <button 
                         className="modal-btn chat"
                         onClick={() => {
@@ -841,49 +840,58 @@ export default FindLawyers;
 
   .action-buttons-container {
     margin-top: 2rem;
-    padding: 0 1.5rem;
-  }
-
-  .primary-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    padding: 0 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
   }
 
-  .chat-action-container {
-    margin-top: 1.5rem;
+  .top-actions-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
     width: 100%;
   }
 
+  .bottom-actions-row {
+    width: 100%;
+  }
+
+  .bottom-actions-row .modal-btn {
+    max-width: 100%;
+  }
+
   .modal-btn {
-    padding: 1rem;
+    padding: 1rem 0.5rem;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
     transition: all 0.3s ease;
     width: 100%;
     color: white;
     text-align: center;
     text-decoration: none;
+    font-size: 0.9rem;
   }
 
   .modal-btn i {
     font-size: 1.2rem;
-    margin-right: 0.5rem;
+    margin-bottom: 0.3rem;
   }
 
   .fee-label {
     display: block;
     width: 100%;
     text-align: center;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    font-weight: 500;
   }
 
   .modal-btn.appointment {
@@ -915,6 +923,25 @@ export default FindLawyers;
     to {
       transform: translateY(0);
       opacity: 1;
+    }
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .top-actions-row {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .top-actions-row {
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+    
+    .modal-btn {
+      padding: 0.8rem 0.4rem;
     }
   }
 `}</style> 

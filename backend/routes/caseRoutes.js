@@ -1559,17 +1559,35 @@ router.get("/cases/:caseId/analysis-history", async (req, res) => {
   }
 });
 
-// Get cases by client ID
+// Get cases by client ID with analysis results
 router.get("/client/:clientId", isAuthenticated, async (req, res) => {
   try {
+    const clientId = req.params.clientId;
+    
+    // Fetch cases with populated analysis results
     const cases = await Case.find({
-      clientId: req.params.clientId,
+      clientId: clientId,
       isDeleted: false
-    }).sort({ createdAt: -1 });
+    })
+    .populate('lastAnalysisId')
+    .sort({ createdAt: -1 });
+
+    // Fetch analysis results for each case
+    const casesWithAnalysis = await Promise.all(cases.map(async (caseItem) => {
+      const analysisResults = await AnalysisResult.find({
+        userId: clientId,
+        fileName: { $in: caseItem.documents.map(doc => doc.fileName) }
+      }).sort({ createdAt: -1 });
+
+      return {
+        ...caseItem.toObject(),
+        analysisResults: analysisResults
+      };
+    }));
 
     res.json({
       success: true,
-      cases: cases
+      cases: casesWithAnalysis
     });
   } catch (error) {
     console.error("Error fetching client cases:", error);
@@ -1603,6 +1621,69 @@ router.get('/', isAuthenticated, async (req, res) => {
       success: false, 
       message: 'Error fetching cases',
       error: error.message 
+    });
+  }
+});
+
+// Add this route to save analysis results
+router.post('/save-analysis', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user._id; // Get from auth middleware
+    const caseData = req.body;
+
+    // Ensure we have a clientId
+    if (!caseData.clientId && !userId) {
+      throw new Error('User ID is required');
+    }
+
+    // Create new Case document
+    const newCase = new Case({
+      clientId: userId || caseData.clientId, // Use authenticated user ID or provided clientId
+      ...caseData
+    });
+
+    // Save the case
+    const savedCase = await newCase.save();
+
+    // Create AnalysisResult document
+    const analysisResult = new AnalysisResult({
+      userId: userId || caseData.clientId,
+      fileName: caseData.documents[0].fileName,
+      crime: caseData.analysisResults.parsedAnalysis.crimeIdentified,
+      sections: caseData.analysisResults.parsedAnalysis.ipcSections.map(section => ({
+        number: section.number,
+        description: section.description
+      })),
+      severity: 'Medium',
+      category: caseData.caseType,
+      documentText: caseData.documents[0].extractedText,
+      confidence: caseData.analysisResults.parsedAnalysis.confidence === 'High' ? 0.9 : 
+                 caseData.analysisResults.parsedAnalysis.confidence === 'Medium' ? 0.7 : 0.5
+    });
+
+    // Save the analysis result
+    const savedAnalysis = await analysisResult.save();
+
+    // Update the case with the analysis ID
+    savedCase.lastAnalysisId = savedAnalysis._id;
+    savedCase.analysisHistory.push({
+      results: caseData.analysisResults,
+      timestamp: new Date()
+    });
+    await savedCase.save();
+
+    res.json({
+      success: true,
+      case: savedCase,
+      analysis: savedAnalysis
+    });
+
+  } catch (error) {
+    console.error('Error saving analysis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error saving analysis results',
+      error: error.message
     });
   }
 });

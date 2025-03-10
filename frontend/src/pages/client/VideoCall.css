@@ -1,17 +1,36 @@
-.video-call-page {
+.app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+  padding: 24px 0;
+}
+
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 64px - 200px);
+  padding-top: 0 !important;
+}
+
+.video-call-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .video-call-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
-  position: relative;
-  overflow: hidden;
+  height: 100%;
 }
 
 .call-header {
@@ -60,7 +79,10 @@
 }
 
 .jitsi-container {
-  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  background-color: #1a1a1a;
   position: relative;
   overflow: hidden;
 }
@@ -148,6 +170,18 @@
     padding: 0.4rem 0.8rem;
     font-size: 0.9rem;
   }
+
+  .main-content {
+    padding: 16px 0;
+  }
+
+  .content-wrapper {
+    padding: 0 8px !important;
+  }
+  
+  .MuiButton-root.back-button {
+    margin: 8px 0;
+  }
 }
 
 .call-active-container {
@@ -204,4 +238,90 @@
   100% {
     transform: rotate(360deg);
   }
+}
+
+.payment-required-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+  text-align: center;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+}
+
+.payment-required-container h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.payment-button {
+  background-color: #1a237e;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.3s;
+}
+
+.payment-button:hover {
+  background-color: #0d1642;
+}
+
+.payment-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #dc3545;
+  margin-top: 1rem;
+}
+
+/* Animation for payment container */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.MuiPaper-root {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Hover effects */
+.MuiButton-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.MuiChip-root {
+  transition: all 0.3s ease;
+}
+
+.MuiChip-root:hover {
+  transform: scale(1.05);
+}
+
+/* Add these styles for the back button */
+.MuiButton-root.back-button {
+  transition: all 0.3s ease;
+}
+
+.MuiButton-root.back-button:hover {
+  transform: translateX(-5px);
 } 

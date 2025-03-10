@@ -9,6 +9,7 @@ import {
   faGavel,
   faFileAlt,
   faMessage,
+  faReceipt,
 } from "@fortawesome/free-solid-svg-icons";
 import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
@@ -19,6 +20,7 @@ const ClientDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [statusUpdates, setStatusUpdates] = useState([]);
+  const [receipts, setReceipts] = useState([]);
   const [userId, setUserId] = useState(sessionStorage.getItem("userid"));
   const navigate = useNavigate();
 
@@ -27,6 +29,7 @@ const ClientDashboard = () => {
       try {
         const token = sessionStorage.getItem("token");
         const userId = sessionStorage.getItem("userid");
+        const email = sessionStorage.getItem("email");
         if (!token || !userId) {
           throw new Error("No authentication token found");
         }
@@ -87,15 +90,28 @@ const ClientDashboard = () => {
           setMessages([]);
         }
 
+          // try {
+          //   const documentsResponse = await axios.get(
+          //     "http://localhost:5000/api/documents",
+          //     config
+          //   );
+          //   setDocuments(documentsResponse.data || []);
+          // } catch (error) {
+          //   console.warn("Documents endpoint error:", error);
+          //   setDocuments([]);
+          // }
+
         try {
-          const documentsResponse = await axios.get(
-            "http://localhost:5000/api/documents",
-            config
-          );
-          setDocuments(documentsResponse.data || []);
+          if (email) {
+            const receiptsResponse = await axios.get(
+              `http://localhost:5000/api/payments/receipts/client/${email}`,
+              config
+            );
+            setReceipts(receiptsResponse.data.data.receipts || []);
+          }
         } catch (error) {
-          console.warn("Documents endpoint error:", error);
-          setDocuments([]);
+          console.warn("Receipts endpoint error:", error);
+          setReceipts([]);
         }
 
       } catch (error) {
@@ -118,6 +134,10 @@ const ClientDashboard = () => {
         caseDetails: null
       }
     });
+  };
+
+  const handleViewReceipts = () => {
+    navigate('/client/payment-receipts');
   };
 
   return (
@@ -166,6 +186,17 @@ const ClientDashboard = () => {
                   <FontAwesomeIcon icon={faFileAlt} className="card-icon" />
                   <h3>Case Management</h3>
                   <p>View and manage your legal cases</p>
+                </div>
+              </Link>
+              
+              <Link 
+                to="/client/payment-receipts" 
+                className="action-card"
+              >
+                <div className="card-content">
+                  <FontAwesomeIcon icon={faReceipt} className="card-icon" />
+                  <h3>Payment Receipts</h3>
+                  <p>View your payment history and receipts</p>
                 </div>
               </Link>
             </div>
@@ -252,7 +283,7 @@ const ClientDashboard = () => {
 
           .action-cards {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
             margin-top: auto;
             animation: fadeInUp 1s ease 0.3s forwards;
@@ -309,7 +340,7 @@ const ClientDashboard = () => {
             }
           }
 
-          @media (max-width: 992px) {
+          @media (max-width: 1200px) {
             .action-cards {
               grid-template-columns: repeat(2, 1fr);
             }

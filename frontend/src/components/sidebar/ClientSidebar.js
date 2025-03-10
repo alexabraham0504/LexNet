@@ -8,13 +8,15 @@ import {
   faChevronLeft,
   faChevronRight,
   faChevronDown,
-  faHome
+  faHome,
+  faReceipt
 } from '@fortawesome/free-solid-svg-icons';
 
 const ClientSidebar = ({ onToggle }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const location = useLocation();
   const isDashboard = location.pathname === '/client-dashboard';
+  const userId = sessionStorage.getItem("userid");
 
   const handleToggle = () => {
     setIsCollapsed(!isCollapsed);
@@ -63,8 +65,11 @@ const ClientSidebar = ({ onToggle }) => {
           <Link to="/IPC" className="collapsed-item" title="IPC">
             <FontAwesomeIcon icon={faGavel} />
           </Link>
-          <Link to="/case-details/${userId}`" className="collapsed-item" title="Case Details">
+          <Link to={`/case-details/${userId}`} className="collapsed-item" title="Case Details">
             <FontAwesomeIcon icon={faFileAlt} />
+          </Link>
+          <Link to="/client/payment-receipts" className="collapsed-item" title="Payment Receipts">
+            <FontAwesomeIcon icon={faReceipt} />
           </Link>
         </div>
       )}
@@ -78,12 +83,12 @@ const ClientSidebar = ({ onToggle }) => {
         </div>
 
         <div className="sidebar-menu">
-          <Link to="/client-dashboard" className="menu-item">
+          <Link to="/clientdashboard" className="menu-item">
             <FontAwesomeIcon icon={faHome} className="menu-icon" />
             <span className="menu-text">Dashboard</span>
           </Link>
           
-          <Link to="/lawyer-search" className="menu-item">
+          <Link to="/client/lawyer-search" className="menu-item">
             <FontAwesomeIcon icon={faSearch} className="menu-icon" />
             <span className="menu-text">Search</span>
           </Link>
@@ -93,9 +98,14 @@ const ClientSidebar = ({ onToggle }) => {
             <span className="menu-text">IPC</span>
           </Link>
           
-          <Link to="/lawyeravailabilityclient" className="menu-item">
+          <Link to={`/case-details/${userId}`} className="menu-item">
             <FontAwesomeIcon icon={faFileAlt} className="menu-icon" />
             <span className="menu-text">Case Details</span>
+          </Link>
+          
+          <Link to="/client/payment-receipts" className="menu-item">
+            <FontAwesomeIcon icon={faReceipt} className="menu-icon" />
+            <span className="menu-text">Payment Receipts</span>
           </Link>
         </div>
 

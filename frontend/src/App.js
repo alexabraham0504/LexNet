@@ -36,6 +36,8 @@ import LawyerAppointment from "./pages/client/LawyerAppointment";
 import CaseDetails from "./pages/client/CaseDetails";
 import DeletedCases from './pages/client/DeletedCases';
 import LawyerProfile from './pages/client/LawyerProfile';
+import PaymentReceiptsList from "./pages/client/PaymentReceiptsList";
+import PaymentReceipt from "./pages/client/PaymentReceipt";
 
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
@@ -105,6 +107,8 @@ function App() {
           <Route path="/ipc-section/:sectionNumber" element={<IPCSectionDetails />} />
           <Route path="/client/lawyer-profile/:lawyerId" element={<LawyerProfile />} />
           <Route path="/video-call/:roomId" element={<VideoCall />} />
+          <Route path="/client/payment-receipts" element={<PaymentReceiptsList />} />
+          <Route path="/client/payment-receipt/:receiptId" element={<PaymentReceipt />} />
 
           {/* Lawyer Pages */}
           <Route path="/lawyerdashboard" element={

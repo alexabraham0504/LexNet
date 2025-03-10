@@ -4,325 +4,596 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/navbar/navbar-client';
+import Footer from '../../components/footer/footer-client';
+import ClientSidebar from '../../components/sidebar/ClientSidebar';
 import './VideoCall.css';
+import { loadScript } from '../../utils/razorpay';
+// Material UI imports
+import { 
+  Box, 
+  Paper, 
+  Typography, 
+  Button, 
+  CircularProgress,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Container
+} from '@mui/material';
+import {
+  VideocamOutlined,
+  PaymentOutlined,
+  CheckCircleOutline,
+  ErrorOutline,
+  ArrowBack
+} from '@mui/icons-material';
 
 const VideoCall = () => {
   const { roomId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [callStatus, setCallStatus] = useState('connecting');
+  const [callStatus, setCallStatus] = useState('pending');
   const [meetingDetails, setMeetingDetails] = useState(null);
   const [deviceError, setDeviceError] = useState(null);
   const [jitsiWindow, setJitsiWindow] = useState(null);
+  const [isPaymentComplete, setIsPaymentComplete] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
 
-  // Get meeting details from location state
-  useEffect(() => {
-    if (location.state) {
-      setMeetingDetails(location.state);
-      setCallStatus('connecting');
-      
-      // If autoJoin is true, open Jitsi with auto-filled name
-      if (location.state.autoJoin) {
-        // Get the user's name from various possible sources
-        let displayName;
-        
-        if (location.state.isLawyer) {
-          // For lawyer, use the name from location state or user context
-          displayName = location.state.lawyerName || 
-                        user?.fullName || 
-                        user?.name || 
-                        sessionStorage.getItem('userName') || 
-                        localStorage.getItem('userName') || 
-                        'Lawyer';
-        } else {
-          // For client, use the name from location state or user context
-          displayName = location.state.clientName || 
-                        user?.fullName || 
-                        user?.name || 
-                        sessionStorage.getItem('userName') || 
-                        localStorage.getItem('userName') || 
-                        'Client';
-        }
-        
-        // Encode the display name for URL
-        const encodedDisplayName = encodeURIComponent(displayName);
-        
-        const roomName = location.state.roomName;
-        
-        // Create URL with properly encoded name
-        const videoServiceUrl = `https://meet.jit.si/${roomName}#userInfo.displayName="${encodedDisplayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
-        
-        console.log("Opening video call with name:", displayName);
-        console.log("Video call URL:", videoServiceUrl);
-        
-        // Open in new window with specific features to avoid browser restrictions
-        const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800,noopener,noreferrer');
-        setJitsiWindow(videoWindow);
-        
-        if (videoWindow) {
-          // Set up a listener for when the window closes
-          const checkWindowClosed = setInterval(() => {
-            if (videoWindow.closed) {
-              clearInterval(checkWindowClosed);
-              setCallStatus('ended');
-              toast.info('Video call window was closed');
-            }
-          }, 1000);
-          
-          setCallStatus('joined');
-          toast.success('Video call opened in a new window');
-        } else {
-          toast.error('Failed to open video call. Please check if popup blockers are enabled.');
-          setCallStatus('error');
-        }
-      } else {
-        // Open Jitsi in a new window
-        openJitsiDirectly();
-      }
-    } else {
-      // If no state is passed, try to fetch meeting details
-      axios.get(`http://localhost:5000/api/meetings/room/${roomId}`, {
-        headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-        }
-      })
-      .then(response => {
-        if (response.data.success) {
-          setMeetingDetails(response.data.meeting);
-          setCallStatus(response.data.meeting.status);
-          // Open Jitsi in a new window
-          openJitsiDirectly();
-        } else {
-          toast.error('Failed to retrieve meeting details');
-          setCallStatus('error');
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching meeting details:', error);
-        toast.error('Error retrieving meeting information');
-        setCallStatus('error');
-      });
-    }
-    
-    // Cleanup function
-    return () => {
-      if (jitsiWindow && !jitsiWindow.closed) {
-        jitsiWindow.close();
-      }
-    };
-  }, [roomId, location.state, user]);
-
-  // Open Jitsi directly in a new window with no security restrictions
-  const openJitsiDirectly = () => {
+  // Function to fetch meeting details and open video call
+  const fetchMeetingDetails = async () => {
     try {
-      const isLawyer = location.state?.isLawyer || false;
-      
-      // Get the user's name from various possible sources
-      let displayName;
-      
-      if (isLawyer) {
-        // For lawyer, use the name from location state or user context
-        displayName = location.state?.lawyerName || 
-                      user?.fullName || 
-                      user?.name || 
-                      sessionStorage.getItem('userName') || 
-                      localStorage.getItem('userName') || 
-                      'Lawyer';
-      } else {
-        // For client, use the name from location state or user context
-        displayName = location.state?.clientName || 
-                      user?.fullName || 
-                      user?.name || 
-                      sessionStorage.getItem('userName') || 
-                      localStorage.getItem('userName') || 
-                      'Client';
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        throw new Error("Authentication required");
       }
-      
-      // Encode the display name for URL
-      const encodedDisplayName = encodeURIComponent(displayName);
-      
-      // Use roomId or roomName from location state
-      const roomIdentifier = location.state?.roomName || roomId;
-      
-      console.log("Opening video call with name:", displayName);
-      
-      // Create URL with properly encoded name
-      const directJoinUrl = `https://meet.jit.si/${roomIdentifier}#userInfo.displayName="${encodedDisplayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
-      
-      // Open in a new window with specific features
-      const newWindow = window.open(directJoinUrl, 'jitsiMeeting', 'width=1200,height=800,noopener,noreferrer');
-      setJitsiWindow(newWindow);
-      
-      if (newWindow) {
-        // Set up a listener for when the window closes
-        const checkWindowClosed = setInterval(() => {
-          if (newWindow.closed) {
-            clearInterval(checkWindowClosed);
-            setCallStatus('ended');
-            toast.info('Video call window was closed');
+
+      const response = await axios.get(
+        `http://localhost:5000/api/meetings/room/${roomId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        }, 1000);
-        
-        setCallStatus('joined');
-        toast.success('Video call opened in a new window');
+        }
+      );
+
+      if (response.data.success) {
+        setMeetingDetails(response.data.meeting);
+        setCallStatus('connecting');
+        // Open the video call window
+        openSimplifiedJitsi();
       } else {
-        toast.error('Failed to open video call. Please check if popup blockers are enabled.');
+        toast.error('Failed to retrieve meeting details');
         setCallStatus('error');
       }
     } catch (error) {
-      console.error('Error opening Jitsi window:', error);
-      toast.error('Failed to open video call: ' + error.message);
+      console.error('Error fetching meeting details:', error);
+      toast.error('Error retrieving meeting information');
       setCallStatus('error');
     }
   };
 
-  // Fallback method to join directly via URL
-  const joinViaDirectLink = () => {
+  // Function to open Jitsi window
+  const openSimplifiedJitsi = () => {
     try {
-      // Use roomId or roomName from location state
-      const roomIdentifier = location.state?.roomName || roomId;
+      const domain = 'meet.jit.si';
       
-      // Simplified direct URL without complex parameters
-      const directUrl = `https://meet.jit.si/${roomIdentifier}`;
+      // Create URL with parameters
+      const clientName = encodeURIComponent(user?.fullName || user?.name || 'Client');
+      const encodedRoomId = encodeURIComponent(roomId);
       
-      // Open in a new tab
-      window.open(directUrl, '_blank', 'noopener,noreferrer');
-      toast.info('Opened Jitsi directly in a new tab');
+      // Create a more compatible URL format with required parameters
+      const url = `https://${domain}/${encodedRoomId}#` + 
+        `userInfo.displayName="${clientName}"&` +
+        `config.prejoinPageEnabled=false&` +
+        `config.startWithAudioMuted=false&` +
+        `config.startWithVideoMuted=false&` +
+        `config.disableDeepLinking=true&` +
+        `config.disableInitialGUM=false&` +
+        `config.enableWelcomePage=false&` +
+        `config.enableClosePage=false&` +
+        `interfaceConfig.MOBILE_APP_PROMO=false&` +
+        `interfaceConfig.SHOW_JITSI_WATERMARK=false&` +
+        `interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false`;
+
+      // First try to open in new window with all required features
+      let newWindow = window.open(
+        url,
+        '_blank',
+        'width=1200,height=800,menubar=no,toolbar=no,location=yes,status=no,resizable=yes'
+      );
+      
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        // If pop-up blocked, show alternative options
+        setCallStatus('blocked');
+        
+        // Update the UI to show direct link option
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" color="warning.main" gutterBottom>
+              Pop-up Blocked
+            </Typography>
+            <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 1, mb: 2 }}>
+              <Typography paragraph>
+                Choose one of these options to join the video call:
+              </Typography>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Option 1: Enable pop-ups
+                </Typography>
+                <ol style={{ textAlign: 'left', mb: 2 }}>
+                  <li>Click the pop-up blocked icon in your browser's address bar</li>
+                  <li>Allow pop-ups for this site</li>
+                  <li>Click the "Try Again" button below</li>
+                </ol>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Option 2: Open directly
+                </Typography>
+                <Typography paragraph>
+                  Click the button below to open the video call in a new tab:
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<VideocamOutlined />}
+                  sx={{ mb: 2 }}
+                  onClick={() => {
+                    setCallStatus('joined');
+                    toast.success('Opening video call in new tab');
+                  }}
+                >
+                  Open in New Tab
+                </Button>
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                const win = window.open(url, '_blank', 'width=1200,height=800');
+                if (win) {
+                  setJitsiWindow(win);
+                  setCallStatus('joined');
+                }
+              }}
+              startIcon={<VideocamOutlined />}
+              sx={{ mt: 2, mr: 2 }}
+            >
+              Try Again
+            </Button>
+          </Box>
+        );
+      }
+
+      // If window opened successfully
+      setJitsiWindow(newWindow);
+      setCallStatus('joined');
+      
+      // Monitor window close
+      const checkWindow = setInterval(() => {
+        if (newWindow.closed) {
+          clearInterval(checkWindow);
+          setCallStatus('ended');
+          toast.info('Video call ended');
+        }
+      }, 1000);
+
     } catch (error) {
-      console.error('Error opening direct link:', error);
-      toast.error('Failed to open direct link: ' + error.message);
+      console.error('Error opening video call:', error);
+      setCallStatus('error');
+      toast.error('Failed to start video call');
     }
   };
 
-  const handleEndCall = () => {
-    if (jitsiWindow && !jitsiWindow.closed) {
-      jitsiWindow.close();
-    }
-    
-    // Update meeting status to completed
-    if (meetingDetails?.meetingId) {
-      axios.post(
-        'http://localhost:5000/api/meetings/complete',
-        { meetingId: meetingDetails.meetingId },
+  // Initialize by checking payment status
+  useEffect(() => {
+    const checkPaymentStatus = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+        
+        const response = await axios.get(
+          `http://localhost:5000/api/payments/status/video-call/${roomId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        if (response.data.success && response.data.isPaid) {
+          setIsPaymentComplete(true);
+          fetchMeetingDetails();
+        }
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+      }
+    };
+
+    checkPaymentStatus();
+  }, [roomId]);
+
+  const initiateVideoCallPayment = async () => {
+    try {
+      setIsPaymentLoading(true);
+      setPaymentError(null);
+
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      // Load Razorpay script
+      const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+      if (!res) {
+        throw new Error("Razorpay SDK failed to load");
+      }
+
+      // Create order
+      const orderResponse = await axios.post(
+        "http://localhost:5000/api/payments/create-video-call-order",
+        {
+          roomId,
+          clientId: user._id,
+          clientEmail: user.email
+        },
         {
           headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         }
-      ).catch(error => {
-        console.error('Error completing meeting:', error);
-      });
+      );
+
+      if (!orderResponse.data.success) {
+        throw new Error(orderResponse.data.message || "Failed to create payment order");
+      }
+
+      const { order, amount } = orderResponse.data;
+
+      const options = {
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: "INR",
+        name: "Lex Net Legal Services",
+        description: `Video Call Consultation (₹${amount})`,
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            const verifyResponse = await axios.post(
+              "http://localhost:5000/api/payments/verify-video-call",
+              {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                roomId
+              },
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              }
+            );
+
+            if (verifyResponse.data.success) {
+              setIsPaymentComplete(true);
+              toast.success("Payment successful! Starting video call...");
+              fetchMeetingDetails();
+            }
+          } catch (error) {
+            setPaymentError("Payment verification failed");
+            toast.error("Payment verification failed");
+          }
+        },
+        prefill: {
+          name: user?.fullName || user?.name,
+          email: user?.email,
+          contact: user?.phone
+        },
+        theme: {
+          color: "#1a237e"
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      setPaymentError(error.message);
+      toast.error(error.message);
+    } finally {
+      setIsPaymentLoading(false);
     }
-    
-    setCallStatus('ended');
-    navigate(-1);
   };
 
-  if (!user) {
+  const handleBack = () => {
+    // Show confirmation if in a call
+    if (isPaymentComplete && callStatus === 'joined') {
+      if (window.confirm('Are you sure you want to leave the video call?')) {
+        navigate(-1);
+      }
+    } else {
+      navigate(-1);
+    }
+  };
+
+  // Show payment screen if payment is not complete
+  if (!isPaymentComplete) {
     return (
-      <div className="video-call-container">
-        <div className="error-message">
-          <h2>Authentication Required</h2>
-          <p>Please log in to join the video call.</p>
-          <button 
-            className="btn-primary"
-            onClick={() => navigate('/login')}
-          >
-            Go to Login
-          </button>
+      <div className="app-container">
+        <Navbar />
+        <div className="main-content">
+          <ClientSidebar />
+          <Container className="content-wrapper">
+            <Box sx={{ mb: 3, ml: 2 }}>
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={handleBack}
+                sx={{
+                  color: '#1a237e',
+                  '&:hover': {
+                    backgroundColor: 'rgba(26, 35, 126, 0.04)'
+                  }
+                }}
+              >
+                Back
+              </Button>
+            </Box>
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              minHeight="calc(70vh - 48px)"
+            >
+              <Paper 
+                elevation={3}
+                sx={{
+                  p: 4,
+                  maxWidth: 500,
+                  width: '100%',
+                  textAlign: 'center',
+                  borderRadius: 2,
+                  background: 'linear-gradient(to bottom, #ffffff, #f8f9fa)'
+                }}
+              >
+                <VideocamOutlined 
+                  sx={{ 
+                    fontSize: 60, 
+                    color: '#1a237e',
+                    mb: 2
+                  }} 
+                />
+                <Typography 
+                  variant="h4" 
+                  component="h1" 
+                  gutterBottom
+                  sx={{ 
+                    color: '#1a237e',
+                    fontWeight: 600
+                  }}
+                >
+                  Payment Required
+                </Typography>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ mb: 4, color: '#666' }}
+                >
+                  Please complete the payment to start your video consultation
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ my: 3 }}>
+                  <Chip
+                    icon={<PaymentOutlined />}
+                    label="Secure Payment"
+                    color="primary"
+                    sx={{ mb: 2 }}
+                  />
+                </Box>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={initiateVideoCallPayment}
+                  disabled={isPaymentLoading}
+                  sx={{
+                    backgroundColor: '#1a237e',
+                    '&:hover': {
+                      backgroundColor: '#0d1642',
+                    },
+                    py: 1.5,
+                    px: 4,
+                    borderRadius: 2
+                  }}
+                  startIcon={isPaymentLoading ? <CircularProgress size={20} color="inherit" /> : <PaymentOutlined />}
+                >
+                  {isPaymentLoading ? "Processing..." : "Pay Now"}
+                </Button>
+                {paymentError && (
+                  <Box 
+                    sx={{ 
+                      mt: 2,
+                      p: 2,
+                      bgcolor: '#ffebee',
+                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }}
+                  >
+                    <ErrorOutline color="error" />
+                    <Typography color="error">{paymentError}</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Box>
+          </Container>
         </div>
+        <Footer />
       </div>
     );
   }
 
+  // Video call interface
   return (
-    <div className="video-call-page">
+    <div className="app-container">
       <Navbar />
-      <div className="video-call-container">
-        {callStatus === 'error' ? (
-          <div className="error-message">
-            <h2>Error Joining Call</h2>
-            <p>There was a problem connecting to the video call.</p>
-            <div className="button-group">
-              <button 
-                className="btn-primary"
-                onClick={openJitsiDirectly}
-              >
-                Try Again
-              </button>
-              <button 
-                className="btn-secondary"
-                onClick={joinViaDirectLink}
-              >
-                Join Directly
-              </button>
-              <button 
-                className="btn-secondary"
-                onClick={() => navigate(-1)}
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
-        ) : callStatus === 'ended' ? (
-          <div className="call-ended-message">
-            <h2>Call Ended</h2>
-            <p>The video call has ended.</p>
-            <button 
-              className="btn-primary"
-              onClick={() => navigate(-1)}
+      <div className="main-content">
+        <ClientSidebar />
+        <Container className="content-wrapper">
+          <Box sx={{ mb: 3, ml: 2 }}>
+            <Button
+              startIcon={<ArrowBack />}
+              onClick={handleBack}
+              sx={{
+                color: '#1a237e',
+                '&:hover': {
+                  backgroundColor: 'rgba(26, 35, 126, 0.04)'
+                }
+              }}
             >
-              Go Back
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="call-header">
-              <h2>Video Call with {meetingDetails?.lawyerName || 'Lawyer'}</h2>
-              <div className="call-controls">
-                <span className="call-status">
-                  {callStatus === 'connecting' ? 'Connecting...' : 
-                   callStatus === 'joined' ? 'Connected (in new window)' : callStatus}
-                </span>
-                <button 
-                  className="end-call-btn"
-                  onClick={handleEndCall}
+              Back
+            </Button>
+          </Box>
+          <Card 
+            elevation={3}
+            sx={{ 
+              p: 4,
+              maxWidth: 600,
+              mx: 'auto',
+              textAlign: 'center',
+              borderRadius: 2
+            }}
+          >
+            <Box sx={{ mb: 3 }}>
+              <VideocamOutlined 
+                sx={{ 
+                  fontSize: 60, 
+                  color: '#1a237e',
+                  mb: 2
+                }} 
+              />
+              <Typography variant="h5" gutterBottom>
+                Video Call with {meetingDetails?.lawyerName || 'Lawyer'}
+              </Typography>
+              <Chip
+                label={
+                  callStatus === 'connecting' ? 'Connecting...' : 
+                  callStatus === 'joined' ? 'Call in Progress' : 
+                  callStatus === 'blocked' ? 'Pop-up Blocked' :
+                  callStatus === 'ended' ? 'Call Ended' :
+                  callStatus
+                }
+                color={
+                  callStatus === 'joined' ? 'success' : 
+                  callStatus === 'blocked' ? 'warning' :
+                  callStatus === 'connecting' ? 'info' : 
+                  'default'
+                }
+                icon={<VideocamOutlined />}
+                sx={{ mb: 2 }}
+              />
+            </Box>
+            
+            {callStatus === 'blocked' && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="h6" color="warning.main" gutterBottom>
+                  Pop-up Blocked
+                </Typography>
+                <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 1, mb: 2 }}>
+                  <Typography paragraph>
+                    Choose one of these options to join the video call:
+                  </Typography>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                      Option 1: Enable pop-ups
+                    </Typography>
+                    <ol style={{ textAlign: 'left', mb: 2 }}>
+                      <li>Click the pop-up blocked icon in your browser's address bar</li>
+                      <li>Allow pop-ups for this site</li>
+                      <li>Click the "Try Again" button below</li>
+                    </ol>
+                  </Box>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                      Option 2: Open directly
+                    </Typography>
+                    <Typography paragraph>
+                      Click the button below to open the video call in a new tab:
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      href={`https://meet.jit.si/${roomId}?jwt=${sessionStorage.getItem('token')}&userInfo.displayName=${encodeURIComponent(user?.fullName || user?.name || 'Client')}#config.prejoinPageEnabled=false`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      startIcon={<VideocamOutlined />}
+                      sx={{ mb: 2 }}
+                      onClick={() => {
+                        setCallStatus('joined');
+                        toast.success('Opening video call in new tab');
+                      }}
+                    >
+                      Open in New Tab
+                    </Button>
+                  </Box>
+                </Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={openSimplifiedJitsi}
+                  startIcon={<VideocamOutlined />}
+                  sx={{ mt: 2 }}
                 >
-                  End Call
-                </button>
-              </div>
-            </div>
-            <div className="call-active-container">
-              <div className="call-info">
-                <h3>Video Call is Active</h3>
-                <p>Your video call is currently running in a separate window.</p>
-                <p>If you closed the window accidentally, you can rejoin the call by clicking the button below.</p>
-                <div className="button-group">
-                  <button 
-                    className="btn-primary"
-                    onClick={openJitsiDirectly}
-                  >
-                    Rejoin Call
-                  </button>
-                  <button 
-                    className="btn-secondary"
-                    onClick={joinViaDirectLink}
-                  >
-                    Join Directly
-                  </button>
-                  <button 
-                    className="btn-secondary"
-                    onClick={handleEndCall}
-                  >
-                    End Call
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+                  Try Again
+                </Button>
+              </Box>
+            )}
+
+            {callStatus === 'error' && (
+              <Box sx={{ mt: 2, color: 'error.main' }}>
+                <ErrorOutline sx={{ fontSize: 40, mb: 1 }} />
+                <Typography>
+                  Failed to start video call. Please try again.
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={openSimplifiedJitsi}
+                  sx={{ mt: 2 }}
+                >
+                  Retry
+                </Button>
+              </Box>
+            )}
+
+            {callStatus === 'ended' && (
+              <Box sx={{ mt: 2 }}>
+                <Typography>
+                  The video call has ended. Thank you for using our service.
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate(-1)}
+                  sx={{ mt: 2 }}
+                >
+                  Return to Dashboard
+                </Button>
+              </Box>
+            )}
+          </Card>
+        </Container>
       </div>
+      <Footer />
     </div>
   );
 };
