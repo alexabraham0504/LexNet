@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarCheck,
-  faFileCircleCheck,
-  faCommentsDollar,
+  // faFileCircleCheck,  // Commented out since no longer used
+  // faCommentsDollar,  // Commented out since no longer used
   // faGavel,
 } from "@fortawesome/free-solid-svg-icons";
 import Footer from "../components/footer/home-footer";
@@ -91,18 +91,7 @@ const Home = () => {
             </div>
             {/* small screens buttons */}
             <div className="mobile-btn d-md-none d-flex justify-content-between pt-2">
-              {/* <Link to="/contact">
-                <button
-                  id="small"
-                  className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1"
-                  aria-label="Schedule Appointment"
-                >
-                  <span className="p-3">
-                    <FontAwesomeIcon icon={faCalendarCheck} size="1x" />
-                  </span>
-                  Schedule Appointment
-                </button>
-              </Link> */}
+              {/* Commenting out Request Evaluation button
               <Link to="/contact">
                 <button
                   className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1"
@@ -114,17 +103,7 @@ const Home = () => {
                   Request Evaluation
                 </button>
               </Link>
-              <Link to="/useful-info">
-                <button
-                  className="btn btn-outline-dark type-button p-2 btn-md"
-                  aria-label="Fees"
-                >
-                  <span className="p-3">
-                    <FontAwesomeIcon icon={faCommentsDollar} size="1x" />
-                  </span>
-                  Fees
-                </button>
-              </Link>
+              */}
             </div>
           </div>
         </div>
