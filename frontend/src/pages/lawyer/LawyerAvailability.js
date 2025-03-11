@@ -12,30 +12,49 @@ import LawyerIconPanel from '../../components/LawyerIconPanel';
 const LawyerAvailability = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [timeSlots, setTimeSlots] = useState([]);
+  const [videoCallTimeSlots, setVideoCallTimeSlots] = useState([]);
   const [newTimeSlot, setNewTimeSlot] = useState("");
   const [existingAvailability, setExistingAvailability] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [appointments, setAppointments] = useState([]);
   const [rescheduleRequests, setRescheduleRequests] = useState([]);
   const [validationError, setValidationError] = useState("");
+  const [activeTab, setActiveTab] = useState('inPerson'); // 'inPerson' or 'videoCall'
 
   // Fetch existing availability when date is selected
   useEffect(() => {
     const fetchAvailabilityAndAppointments = async () => {
-      if (!selectedDate) return;
+      if (!selectedDate) {
+        console.log("FETCH: No date selected, resetting slots");
+        setTimeSlots([]);
+        setVideoCallTimeSlots([]);
+        setExistingAvailability(null);
+        return;
+      }
 
       try {
         setIsLoading(true);
-        const lawyerEmail =
-          localStorage.getItem("userEmail") || sessionStorage.getItem("email");
+        // Reset time slots FIRST before fetching new ones
+        setTimeSlots([]);
+        setVideoCallTimeSlots([]);
+        setExistingAvailability(null);
+
+        const lawyerEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("email");
         const userResponse = await axios.get(
           `http://localhost:5000/api/lawyers/user-details/${lawyerEmail}`
         );
         const lawyerId = userResponse.data._id;
 
-        const formattedDate = selectedDate.toISOString().split("T")[0];
-        
-        // Fetch availability
+        // Format the date correctly for the API call
+        // Ensure we're using the local date's year, month, and day
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+
+        console.log("FETCH: Selected date:", selectedDate);
+        console.log("FETCH: Formatted date for API:", formattedDate);
+
         const availabilityResponse = await axios.get(
           `http://localhost:5000/api/lawyer/availability/${lawyerId}/${formattedDate}`
         );
@@ -43,48 +62,59 @@ const LawyerAvailability = () => {
         if (availabilityResponse.data.availability) {
           const availability = availabilityResponse.data.availability;
           
-          // Filter out past time slots if it's today
-          const isToday = selectedDate.toDateString() === new Date().toDateString();
-          if (isToday) {
-            const currentHour = new Date().getHours();
-            const filteredSlots = availability.timeSlots.filter(slot => {
-              const slotHour = parseInt(slot.split(':')[0]);
-              return slotHour > currentHour;
-            });
-            setTimeSlots(filteredSlots);
-          } else {
-            setTimeSlots(availability.timeSlots);
-          }
+          // Compare dates using local date strings to avoid timezone issues
+          const availabilityDate = new Date(availability.date);
+          const isCorrectDate = availabilityDate.toDateString() === selectedDate.toDateString();
           
-          setExistingAvailability(availability);
+          console.log("FETCH: Availability date:", availabilityDate);
+          console.log("FETCH: Selected date:", selectedDate);
+          console.log("FETCH: Dates match:", isCorrectDate);
+
+          if (isCorrectDate) {
+            // Filter out past time slots if it's today
+            const isToday = selectedDate.toDateString() === new Date().toDateString();
+            if (isToday) {
+              const currentHour = new Date().getHours();
+              const filteredSlots = availability.timeSlots.filter(slot => {
+                const slotHour = parseInt(slot.split(':')[0]);
+                return slotHour > currentHour;
+              });
+              setTimeSlots(filteredSlots);
+
+              const filteredVideoSlots = availability.videoCallTimeSlots?.filter(slot => {
+                const slotHour = parseInt(slot.split(':')[0]);
+                return slotHour > currentHour;
+              }) || [];
+              setVideoCallTimeSlots(filteredVideoSlots);
+            } else {
+              setTimeSlots(availability.timeSlots || []);
+              setVideoCallTimeSlots(availability.videoCallTimeSlots || []);
+            }
+            setExistingAvailability(availability);
+          } else {
+            console.log("FETCH: Date mismatch, resetting slots");
+            setTimeSlots([]);
+            setVideoCallTimeSlots([]);
+            setExistingAvailability(null);
+          }
         } else {
-          setExistingAvailability(null);
-          setTimeSlots([]);
+          console.log("FETCH: No availability found for date:", formattedDate);
         }
 
-        // Fetch appointments for the selected date
+        // Fetch and filter appointments for the exact selected date
         const appointmentsResponse = await axios.get(
           `http://localhost:5000/api/appointments/lawyer/${lawyerId}`
         );
 
-        // Filter appointments for the selected date
-        const selectedDateAppointments = appointmentsResponse.data.appointments.filter(
-          (appointment) => {
-            const appointmentDate = new Date(appointment.appointmentDate).toISOString().split('T')[0];
-            return appointmentDate === formattedDate;
-          }
-        );
+        const filteredAppointments = appointmentsResponse.data.appointments.filter(apt => {
+          const aptDate = new Date(apt.appointmentDate);
+          return aptDate.toDateString() === selectedDate.toDateString();
+        });
 
-        setAppointments(selectedDateAppointments);
-
-        // Filter appointments with reschedule requests
-        const appointmentsWithReschedule = appointmentsResponse.data.appointments.filter(
-          apt => apt.rescheduleRequest?.requested && apt.rescheduleRequest?.status === 'pending'
-        );
-        setRescheduleRequests(appointmentsWithReschedule);
-
+        setAppointments(filteredAppointments);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("FETCH ERROR:", error);
+        setValidationError("Error loading data. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -99,20 +129,41 @@ const LawyerAvailability = () => {
     return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
   };
 
-  // Update handleDateChange to prevent weekend selection
+  // Update handleDateChange function
   const handleDateChange = (date) => {
     if (isWeekend(date)) {
       setValidationError("Appointments are not available on weekends");
       return;
     }
+
+    // Reset everything when date changes
     setValidationError("");
-    setSelectedDate(date);
+    setTimeSlots([]);
+    setVideoCallTimeSlots([]);
+    setExistingAvailability(null);
+    
+    // Create a new date object at the start of day in local timezone
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    const newDate = new Date(year, month, day);
+    
+    console.log("Date changed to:", newDate);
+    console.log("Date ISO string:", newDate.toISOString());
+    console.log("Date local string:", newDate.toString());
+    
+    setSelectedDate(newDate);
   };
 
   const handleAddTimeSlot = () => {
     if (newTimeSlot && !timeSlots.includes(newTimeSlot)) {
+      // Check if this slot is already used for video calls
+      if (videoCallTimeSlots.includes(newTimeSlot)) {
+        setValidationError("This time slot is already set for video call consultations");
+        return;
+      }
       setTimeSlots([...timeSlots, newTimeSlot].sort());
-      setNewTimeSlot("");
+      setNewTimeSlot(""); // Reset the input after adding
     }
   };
 
@@ -120,24 +171,82 @@ const LawyerAvailability = () => {
     setTimeSlots(timeSlots.filter((slot) => slot !== slotToRemove));
   };
 
-  const handleDeleteAvailability = async () => {
-    if (
-      !existingAvailability ||
-      !window.confirm("Are you sure you want to delete this availability?")
-    ) {
-      return;
-    }
+  const handleDeleteAvailability = async (type = 'all') => {
+    if (!existingAvailability) return;
 
     try {
-      await axios.delete(
-        `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
-      );
-      setTimeSlots([]);
-      setExistingAvailability(null);
-      alert("Availability deleted successfully!");
+      setIsLoading(true);
+      
+      if (type === 'all') {
+        // Delete the entire availability record
+        await axios.delete(
+          `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
+        );
+        
+        setTimeSlots([]);
+        setVideoCallTimeSlots([]);
+        setExistingAvailability(null);
+      } else {
+        // Update the availability record to remove only the specified type of slots
+        const updateData = {};
+        
+        if (type === 'inPerson') {
+          // Check if video call slots exist
+          if (existingAvailability.videoCallTimeSlots && existingAvailability.videoCallTimeSlots.length > 0) {
+            // If video call slots exist, just update the in-person slots to empty
+            updateData.timeSlots = [];
+            updateData.videoCallTimeSlots = existingAvailability.videoCallTimeSlots;
+            
+            const response = await axios.put(
+              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`,
+              updateData
+            );
+            
+            setTimeSlots([]);
+            setExistingAvailability(response.data.availability);
+          } else {
+            // If no video call slots, delete the entire record
+            await axios.delete(
+              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
+            );
+            
+            setTimeSlots([]);
+            setVideoCallTimeSlots([]);
+            setExistingAvailability(null);
+          }
+        } else if (type === 'videoCall') {
+          // Check if in-person slots exist
+          if (existingAvailability.timeSlots && existingAvailability.timeSlots.length > 0) {
+            // If in-person slots exist, just update the video call slots to empty
+            updateData.timeSlots = existingAvailability.timeSlots;
+            updateData.videoCallTimeSlots = [];
+            
+            const response = await axios.put(
+              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`,
+              updateData
+            );
+            
+            setVideoCallTimeSlots([]);
+            setExistingAvailability(response.data.availability);
+          } else {
+            // If no in-person slots, delete the entire record
+            await axios.delete(
+              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
+            );
+            
+            setTimeSlots([]);
+            setVideoCallTimeSlots([]);
+            setExistingAvailability(null);
+          }
+        }
+      }
+      
+      setValidationError("");
     } catch (error) {
       console.error("Error deleting availability:", error);
-      alert("Error deleting availability");
+      setValidationError("Error deleting availability. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -194,53 +303,88 @@ const LawyerAvailability = () => {
     return true;
   };
 
-  // Update handleSaveSlots with validation
+  // Add validation for video call time slots
+  const validateVideoCallTimeSlots = () => {
+    if (!selectedDate) {
+      setValidationError("Please select a date first");
+      return false;
+    }
+
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(selectedDate);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    if (selectedDay < today) {
+      setValidationError("Cannot set availability for past dates");
+      return false;
+    }
+
+    // If it's today, check for past hours
+    if (selectedDay.getTime() === today.getTime()) {
+      const currentHour = new Date().getHours();
+      const hasPastSlots = videoCallTimeSlots.some(slot => {
+        const slotHour = parseInt(slot.split(':')[0]);
+        return slotHour <= currentHour;
+      });
+
+      if (hasPastSlots) {
+        setValidationError("Cannot set availability for past hours");
+        return false;
+      }
+    }
+
+    setValidationError("");
+    return true;
+  };
+
+  // Update handleSaveSlots function
   const handleSaveSlots = async () => {
     if (!validateTimeSlots()) {
       return;
     }
 
     try {
-      const lawyerEmail =
-        localStorage.getItem("userEmail") || sessionStorage.getItem("email");
-      if (!lawyerEmail) {
-        setValidationError("Please login again");
-        return;
-      }
-
+      setIsLoading(true);
+      const lawyerEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("email");
       const userResponse = await axios.get(
         `http://localhost:5000/api/lawyers/user-details/${lawyerEmail}`
       );
       const lawyerId = userResponse.data._id;
-      const formattedDate = selectedDate.toISOString().split("T")[0];
-      const formattedTimeSlots = timeSlots
-        .map((slot) => {
-          const [hours, minutes] = slot.split(":");
-          return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
-        })
-        .sort();
 
-      const requestData = {
+      // Format the date properly to avoid timezone issues
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+
+      console.log("SAVE: Selected date object:", selectedDate);
+      console.log("SAVE: Selected date local:", selectedDate.toString());
+      console.log("SAVE: Formatted date string:", formattedDate);
+
+      const availabilityData = {
         lawyerId,
         date: formattedDate,
-        timeSlots: formattedTimeSlots,
+        timeSlots,
+        videoCallTimeSlots
       };
 
-      const response = await axios[existingAvailability ? "put" : "post"](
-        `http://localhost:5000/api/lawyer/availability${
-          existingAvailability ? `/${existingAvailability._id}` : ""
-        }`,
-        requestData
+      const response = await axios.post(
+        "http://localhost:5000/api/lawyer/availability",
+        availabilityData
       );
 
-      alert(
-        existingAvailability
-          ? "Time slots updated successfully!"
-          : "Time slots saved successfully!"
-      );
+      console.log("SAVE: Create response:", response.data);
       setExistingAvailability(response.data.availability);
+      setValidationError("");
     } catch (error) {
-      setValidationError(error.response?.data?.message || "Error saving time slots");
+      console.error("SAVE ERROR:", error);
+      setValidationError(
+        error.response?.data?.message || "Error saving availability"
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -331,18 +475,31 @@ const LawyerAvailability = () => {
 
   const availableTimeSlots = generateTimeSlots();
 
-  // Update handleSlotToggle with validation
+  // Add a function to check if a slot is already booked for either type of appointment
+  const isSlotBooked = (slot, appointmentType) => {
+    return appointments.some(
+      apt => apt.appointmentTime === slot && 
+             apt.status !== 'cancelled' && 
+             (appointmentType === 'all' || apt.appointmentType === appointmentType)
+    );
+  };
+
+  // Update handleSlotToggle to prevent selecting slots already used for video calls
   const handleSlotToggle = (slot) => {
     // Clear any previous validation errors
     setValidationError("");
 
-    // Check if the slot has an existing appointment
-    const hasAppointment = appointments.some(
-      apt => apt.appointmentTime === slot && apt.status !== 'cancelled'
-    );
+    // Check if the slot has an existing appointment of any type
+    const hasAppointment = isSlotBooked(slot, 'all');
 
     if (hasAppointment) {
-      setValidationError("Cannot remove slot with existing appointment");
+      setValidationError("Cannot modify slot with existing appointment");
+      return;
+    }
+
+    // Check if the slot is already selected for video calls
+    if (videoCallTimeSlots.includes(slot)) {
+      setValidationError("This time slot is already set for video call consultations");
       return;
     }
 
@@ -351,6 +508,37 @@ const LawyerAvailability = () => {
     } else {
       setTimeSlots([...timeSlots, slot].sort());
     }
+  };
+
+  // Update handleVideoCallSlotToggle to prevent selecting slots already used for in-person
+  const handleVideoCallSlotToggle = (slot) => {
+    // Clear any previous validation errors
+    setValidationError("");
+
+    // Check if the slot has an existing appointment of any type
+    const hasAppointment = isSlotBooked(slot, 'all');
+
+    if (hasAppointment) {
+      setValidationError("Cannot modify slot with existing appointment");
+      return;
+    }
+
+    // Check if the slot is already selected for in-person consultations
+    if (timeSlots.includes(slot)) {
+      setValidationError("This time slot is already set for in-person consultations");
+      return;
+    }
+
+    if (videoCallTimeSlots.includes(slot)) {
+      setVideoCallTimeSlots(videoCallTimeSlots.filter((s) => s !== slot));
+    } else {
+      setVideoCallTimeSlots([...videoCallTimeSlots, slot].sort());
+    }
+  };
+
+  // Add the missing handler for tab switching
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
   };
 
   return (
@@ -388,10 +576,17 @@ const LawyerAvailability = () => {
                 </div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">⏰</div>
+                <div className="stat-icon">👤</div>
                 <div className="stat-info">
-                  <h3>Available Slots</h3>
+                  <h3>In-Person Slots</h3>
                   <span className="stat-number">{timeSlots.length}</span>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📹</div>
+                <div className="stat-info">
+                  <h3>Video Call Slots</h3>
+                  <span className="stat-number">{videoCallTimeSlots.length}</span>
                 </div>
               </div>
             </div>
@@ -401,38 +596,88 @@ const LawyerAvailability = () => {
             <div className="time-slots-box">
               <div className="section-header">
                 <h2>Select Available Hours</h2>
+                <div className="tabs">
+                  <button 
+                    className={`tab-btn ${activeTab === 'inPerson' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('inPerson')}
+                  >
+                    In-Person Appointments
+                  </button>
+                  <button 
+                    className={`tab-btn ${activeTab === 'videoCall' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('videoCall')}
+                  >
+                    Video Call Appointments
+                  </button>
+                </div>
                 <p className="time-info">Select your available time slots (1-hour intervals)</p>
               </div>
 
-              <div className="time-slots-grid">
-                {availableTimeSlots.map((slot) => {
-                  const hasAppointment = appointments.some(
-                    apt => apt.appointmentTime === slot && apt.status !== 'cancelled'
-                  );
-                  
-                  const isToday = selectedDate && 
-                    selectedDate.toDateString() === new Date().toDateString();
-                  const slotHour = parseInt(slot.split(':')[0]);
-                  const currentHour = new Date().getHours();
-                  const isPastSlot = isToday && slotHour <= currentHour;
-                  
-                  return (
-                    <div
-                      key={slot}
-                      className={`time-slot 
-                        ${timeSlots.includes(slot) ? 'selected' : ''} 
-                        ${hasAppointment ? 'has-appointment' : ''}
-                        ${isPastSlot ? 'past-slot' : ''}`}
-                      onClick={() => !isPastSlot && handleSlotToggle(slot)}
-                      title={isPastSlot ? "Past time slot" : 
-                             hasAppointment ? "Slot has existing appointment" : ""}
-                    >
-                      {slot}
-                      {hasAppointment && <span className="appointment-indicator">📅</span>}
-                    </div>
-                  );
-                })}
-              </div>
+              {activeTab === 'inPerson' ? (
+                <div className="time-slots-grid">
+                  {availableTimeSlots.map((slot) => {
+                    const hasAppointment = isSlotBooked(slot, 'inPerson');
+                    const isUsedForVideoCall = videoCallTimeSlots.includes(slot);
+                    
+                    const isToday = selectedDate && 
+                      selectedDate.toDateString() === new Date().toDateString();
+                    const slotHour = parseInt(slot.split(':')[0]);
+                    const currentHour = new Date().getHours();
+                    const isPastSlot = isToday && slotHour <= currentHour;
+                    
+                    return (
+                      <div
+                        key={slot}
+                        className={`time-slot 
+                          ${timeSlots.includes(slot) ? 'selected' : ''} 
+                          ${hasAppointment ? 'has-appointment' : ''}
+                          ${isPastSlot ? 'past-slot' : ''}
+                          ${isUsedForVideoCall ? 'used-for-other-type' : ''}`}
+                        onClick={() => !isPastSlot && !isUsedForVideoCall && handleSlotToggle(slot)}
+                        title={isPastSlot ? "Past time slot" : 
+                               hasAppointment ? "Slot has existing appointment" : 
+                               isUsedForVideoCall ? "Already set for video call consultations" : ""}
+                      >
+                        {slot}
+                        {hasAppointment && <span className="appointment-indicator">📅</span>}
+                        {isUsedForVideoCall && <span className="other-type-indicator">📹</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="time-slots-grid">
+                  {availableTimeSlots.map((slot) => {
+                    const hasAppointment = isSlotBooked(slot, 'videoCall');
+                    const isUsedForInPerson = timeSlots.includes(slot);
+                    
+                    const isToday = selectedDate && 
+                      selectedDate.toDateString() === new Date().toDateString();
+                    const slotHour = parseInt(slot.split(':')[0]);
+                    const currentHour = new Date().getHours();
+                    const isPastSlot = isToday && slotHour <= currentHour;
+                    
+                    return (
+                      <div
+                        key={slot}
+                        className={`time-slot 
+                          ${videoCallTimeSlots.includes(slot) ? 'selected' : ''} 
+                          ${hasAppointment ? 'has-appointment' : ''}
+                          ${isPastSlot ? 'past-slot' : ''}
+                          ${isUsedForInPerson ? 'used-for-other-type' : ''}`}
+                        onClick={() => !isPastSlot && !isUsedForInPerson && handleVideoCallSlotToggle(slot)}
+                        title={isPastSlot ? "Past time slot" : 
+                               hasAppointment ? "Slot has existing appointment" : 
+                               isUsedForInPerson ? "Already set for in-person consultations" : ""}
+                      >
+                        {slot}
+                        {hasAppointment && <span className="appointment-indicator">📹</span>}
+                        {isUsedForInPerson && <span className="other-type-indicator">👤</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {validationError && (
                 <div className="validation-error">
@@ -444,10 +689,34 @@ const LawyerAvailability = () => {
                 <button onClick={handleSaveSlots} className="save-btn">
                   {existingAvailability ? "Update Slots" : "Save Slots"}
                 </button>
+                
                 {existingAvailability && (
-                  <button onClick={handleDeleteAvailability} className="delete-btn">
-                    Delete All
-                  </button>
+                  <div className="delete-buttons">
+                    {activeTab === 'inPerson' && timeSlots.length > 0 && (
+                      <button 
+                        onClick={() => handleDeleteAvailability('inPerson')} 
+                        className="delete-btn delete-specific"
+                      >
+                        Delete In-Person Slots
+                      </button>
+                    )}
+                    
+                    {activeTab === 'videoCall' && videoCallTimeSlots.length > 0 && (
+                      <button 
+                        onClick={() => handleDeleteAvailability('videoCall')} 
+                        className="delete-btn delete-specific"
+                      >
+                        Delete Video Call Slots
+                      </button>
+                    )}
+                    
+                    <button 
+                      onClick={() => handleDeleteAvailability('all')} 
+                      className="delete-btn delete-all"
+                    >
+                      Delete All Slots
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -582,22 +851,39 @@ const LawyerAvailability = () => {
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 1rem;
+          margin-top: 1.5rem;
         }
 
         .stat-card {
           background: white;
-          padding: 1.25rem;
-          border-radius: 12px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          border-radius: 8px;
+          padding: 1rem;
           display: flex;
           align-items: center;
-          gap: 1rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+          transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .stat-icon {
-          font-size: 2rem;
+        .stat-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card:nth-child(1) .stat-icon {
+          background-color: #e0f2fe;
+          color: #0284c7;
+        }
+        
+        .stat-card:nth-child(2) .stat-icon {
+          background-color: #dcfce7;
+          color: #16a34a;
+        }
+        
+        .stat-card:nth-child(3) .stat-icon {
+          background-color: #f0f9ff;
+          color: #0369a1;
         }
 
         .stat-info h3 {
@@ -859,6 +1145,106 @@ const LawyerAvailability = () => {
 
         .weekend-tile abbr {
           text-decoration: line-through;
+        }
+
+        .tabs {
+          display: flex;
+          margin-bottom: 1rem;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab-btn {
+          padding: 0.75rem 1.5rem;
+          background: none;
+          border: none;
+          border-bottom: 3px solid transparent;
+          font-weight: 500;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+          color: #2563eb;
+          border-bottom-color: #2563eb;
+        }
+        
+        .tab-btn:hover {
+          color: #1e40af;
+          background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        .time-slot.used-for-other-type {
+          opacity: 0.5;
+          background: #f0f0f0;
+          cursor: not-allowed;
+          color: #999;
+          border: 1px dashed #ccc;
+        }
+
+        .other-type-indicator {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          font-size: 12px;
+        }
+
+        .action-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          margin-top: 1.5rem;
+        }
+        
+        .delete-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+        
+        .save-btn {
+          background-color: #2563eb;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .save-btn:hover {
+          background-color: #1d4ed8;
+        }
+        
+        .delete-btn {
+          padding: 0.75rem 1.5rem;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .delete-specific {
+          background-color: #f3f4f6;
+          color: #4b5563;
+          border: 1px solid #d1d5db;
+        }
+        
+        .delete-specific:hover {
+          background-color: #e5e7eb;
+          color: #1f2937;
+        }
+        
+        .delete-all {
+          background-color: #fee2e2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
+        }
+        
+        .delete-all:hover {
+          background-color: #fecaca;
+          color: #b91c1c;
         }
       `}</style>
     </>

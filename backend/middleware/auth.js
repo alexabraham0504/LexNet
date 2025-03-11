@@ -7,23 +7,21 @@ const isAuthenticated = (req, res, next) => {
     // Get token from header
     const authHeader = req.headers.authorization;
     
-    // Check if auth header exists and has the right format
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('No token or invalid token format');
       return res.status(401).json({
         success: false,
-        message: 'Authentication failed: No token provided or invalid format'
+        message: 'Authentication required. Please log in.'
       });
     }
     
-    // Extract the token (remove 'Bearer ' prefix)
     const token = authHeader.split(' ')[1];
     
     if (!token) {
-      console.log('Token is empty after splitting');
+      console.log('Token extraction failed');
       return res.status(401).json({
         success: false,
-        message: 'Authentication failed: Empty token'
+        message: 'Authentication required. Please log in.'
       });
     }
     
@@ -35,10 +33,10 @@ const isAuthenticated = (req, res, next) => {
     
     next();
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Auth middleware error:', error);
     return res.status(401).json({
       success: false,
-      message: 'Authentication failed: ' + error.message
+      message: 'Invalid or expired token. Please log in again.'
     });
   }
 };

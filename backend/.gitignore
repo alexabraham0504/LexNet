@@ -1,4 +1,6 @@
 /node_modules
-# Don't ignore uploads directory anymore
-/uploads
+# Track uploads directory but ignore its contents
+/uploads/*
+# But keep the directory with a .gitkeep file
+!/uploads/.gitkeep
 /config/credentials/gen-lang-client-0211780297-e10ebf9f18e8.json

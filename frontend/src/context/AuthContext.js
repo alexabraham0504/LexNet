@@ -79,6 +79,7 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem("name", userData.fullName);
     sessionStorage.setItem("email", userData.email);
     sessionStorage.setItem("role", userData.role);
+    sessionStorage.setItem("phone", userData.phone);
   };
 
   const logout = () => {

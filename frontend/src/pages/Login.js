@@ -160,6 +160,7 @@ const Login = () => {
         sessionStorage.setItem("name", user.fullName);
         sessionStorage.setItem("email", user.email);
         sessionStorage.setItem("role", user.role);
+        sessionStorage.setItem("phone", user.phone || ''); // Add fallback empty string
 
         console.log('Session Storage:', {
           token: sessionStorage.getItem("token"),
@@ -167,6 +168,7 @@ const Login = () => {
           name: sessionStorage.getItem("name"),
           email: sessionStorage.getItem("email"),
           role: sessionStorage.getItem("role"),
+          phone: sessionStorage.getItem("phone") // Log phone number
         });
 
         // Use the login function from AuthContext

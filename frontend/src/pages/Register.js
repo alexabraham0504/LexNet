@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import Navbar from "../components/navbar/home-navbar";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "./firebaseConfig.js";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ const Register = () => {
     role: "Client", // Default to Client
   });
   const [errors, setErrors] = useState({});
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -120,6 +123,48 @@ const Register = () => {
 
   const toggleConfirmPasswordVisibility = () => {
     setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const handleGoogleSignIn = async (role) => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const userData = {
+        displayName: user.displayName,
+        Uid: user.uid,
+        email: user.email,
+        role,
+        phone: user.phoneNumber || '',
+      };
+
+      const response = await axios.post('/api/auth/google-login', userData);
+      const data = response.data.user;
+
+      // Check if user is approved
+      if (data.status !== "approved") {
+        setError(
+          "Your account is pending approval or has been rejected/suspended. Please contact admin."
+        );
+        return;
+      }
+
+      sessionStorage.setItem("name", data.displayName);
+      sessionStorage.setItem("email", user.email);
+      sessionStorage.setItem("phone", data.phone || '');
+
+      if (data.role === "Admin") {
+        navigate("/AdminDashboard", { replace: true });
+      } else if (data.role === "Lawyer") {
+        navigate("/LawyerDashboard", { replace: true });
+      } else if (data.role === "Client") {
+        navigate("/ClientDashboard", { replace: true });
+      }
+
+      alert(`User role: ${data.role.toLowerCase()}`);
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+    }
   };
 
   return (

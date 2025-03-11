@@ -37,6 +37,8 @@ const LawyerDashboard = () => {
   const [incomingCalls, setIncomingCalls] = useState([]);
   const [pendingMeetings, setPendingMeetings] = useState([]);
   const [socket, setSocket] = useState(null);
+  const [consultationRequests, setConsultationRequests] = useState([]);
+  const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
 
   useEffect(() => {
     const fetchLawyerData = async () => {
@@ -265,6 +267,135 @@ const LawyerDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchConsultationRequests = async () => {
+      if (!user?._id) return;
+      
+      try {
+        setIsLoadingConsultations(true);
+        const token = sessionStorage.getItem("token");
+        
+        if (!token) {
+          console.error("No authentication token found");
+          toast.error("Authentication error. Please log in again.");
+          navigate('/login');
+          return;
+        }
+        
+        const response = await axios.get(
+          `http://localhost:5000/api/consultations/lawyer/${user._id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        if (response.data.success) {
+          setConsultationRequests(response.data.consultationRequests);
+        }
+      } catch (error) {
+        console.error("Error fetching consultation requests:", error);
+      } finally {
+        setIsLoadingConsultations(false);
+      }
+    };
+    
+    fetchConsultationRequests();
+    
+    // Set up an interval to refresh consultation requests
+    const intervalId = setInterval(fetchConsultationRequests, 30000); // every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [user?._id, navigate]);
+
+  const handleConsultationRequest = async (requestId, action) => {
+    try {
+      const token = sessionStorage.getItem("token");
+      
+      if (!token) {
+        toast.error("Authentication error. Please log in again.");
+        navigate('/login');
+        return;
+      }
+      
+      const response = await axios.put(
+        `http://localhost:5000/api/consultations/${requestId}/status`,
+        {
+          status: action === 'accept' ? 'accepted' : 'declined'
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.success) {
+        toast.success(`Consultation request ${action === 'accept' ? 'accepted' : 'declined'}`);
+        
+        // Update the local state
+        setConsultationRequests(prevRequests => 
+          prevRequests.map(req => 
+            req._id === requestId 
+              ? { ...req, status: action === 'accept' ? 'accepted' : 'declined' } 
+              : req
+          )
+        );
+        
+        // If accepted, offer to start the call
+        if (action === 'accept') {
+          const request = consultationRequests.find(req => req._id === requestId);
+          if (request) {
+            const startCall = window.confirm("Would you like to start the video call now?");
+            if (startCall) {
+              handleStartVideoCall(request);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error handling consultation request:", error);
+      toast.error("Error handling consultation request");
+    }
+  };
+
+  const handleStartVideoCall = (consultationRequest) => {
+    const { roomName, clientName } = consultationRequest;
+    
+    // Create URL with encoded parameters for external video service
+    const lawyerName = encodeURIComponent(
+      user?.fullName || 
+      user?.name || 
+      sessionStorage.getItem('userName') || 
+      localStorage.getItem('userName') || 
+      'Lawyer'
+    );
+    const encodedRoomName = encodeURIComponent(roomName);
+    
+    // Simplified URL with essential parameters for better compatibility
+    const videoServiceUrl = `https://meet.jit.si/${encodedRoomName}#userInfo.displayName="${lawyerName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
+    
+    // Open in new window with specific features
+    const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800,noopener,noreferrer');
+    
+    // If window was blocked, show message and navigate to video call page as fallback
+    if (!videoWindow || videoWindow.closed || typeof videoWindow.closed === 'undefined') {
+      toast.error('Please allow pop-ups to open the video call');
+      
+      // Navigate to the video call page as fallback
+      navigate(`/video-call/${roomName}`, {
+        state: {
+          roomName: roomName,
+          isLawyer: true,
+          lawyerName: lawyerName,
+          clientName: clientName,
+          autoJoin: true
+        }
+      });
+    }
+  };
+
   const userName = sessionStorage.getItem("name") || "Lawyer";
 
   return (
@@ -378,6 +509,58 @@ const LawyerDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Video Consultation Requests Section */}
+          <div className="dashboard-card consultation-requests">
+            <h3>Video Consultation Requests</h3>
+            
+            {isLoadingConsultations ? (
+              <div className="loading-spinner">Loading consultation requests...</div>
+            ) : consultationRequests.length > 0 ? (
+              <div className="consultation-list">
+                {consultationRequests.map(request => (
+                  <div key={request._id} className={`consultation-item ${request.status}`}>
+                    <div className="consultation-details">
+                      <p className="client-name">{request.clientName}</p>
+                      <p className="request-time">
+                        {new Date(request.createdAt).toLocaleString()}
+                      </p>
+                      <p className="request-message">{request.message}</p>
+                      <p className="request-status">Status: {request.status}</p>
+                    </div>
+                    
+                    {request.status === 'pending' && (
+                      <div className="consultation-actions">
+                        <button 
+                          className="accept-btn"
+                          onClick={() => handleConsultationRequest(request._id, 'accept')}
+                        >
+                          Accept
+                        </button>
+                        <button 
+                          className="decline-btn"
+                          onClick={() => handleConsultationRequest(request._id, 'decline')}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )}
+                    
+                    {request.status === 'accepted' && (
+                      <button 
+                        className="start-call-btn"
+                        onClick={() => handleStartVideoCall(request)}
+                      >
+                        Start Call
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-consultations">No pending consultation requests</p>
+            )}
+          </div>
 
           {/* HERO SECTION */}
           <div className="container-fluid">

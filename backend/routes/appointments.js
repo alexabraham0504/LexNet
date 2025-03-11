@@ -14,6 +14,7 @@ router.post("/", async (req, res) => {
       clientPhone,
       appointmentDate,
       appointmentTime,
+      appointmentType,
       notes,
     } = req.body;
 
@@ -50,20 +51,26 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Check if the time slot is available
+    // Check if the time slot is available based on appointment type
     const availability = await LawyerAvailability.findOne({
       lawyerId,
       date: new Date(appointmentDate),
     });
 
-    if (!availability || !availability.timeSlots.includes(appointmentTime)) {
+    // Check availability based on appointment type
+    const isAvailable = appointmentType === 'videoCall' 
+      ? availability && availability.videoCallTimeSlots.includes(appointmentTime)
+      : availability && availability.timeSlots.includes(appointmentTime);
+
+    if (!isAvailable) {
       return res.status(400).json({
         success: false,
-        message: "Selected time slot is not available",
+        message: `Selected time slot is not available for ${appointmentType === 'videoCall' ? 'video call' : 'in-person'} appointment`,
       });
     }
 
-    // Check for existing appointments
+    // Check for existing appointments with the same time slot (regardless of type)
+    // This prevents double bookings across appointment types
     const existingAppointment = await Appointment.findOne({
       lawyerId,
       appointmentDate: new Date(appointmentDate),
@@ -74,11 +81,11 @@ router.post("/", async (req, res) => {
     if (existingAppointment) {
       return res.status(400).json({
         success: false,
-        message: "This time slot has already been booked",
+        message: "This time slot has already been booked for another appointment",
       });
     }
 
-    // Create new appointment
+    // Create new appointment with type
     const appointment = new Appointment({
       lawyerId,
       clientName,
@@ -86,10 +93,34 @@ router.post("/", async (req, res) => {
       clientPhone,
       appointmentDate: new Date(appointmentDate),
       appointmentTime,
+      appointmentType: appointmentType || 'inPerson', // Default to in-person if not specified
       notes,
+      status: "pending",
     });
 
     await appointment.save();
+
+    // When an appointment is booked, remove the time slot from both types of availability
+    // to prevent double bookings
+    const updateData = {};
+    
+    if (appointmentType === 'videoCall') {
+      // If it's a video call appointment, remove the slot from video call slots
+      updateData.videoCallTimeSlots = availability.videoCallTimeSlots.filter(
+        slot => slot !== appointmentTime
+      );
+    } else {
+      // If it's an in-person appointment, remove the slot from in-person slots
+      updateData.timeSlots = availability.timeSlots.filter(
+        slot => slot !== appointmentTime
+      );
+    }
+    
+    // Update the availability document
+    await LawyerAvailability.findByIdAndUpdate(
+      availability._id,
+      updateData
+    );
 
     res.status(201).json({
       success: true,
@@ -332,6 +363,37 @@ router.put("/reschedule/:id/:action", async (req, res) => {
       success: false,
       message: "Error handling reschedule request",
       error: error.message
+    });
+  }
+});
+
+// Add this new route to get appointments for a specific date
+router.get("/date/:lawyerId/:date", async (req, res) => {
+  try {
+    const { lawyerId, date } = req.params;
+    
+    // Parse the date string to a Date object
+    const queryDate = new Date(date);
+    
+    // Set the time to midnight to ensure we're only comparing dates
+    queryDate.setHours(0, 0, 0, 0);
+    
+    // Find appointments where the date matches exactly
+    const appointments = await Appointment.find({ 
+      lawyerId, 
+      appointmentDate: {
+        $gte: queryDate,
+        $lt: new Date(queryDate.getTime() + 24 * 60 * 60 * 1000) // Next day
+      }
+    });
+    
+    res.json({ appointments });
+  } catch (error) {
+    console.error("Error fetching appointments for date:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Error fetching appointments for date",
+      error: error.message 
     });
   }
 });

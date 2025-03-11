@@ -201,7 +201,8 @@ router.post("/login", async (req, res) => {
       { 
         userId: user._id,
         role: user.role,
-        email: user.email
+        email: user.email,
+        phone: user.phone
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
@@ -216,6 +217,7 @@ router.post("/login", async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+        phone: user.phone,
         status: user.status
       }
     });
@@ -413,27 +415,42 @@ router.post("/users/:userId/:action", async (req, res) => {
 //Google
 
 router.post("/google-login", async (req, res) => {
-  const { displayName, Uid, email, role } = req.body;
-
   try {
-    // Check if the user already exists in the database
-    let user = await User1.findOne({ Uid });
-
+    const { displayName, email, Uid, role, phone } = req.body;
+    
+    let user = await User.findOne({ email });
+    
     if (!user) {
-      // If user does not exist, create a new one
-      user = new User1({
-        displayName,
+      // Create new user if doesn't exist
+      user = new User({
+        fullName: displayName,
         email,
-        Uid,
+        googleId: Uid,
         role,
+        phone: phone || '', // Include phone number
+        status: 'approved' // or whatever default status you want
       });
       await user.save();
     }
 
-    res.status(200).json({ message: "User authenticated and saved", user });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        phone: user.phone, // Include phone in response
+        status: user.status
+      }
+    });
+
   } catch (error) {
-    console.error("Error verifying user data:", error);
-    res.status(500).json({ message: "Authentication failed" });
+    console.error("Google login error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

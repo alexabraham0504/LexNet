@@ -11,6 +11,10 @@ const http = require('http');
 const socketIo = require('socket.io');
 const lawyerRoutes = require('./routes/lawyerRoutes');
 const lawyerRegistrationRoutes = require('./routes/lawyerRegistrationRoutes');
+const consultationsRouter = require('./routes/consultations');
+const appointmentsRouter = require('./routes/appointments');
+const meetingsRouter = require('./routes/meetings');
+const lawyerAvailabilityRouter = require('./routes/lawyerAvailability');
 
 
 
@@ -84,6 +88,10 @@ try {
   app.use('/cases', casesRouter);
   app.use('/api/lawyers', lawyerRoutes);
   app.use('/api/lawyer-registration', lawyerRegistrationRoutes);
+  app.use('/api/consultations', consultationsRouter);
+  app.use('/api/appointments', appointmentsRouter);
+  app.use('/api/meetings', meetingsRouter);
+  app.use('/api/lawyer', lawyerAvailabilityRouter);
  
 
   // Add error handling middleware

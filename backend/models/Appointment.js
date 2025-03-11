@@ -55,6 +55,12 @@ const appointmentSchema = new mongoose.Schema({
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Payment"
+  },
+  appointmentType: {
+    type: String,
+    enum: ['inPerson', 'videoCall'],
+    default: 'inPerson',
+    required: true
   }
 });
 

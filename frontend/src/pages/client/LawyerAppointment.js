@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import axios from "axios";
@@ -8,6 +8,7 @@ import Footer from "../../components/footer/footer-client";
 import ClientSidebar from '../../components/sidebar/ClientSidebar';
 import { useAuth } from "../../context/AuthContext";
 import { loadScript } from '../../utils/razorpay';
+import { toast } from 'react-hot-toast';
 
 const BAD_WORDS = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'damn', 'cunt', 'dick', 'pussy', 
@@ -19,7 +20,9 @@ const LawyerAppointment = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  const [videoCallTimeSlots, setVideoCallTimeSlots] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
+  const [appointmentType, setAppointmentType] = useState('inPerson');
   const [lawyerDetails, setLawyerDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -50,6 +53,13 @@ const LawyerAppointment = () => {
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [appointmentId, setAppointmentId] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isVideoCallLoading, setIsVideoCallLoading] = useState(false);
+  const [myConsultationRequests, setMyConsultationRequests] = useState([]);
+  const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
+  const [hasAcceptedAppointment, setHasAcceptedAppointment] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch lawyer details on component mount
   useEffect(() => {
@@ -70,61 +80,125 @@ const LawyerAppointment = () => {
 
   // Fetch available time slots when date is selected
   useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!selectedDate) return;
-
+    const fetchAvailableTimeSlots = async () => {
+      if (!selectedDate || !lawyerId) return;
+      
       try {
         setIsLoading(true);
-        const formattedDate = selectedDate.toISOString().split("T")[0];
         
-        // Fetch both availability and existing appointments
-        const [availabilityResponse, appointmentsResponse] = await Promise.all([
-          axios.get(
-            `http://localhost:5000/api/lawyer/availability/${lawyerId}/${formattedDate}`
-          ),
-          axios.get(
-            `http://localhost:5000/api/appointments/lawyer/${lawyerId}`
-          )
-        ]);
-
-        if (availabilityResponse.data.availability) {
-          const allTimeSlots = availabilityResponse.data.availability.timeSlots.sort();
+        // Reset time slots first
+        setAvailableTimeSlots([]);
+        setVideoCallTimeSlots([]);
+        
+        // Format the date to YYYY-MM-DD using local date components
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        console.log("Client fetching availability for date:", formattedDate, "lawyerId:", lawyerId);
+        
+        const response = await axios.get(
+          `http://localhost:5000/api/lawyer/availability/${lawyerId}/${formattedDate}`
+        );
+        
+        if (response.data.availability) {
+          let inPersonSlots = [];
+          let videoSlots = [];
           
-          // Filter out booked slots
-          const bookedSlots = appointmentsResponse.data.appointments
-            .filter(apt => 
-              new Date(apt.appointmentDate).toISOString().split('T')[0] === formattedDate &&
-              apt.status !== 'cancelled'
-            )
+          const availability = response.data.availability;
+          
+          // Get in-person slots
+          if (availability.timeSlots && availability.timeSlots.length > 0) {
+            inPersonSlots = availability.timeSlots;
+          }
+          
+          // Get video call slots
+          if (availability.videoCallTimeSlots && availability.videoCallTimeSlots.length > 0) {
+            videoSlots = availability.videoCallTimeSlots;
+          }
+          
+          // Fetch existing appointments to filter out booked slots
+          const appointmentsResponse = await axios.get(
+            `http://localhost:5000/api/appointments/date/${lawyerId}/${formattedDate}`
+          );
+          
+          const bookedAppointments = appointmentsResponse.data.appointments || [];
+          
+          // Filter out booked in-person slots
+          const bookedInPersonSlots = bookedAppointments
+            .filter(apt => apt.status !== 'cancelled' && apt.appointmentType === 'inPerson')
             .map(apt => apt.appointmentTime);
-
-          const availableSlots = allTimeSlots.filter(slot => !bookedSlots.includes(slot));
           
-          setAvailableTimeSlots(availableSlots);
-          setAvailabilityStatus(availableSlots.length > 0 ? 'available' : 'fully-booked');
-        } else {
-          setAvailableTimeSlots([]);
-          setAvailabilityStatus('unavailable');
+          // Filter out booked video call slots
+          const bookedVideoSlots = bookedAppointments
+            .filter(apt => apt.status !== 'cancelled' && apt.appointmentType === 'videoCall')
+            .map(apt => apt.appointmentTime);
+          
+          // Remove booked slots from available slots
+          const availableInPersonSlots = inPersonSlots.filter(
+            slot => !bookedInPersonSlots.includes(slot)
+          );
+          
+          const availableVideoSlots = videoSlots.filter(
+            slot => !bookedVideoSlots.includes(slot)
+          );
+          
+          // Filter out past time slots if it's today
+          const now = new Date();
+          const isToday = selectedDate.toDateString() === now.toDateString();
+          
+          if (isToday) {
+            const currentHour = now.getHours();
+            
+            // Filter in-person slots
+            const filteredInPersonSlots = availableInPersonSlots.filter(slot => {
+              const slotHour = parseInt(slot.split(':')[0]);
+              return slotHour > currentHour;
+            });
+            
+            // Filter video slots
+            const filteredVideoSlots = availableVideoSlots.filter(slot => {
+              const slotHour = parseInt(slot.split(':')[0]);
+              return slotHour > currentHour;
+            });
+            
+            setAvailableTimeSlots(filteredInPersonSlots);
+            setVideoCallTimeSlots(filteredVideoSlots);
+          } else {
+            setAvailableTimeSlots(availableInPersonSlots);
+            setVideoCallTimeSlots(availableVideoSlots);
+          }
         }
       } catch (error) {
-        console.error("Error fetching availability:", error);
-        setError("Error loading available time slots");
-        setAvailabilityStatus('error');
+        console.error("Error fetching time slots:", error);
+        setError("Failed to load available time slots. Please try again.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAvailability();
+    fetchAvailableTimeSlots();
   }, [selectedDate, lawyerId]);
 
   const handleDateChange = (date) => {
-    setSelectedDate(date);
-    setSelectedTimeSlot(null); // Reset selected time slot when date changes
+    // Create a new date object at the start of the selected day
+    const newDate = new Date(date);
+    newDate.setHours(0, 0, 0, 0);
+    
+    console.log("Client - Date changed to:", newDate);
+    console.log("Client - Date ISO string:", newDate.toISOString());
+    console.log("Client - Date local string:", newDate.toString());
+    
+    setSelectedDate(newDate);
+    setSelectedTimeSlot(null);
+    setError(null);
+    setSuccess(false);
   };
 
   const handleTimeSlotSelect = (slot) => {
     setSelectedTimeSlot(slot);
+    setError(null);
   };
 
   const handleInputChange = (e) => {
@@ -331,51 +405,64 @@ const LawyerAppointment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
-    setPaymentError(null);
-
-    // Add form validation before submission
-    if (!validateForm()) {
-      setError("Please fix the errors in the form before submitting");
-      return;
-    }
-
+    
     try {
-      const appointmentData = {
-        lawyerId,
-        clientName: user?.fullName || user?.name || formData.clientName,
-        clientEmail: user?.email || formData.clientEmail,
-        clientPhone: user?.phone || formData.clientPhone,
-        appointmentDate: selectedDate.toISOString().split("T")[0],
-        appointmentTime: selectedTimeSlot,
-        notes: formData.notes.trim(),
-      };
+      setIsLoading(true);
+      setError(null);
+      
+      // Format the date for the API
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
 
-      // Check if required fields are present
-      if (!appointmentData.clientName || !appointmentData.clientEmail || !appointmentData.clientPhone) {
-        setError("Missing required client information. Please ensure your profile is complete.");
+      // Validate all required fields
+      if (!selectedDate || !selectedTimeSlot || !formData.clientName || !formData.clientEmail || !formData.clientPhone) {
+        setError("Please fill in all required fields");
         return;
       }
 
+      // Create appointment data
+      const appointmentData = {
+        lawyerId,
+        clientName: formData.clientName,
+        clientEmail: formData.clientEmail,
+        clientPhone: formData.clientPhone,
+        appointmentDate: formattedDate,
+        appointmentTime: selectedTimeSlot,
+        appointmentType: appointmentType,
+        notes: formData.notes
+      };
+
+      // Make the API call to create appointment
       const response = await axios.post(
-        "http://localhost:5000/api/appointments",
+        'http://localhost:5000/api/appointments',
         appointmentData
       );
 
-      if (response.data.success) {
-        // Store the appointment ID for payment processing
-        setAppointmentId(response.data.appointment._id);
+      if (response.data.success !== false) {
+        setSuccess(true);
+        setError(null);
         
-        // Initiate payment
-        await initiatePayment(response.data.appointment._id);
+        // Reset form
+        setSelectedTimeSlot(null);
+        setFormData({
+          ...formData,
+          notes: ''
+        });
+
+        // Show payment modal if needed
+        if (response.data.requiresPayment) {
+          setAppointmentId(response.data.appointmentId);
+          setPaymentAmount(response.data.paymentAmount);
+          setShowPaymentModal(true);
+        }
       }
     } catch (error) {
-      console.error("Error booking appointment:", error);
-      setError(
-        error.response?.data?.message ||
-          "Error occurred while booking appointment"
-      );
+      console.error('Error booking appointment:', error);
+      setError(error.response?.data?.message || 'Error booking appointment. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -487,6 +574,12 @@ const LawyerAppointment = () => {
         `http://localhost:5000/api/appointments/client/${clientEmail}`
       );
       setMyBookings(response.data.appointments);
+      
+      // Check if there's at least one confirmed appointment with this lawyer
+      const hasConfirmed = response.data.appointments.some(
+        booking => booking.status === 'confirmed'
+      );
+      setHasAcceptedAppointment(hasConfirmed);
     } catch (error) {
       console.error("Error fetching bookings:", error);
     } finally {
@@ -621,6 +714,202 @@ const LawyerAppointment = () => {
     </div>
   );
 
+  // Add a handler for appointment type change
+  const handleAppointmentTypeChange = (type) => {
+    setAppointmentType(type);
+    setSelectedTimeSlot(null); // Reset selected time slot when changing appointment type
+  };
+
+  // Update the handleVideoCall function to send a consultation request instead of immediately starting a call
+  const handleVideoCall = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (!lawyerId) {
+      console.error("No lawyer ID found");
+      return;
+    }
+
+    // Create a unique room name using timestamp and IDs
+    const timestamp = new Date().getTime();
+    const roomName = `meeting_${user._id}_${lawyerId}_${timestamp}`;
+
+    // Show loading toast
+    toast.loading("Sending video consultation request...");
+    setIsVideoCallLoading(true);
+
+    // Get token from sessionStorage
+    const token = sessionStorage.getItem('token');
+    
+    if (!token) {
+      toast.dismiss();
+      toast.error('Authentication error. Please log in again.');
+      navigate('/login');
+      setIsVideoCallLoading(false);
+      return;
+    }
+
+    // Send consultation request to the lawyer
+    axios.post('http://localhost:5000/api/consultations/request', {
+      lawyerId: lawyerId,
+      roomName: roomName,
+      clientName: user?.fullName || user?.name || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Client',
+      clientId: user?._id,
+      lawyerName: lawyerDetails?.fullName || lawyerDetails?.fullname || lawyerDetails?.name || 'Lawyer',
+      status: 'pending',
+      message: "I would like to schedule a video consultation with you."
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      toast.dismiss();
+      setIsVideoCallLoading(false);
+      
+      if (response.data.success) {
+        toast.success('Video consultation request sent to lawyer');
+        // Show a confirmation message to the client
+        setSuccess(true);
+        setError(null);
+      } else {
+        toast.error(response.data.message || 'Failed to send consultation request');
+        setError(response.data.message || 'Failed to send consultation request');
+      }
+    })
+    .catch(error => {
+      toast.dismiss();
+      setIsVideoCallLoading(false);
+      console.error('Error sending consultation request:', error);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
+      
+      if (error.response && error.response.status === 401) {
+        toast.error('Authentication error. Please log in again.');
+        sessionStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        toast.error(error.response?.data?.message || 'Error sending consultation request. Please try again.');
+        setError('Error sending consultation request. Please try again.');
+      }
+    });
+  };
+
+  // Temporary workaround to prevent 404 errors
+  useEffect(() => {
+    // Only attempt to fetch if the backend route is ready
+    const isBackendReady = false; // Set this to true when your backend route is ready
+    
+    if (isBackendReady) {
+      const fetchMyConsultationRequests = async () => {
+        if (!user?._id) return;
+        
+        try {
+          setIsLoadingConsultations(true);
+          const token = sessionStorage.getItem('token');
+          
+          if (!token) {
+            console.error("No authentication token found");
+            return;
+          }
+          
+          console.log("Fetching consultation requests for client:", user._id);
+          console.log("Using token:", token.substring(0, 10) + "...");
+          
+          const response = await axios.get(
+            `http://localhost:5000/api/consultations/client/${user._id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }
+          );
+          
+          console.log("Consultation requests response:", response.data);
+          
+          if (response.data.success) {
+            // Filter to only show consultations with this lawyer
+            const filteredRequests = response.data.consultationRequests.filter(
+              req => req.lawyerId === lawyerId
+            );
+            setMyConsultationRequests(filteredRequests);
+          }
+        } catch (error) {
+          console.error("Error fetching consultation requests:", error);
+          
+          // Add more detailed error logging
+          if (error.response) {
+            console.error("Error status:", error.response.status);
+            console.error("Error data:", error.response.data);
+            
+            if (error.response.status === 404) {
+              console.error("Endpoint not found. Check if the route is registered correctly in your backend.");
+            } else if (error.response.status === 401) {
+              console.error("Authentication error. Token may be invalid or expired.");
+              // Optionally redirect to login
+              // navigate('/login');
+            }
+          }
+        } finally {
+          setIsLoadingConsultations(false);
+        }
+      };
+      
+      fetchMyConsultationRequests();
+      
+      // Set up polling to check for updates every 30 seconds
+      const intervalId = setInterval(fetchMyConsultationRequests, 30000);
+      
+      return () => clearInterval(intervalId);
+    } else {
+      // Set empty array to prevent errors
+      setMyConsultationRequests([]);
+      setIsLoadingConsultations(false);
+    }
+  }, [user?._id, lawyerId]);
+
+  const handleStartVideoCall = (consultationRequest) => {
+    const { roomName } = consultationRequest;
+    
+    // Create URL with encoded parameters for external video service
+    const clientName = encodeURIComponent(
+      user?.fullName || 
+      user?.name || 
+      sessionStorage.getItem('userName') || 
+      localStorage.getItem('userName') || 
+      'Client'
+    );
+    const encodedRoomName = encodeURIComponent(roomName);
+    
+    // Simplified URL with essential parameters for better compatibility
+    const videoServiceUrl = `https://meet.jit.si/${encodedRoomName}#userInfo.displayName="${clientName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
+    
+    // Open in new window with specific features
+    const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800,noopener,noreferrer');
+    
+    // If window was blocked, show message and navigate to video call page as fallback
+    if (!videoWindow || videoWindow.closed || typeof videoWindow.closed === 'undefined') {
+      toast.error('Please allow pop-ups to open the video call');
+      
+      // Navigate to the video call page as fallback
+      navigate(`/video-call/${roomName}`, {
+        state: {
+          roomName: roomName,
+          isLawyer: false,
+          clientName: clientName,
+          lawyerName: consultationRequest.lawyerName,
+          autoJoin: true
+        }
+      });
+    }
+  };
+
   return (
     <>
       <div className="page-container">
@@ -630,32 +919,157 @@ const LawyerAppointment = () => {
           <div className="appointment-container">
             <h2>Book Appointment with {lawyerDetails?.fullname}</h2>
 
-            <div className="appointment-grid">
-              {/* Left Side - Calendar */}
-              <div className="calendar-section">
-                <h3>Select Date & Time</h3>
-                <Calendar
-                  onChange={handleDateChange}
-                  value={selectedDate}
-                  minDate={new Date()}
-                  className="custom-calendar"
-                />
+            {/* Add Video Call Button - Only show if lawyer has accepted an appointment */}
+            {lawyerDetails && hasAcceptedAppointment && (
+              <div className="video-call-section">
+                <button 
+                  className="video-call-button"
+                  onClick={handleVideoCall}
+                  disabled={isVideoCallLoading}
+                >
+                  <i className="fas fa-video"></i>
+                  {isVideoCallLoading ? 'Sending Video Consultation Request...' : 'Request Video Consultation'}
+                </button>
+                <p className="video-call-info">
+                  Connect instantly with {lawyerDetails.fullname} via video call for quick consultation
+                </p>
+              </div>
+            )}
 
+            {/* Show message if no accepted appointments yet */}
+            {lawyerDetails && !hasAcceptedAppointment && (
+              <div className="video-call-info-message">
+                <p>
+                  <i className="fas fa-info-circle"></i> 
+                  Video consultation will be available after the lawyer accepts your appointment
+                </p>
+              </div>
+            )}
+
+            <div className="appointment-grid">
+              {/* Left Side */}
+              <div className="left-section">
+                {/* Consultation Type Selection */}
+                <div className="consultation-type-section">
+                  <h3>Select Consultation Type</h3>
+                  <div className="consultation-buttons">
+                    <button
+                      className={`consultation-btn ${appointmentType === 'inPerson' ? 'active' : ''}`}
+                      onClick={() => handleAppointmentTypeChange('inPerson')}
+                    >
+                      <i className="fas fa-user"></i>
+                      Face to Face Consultation
+                    </button>
+                    <button
+                      className={`consultation-btn ${appointmentType === 'videoCall' ? 'active' : ''}`}
+                      onClick={() => handleAppointmentTypeChange('videoCall')}
+                    >
+                      <i className="fas fa-video"></i>
+                      Video Call Consultation
+                    </button>
+                  </div>
+                </div>
+
+                {/* Calendar Section */}
+                <div className="calendar-section">
+                  <h3>Select Date</h3>
+                  <Calendar
+                    onChange={handleDateChange}
+                    value={selectedDate}
+                    minDate={new Date()}
+                    className="custom-calendar"
+                    tileDisabled={({ date }) => date.getDay() === 0 || date.getDay() === 6}
+                  />
+                </div>
+
+                {/* Time Slots Section */}
                 {selectedDate && (
                   <div className="time-slots-section">
-                    <h4>Available Time Slots</h4>
+                    <h3>Available Time Slots</h3>
                     {isLoading ? (
-                      <div className="loading-spinner">Loading time slots...</div>
+                      <div className="loading-spinner">Loading available slots...</div>
                     ) : (
-                      <div className="time-slots-grid">
-                        {availableTimeSlots.map((slot) => (
-                          <button
-                            key={slot}
-                            className={`time-slot ${selectedTimeSlot === slot ? "selected" : ""}`}
-                            onClick={() => handleTimeSlotSelect(slot)}
-                          >
-                            {slot}
-                          </button>
+                      <div className="time-slots-container">
+                        {appointmentType === 'inPerson' ? (
+                          availableTimeSlots.length > 0 ? (
+                            <div className="time-slots-grid">
+                              {availableTimeSlots.map((slot) => (
+                                <button
+                                  key={slot}
+                                  className={`time-slot ${selectedTimeSlot === slot ? 'selected' : ''}`}
+                                  onClick={() => handleTimeSlotSelect(slot)}
+                                >
+                                  {slot}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="no-slots">No face-to-face consultation slots available</p>
+                          )
+                        ) : (
+                          videoCallTimeSlots.length > 0 ? (
+                            <div className="time-slots-grid">
+                              {videoCallTimeSlots.map((slot) => (
+                                <button
+                                  key={slot}
+                                  className={`time-slot ${selectedTimeSlot === slot ? 'selected' : ''}`}
+                                  onClick={() => handleTimeSlotSelect(slot)}
+                                >
+                                  {slot}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="no-slots">No video call consultation slots available</p>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Video Consultation Requests Section */}
+                {myConsultationRequests.length > 0 && (
+                  <div className="consultation-requests-section">
+                    <h3>Your Video Consultation Requests</h3>
+                    
+                    {isLoadingConsultations ? (
+                      <div className="loading-spinner">Loading your consultation requests...</div>
+                    ) : (
+                      <div className="consultation-list">
+                        {myConsultationRequests.map(request => (
+                          <div key={request._id} className={`consultation-item ${request.status}`}>
+                            <div className="consultation-details">
+                              <p className="request-time">
+                                Requested on: {new Date(request.createdAt).toLocaleString()}
+                              </p>
+                              <p className="request-message">{request.message}</p>
+                              <p className="request-status">Status: {request.status}</p>
+                              
+                              {request.scheduledTime && (
+                                <p className="scheduled-time">
+                                  Scheduled for: {new Date(request.scheduledTime).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {request.status === 'accepted' && (
+                              <button 
+                                className="start-call-btn"
+                                onClick={() => handleStartVideoCall(request)}
+                              >
+                                <i className="fas fa-video"></i> Start Video Call
+                              </button>
+                            )}
+                            
+                            {request.status === 'pending' && (
+                              <p className="pending-message">Waiting for lawyer to accept your request</p>
+                            )}
+                            
+                            {request.status === 'declined' && (
+                              <p className="declined-message">Lawyer has declined this request</p>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}
@@ -663,77 +1077,74 @@ const LawyerAppointment = () => {
                 )}
               </div>
 
-              {/* Right Side - Form */}
-              <div className="appointment-form-section">
-                <h3>Your Information</h3>
-                <form onSubmit={handleSubmit}>
-                  <div className="form-group">
-                    <label>Name <span className="required">*</span></label>
-                    <div className="info-display">
-                      {formData.clientName || "Not available"}
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Email <span className="required">*</span></label>
-                    <div className="info-display">
-                      {formData.clientEmail || "Not available"}
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Phone <span className="required">*</span></label>
-                    <input
-                      type="tel"
-                      name="clientPhone"
-                      value={formData.clientPhone}
-                      onChange={handleInputChange}
-                      className={validationErrors.clientPhone ? "error" : ""}
-                      placeholder="Enter your 10-digit phone number"
-                      maxLength={10}
-                      pattern="[6-9][0-9]{9}"
-                      title="Please enter a valid 10-digit Indian phone number"
-                    />
-                    {validationErrors.clientPhone && (
-                      <span className="error-text">{validationErrors.clientPhone}</span>
+              {/* Right Side - Booking Form */}
+              <div className="right-section">
+                <div className="appointment-form-section">
+                  <h3>Your Information</h3>
+                  <form onSubmit={handleSubmit}>
+                    {selectedTimeSlot && (
+                      <div className="selected-slot-summary">
+                        <p><strong>Selected Consultation:</strong> {appointmentType === 'inPerson' ? 'Face to Face' : 'Video Call'}</p>
+                        <p><strong>Date:</strong> {selectedDate.toLocaleDateString()}</p>
+                        <p><strong>Time:</strong> {selectedTimeSlot}</p>
+                      </div>
                     )}
-                  </div>
 
-                  <div className="form-group">
-                    <label>
-                      Notes <span className="optional">(Optional)</span>
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      placeholder="Add any additional notes or specific concerns..."
-                      maxLength={500}
-                      className={validationErrors.notes ? "error" : ""}
-                    />
-                    <small className="char-count">
-                      {formData.notes.length}/500 characters
-                    </small>
-                    {validationErrors.notes && (
-                      <span className="error-text">{validationErrors.notes}</span>
-                    )}
-                  </div>
-
-                  {error && <div className="error-message">{error}</div>}
-                  {success && (
-                    <div className="success-message">
-                      Appointment booked successfully!
+                    <div className="form-group">
+                      <label>Name <span className="required">*</span></label>
+                      <div className="info-display">
+                        {formData.clientName || "Not available"}
+                      </div>
                     </div>
-                  )}
 
-                  <button
-                    type="submit"
-                    className="submit-button"
-                    disabled={!selectedDate || !selectedTimeSlot}
-                  >
-                    Book Appointment
-                  </button>
-                </form>
+                    <div className="form-group">
+                      <label>Email <span className="required">*</span></label>
+                      <div className="info-display">
+                        {formData.clientEmail || "Not available"}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Phone <span className="required">*</span></label>
+                      <div className="info-display">
+                        {formData.clientPhone || "Not available"}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Notes <span className="optional">(Optional)</span></label>
+                      <textarea
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        placeholder="Add any additional notes or specific concerns..."
+                        maxLength={500}
+                        className={validationErrors.notes ? "error" : ""}
+                      />
+                      <small className="char-count">
+                        {formData.notes.length}/500 characters
+                      </small>
+                      {validationErrors.notes && (
+                        <span className="error-text">{validationErrors.notes}</span>
+                      )}
+                    </div>
+
+                    {error && <div className="error-message">{error}</div>}
+                    {success && (
+                      <div className="success-message">
+                        Appointment booked successfully!
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="submit-button"
+                      disabled={!selectedDate || !selectedTimeSlot || isLoading || !formData.clientName || !formData.clientEmail || !formData.clientPhone}
+                    >
+                      {isLoading ? 'Booking...' : 'Book Appointment'}
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
@@ -914,6 +1325,36 @@ const LawyerAppointment = () => {
           margin-top: 2rem;
         }
 
+        .consultation-type-section {
+          margin-bottom: 2rem;
+        }
+
+        .consultation-buttons {
+          display: flex;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .consultation-btn {
+          flex: 1;
+          padding: 1rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .consultation-btn.active {
+          border-color: #2563eb;
+          background: #2563eb;
+          color: white;
+        }
+
         .calendar-section {
           padding: 1.5rem;
           background: #f8f9fa;
@@ -961,22 +1402,34 @@ const LawyerAppointment = () => {
         }
 
         .time-slot {
-          padding: 0.5rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          background: none;
+          padding: 0.75rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          background: white;
           cursor: pointer;
           transition: all 0.2s;
         }
 
         .time-slot:hover {
-          background: #f0f0f0;
+          border-color: #2563eb;
         }
 
         .time-slot.selected {
-          background: #007bff;
+          background: #2563eb;
           color: white;
-          border-color: #0056b3;
+          border-color: #2563eb;
+        }
+
+        .selected-slot-summary {
+          background: #f8fafc;
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1.5rem;
+          border: 1px solid #e2e8f0;
+        }
+
+        .selected-slot-summary p {
+          margin: 0.5rem 0;
         }
 
         .form-group {
@@ -1020,28 +1473,40 @@ const LawyerAppointment = () => {
         }
 
         .error-message {
-          color: #dc3545;
-          margin: 1rem 0;
+          color: #dc2626;
+          background-color: #fee2e2;
+          padding: 0.75rem;
+          border-radius: 6px;
+          margin-bottom: 1rem;
         }
 
         .success-message {
-          color: #28a745;
-          margin: 1rem 0;
+          color: #059669;
+          background-color: #d1fae5;
+          padding: 0.75rem;
+          border-radius: 6px;
+          margin-bottom: 1rem;
         }
 
         .submit-button {
-          background: #007bff;
-          color: white;
-          padding: 0.75rem 1.5rem;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
           width: 100%;
+          padding: 0.75rem;
+          background-color: #2563eb;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
         }
 
         .submit-button:disabled {
-          background: #ccc;
+          background-color: #93c5fd;
           cursor: not-allowed;
+        }
+
+        .submit-button:hover:not(:disabled) {
+          background-color: #1d4ed8;
         }
 
         .error {
@@ -1442,14 +1907,12 @@ const LawyerAppointment = () => {
         }
 
         .info-display {
-          padding: 12px;
-          background: #f8f9fa;
+          padding: 0.75rem;
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
           border-radius: 6px;
-          border: 1px solid #e0e0e0;
-          color: #333;
-          font-size: 1rem;
-          margin-top: 5px;
-          font-weight: 500;
+          color: #4a5568;
+          font-size: 0.95rem;
         }
 
         .info-display:empty::before {
@@ -1485,6 +1948,292 @@ const LawyerAppointment = () => {
 
         .form-group input[type="tel"]::placeholder {
           color: #6c757d;
+          font-size: 0.9rem;
+        }
+
+        .appointment-type-selector {
+          margin-bottom: 2rem;
+        }
+        
+        .appointment-type-buttons {
+          display: flex;
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+        
+        .appointment-type-btn {
+          padding: 0.75rem 1rem;
+          border: 1px solid #e5e7eb;
+          background-color: #f9fafb;
+          border-radius: 0.375rem;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          flex: 1;
+        }
+        
+        .appointment-type-btn:hover {
+          background-color: #f3f4f6;
+        }
+        
+        .appointment-type-btn.active {
+          background-color: #2563eb;
+          color: white;
+          border-color: #2563eb;
+        }
+
+        .time-slots-container {
+          margin-bottom: 2rem;
+        }
+        
+        .no-slots-message {
+          text-align: center;
+          color: #666;
+          padding: 1rem;
+          background-color: #f8f9fa;
+          border-radius: 4px;
+        }
+
+        .info-text {
+          color: #666;
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+          padding: 0.5rem;
+          background-color: #f8f9fa;
+          border-left: 3px solid #2563eb;
+          border-radius: 4px;
+        }
+
+        .consultation-type-section {
+          margin-bottom: 2rem;
+        }
+
+        .consultation-buttons {
+          display: flex;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .consultation-btn {
+          flex: 1;
+          padding: 1rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .consultation-btn.active {
+          border-color: #2563eb;
+          background: #2563eb;
+          color: white;
+        }
+
+        .booking-form {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+        }
+
+        .form-summary {
+          margin-bottom: 1.5rem;
+          padding: 1rem;
+          background: #f8fafc;
+          border-radius: 6px;
+        }
+
+        .video-call-section {
+          margin: 1.5rem 0;
+          padding: 1.5rem;
+          background: #f0f7ff;
+          border-radius: 10px;
+          border: 1px solid #cce5ff;
+          text-align: center;
+        }
+
+        .video-call-button {
+          padding: 0.75rem 1.5rem;
+          background-color: #9C27B0;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1rem;
+        }
+
+        .video-call-button:hover:not(:disabled) {
+          background-color: #7B1FA2;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .video-call-button:disabled {
+          background-color: #D1C4E9;
+          cursor: not-allowed;
+        }
+
+        .video-call-button i {
+          font-size: 1.2rem;
+        }
+
+        .video-call-info {
+          margin-top: 0.75rem;
+          color: #555;
+          font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+          .video-call-section {
+            padding: 1rem;
+          }
+          
+          .video-call-button {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        .consultation-requests-section {
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background-color: #fff;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .consultation-requests-section h3 {
+          margin-bottom: 1rem;
+          color: #333;
+          font-size: 1.25rem;
+        }
+        
+        .consultation-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .consultation-item {
+          padding: 1rem;
+          border-radius: 6px;
+          border-left: 4px solid #ccc;
+          background-color: #f9f9f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        
+        .consultation-item.pending {
+          border-left-color: #f0ad4e;
+          background-color: #fff9f0;
+        }
+        
+        .consultation-item.accepted {
+          border-left-color: #5cb85c;
+          background-color: #f0fff0;
+        }
+        
+        .consultation-item.declined {
+          border-left-color: #d9534f;
+          background-color: #fff0f0;
+          opacity: 0.8;
+        }
+        
+        .consultation-details {
+          flex: 1;
+        }
+        
+        .request-time {
+          font-size: 0.85rem;
+          color: #666;
+          margin-bottom: 0.5rem;
+        }
+        
+        .request-message {
+          font-size: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .request-status {
+          font-weight: 600;
+          text-transform: capitalize;
+        }
+        
+        .scheduled-time {
+          margin-top: 0.5rem;
+          font-weight: 600;
+          color: #5cb85c;
+        }
+        
+        .start-call-btn {
+          background-color: #9C27B0;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          padding: 0.75rem 1.25rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .start-call-btn:hover {
+          background-color: #7B1FA2;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pending-message {
+          color: #f0ad4e;
+          font-style: italic;
+          padding: 0.5rem 1rem;
+        }
+        
+        .declined-message {
+          color: #d9534f;
+          font-style: italic;
+          padding: 0.5rem 1rem;
+        }
+        
+        @media (max-width: 768px) {
+          .consultation-item {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          
+          .start-call-btn {
+            margin-top: 1rem;
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        .video-call-info-message {
+          margin: 1.5rem 0;
+          padding: 1.5rem;
+          background: #f0f7ff;
+          border-radius: 10px;
+          border: 1px solid #cce5ff;
+          text-align: center;
+        }
+
+        .video-call-info-message p {
+          margin: 0;
+          color: #555;
           font-size: 0.9rem;
         }
       `}</style>
