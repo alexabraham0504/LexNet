@@ -9,6 +9,7 @@ import ClientSidebar from '../../components/sidebar/ClientSidebar';
 import { useAuth } from "../../context/AuthContext";
 import { loadScript } from '../../utils/razorpay';
 import { toast } from 'react-hot-toast';
+import { FaCalendar, FaTimes } from 'react-icons/fa';
 
 const BAD_WORDS = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'damn', 'cunt', 'dick', 'pussy', 
@@ -59,6 +60,7 @@ const LawyerAppointment = () => {
   const [myConsultationRequests, setMyConsultationRequests] = useState([]);
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
   const [hasAcceptedAppointment, setHasAcceptedAppointment] = useState(false);
+  const [rescheduleBookingId, setRescheduleBookingId] = useState(null);
   const navigate = useNavigate();
 
   // Fetch lawyer details on component mount
@@ -573,10 +575,33 @@ const LawyerAppointment = () => {
       const response = await axios.get(
         `http://localhost:5000/api/appointments/client/${clientEmail}`
       );
-      setMyBookings(response.data.appointments);
+
+      // Fetch lawyer details for each booking if not already included
+      const bookingsWithLawyerDetails = await Promise.all(
+        response.data.appointments.map(async (booking) => {
+          if (!booking.lawyerName || !booking.lawyerSpecialization) {
+            try {
+              const lawyerResponse = await axios.get(
+                `http://localhost:5000/api/lawyers/${booking.lawyerId}`
+              );
+              return {
+                ...booking,
+                lawyerName: lawyerResponse.data.fullname,
+                lawyerSpecialization: lawyerResponse.data.specialization
+              };
+            } catch (error) {
+              console.error("Error fetching lawyer details:", error);
+              return booking;
+            }
+          }
+          return booking;
+        })
+      );
+
+      setMyBookings(bookingsWithLawyerDetails);
       
       // Check if there's at least one confirmed appointment with this lawyer
-      const hasConfirmed = response.data.appointments.some(
+      const hasConfirmed = bookingsWithLawyerDetails.some(
         booking => booking.status === 'confirmed'
       );
       setHasAcceptedAppointment(hasConfirmed);
@@ -910,6 +935,58 @@ const LawyerAppointment = () => {
     }
   };
 
+  // Add these function definitions to your component
+
+  // Add this near your other handler functions
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.put(
+        `http://localhost:5000/api/appointments/${bookingId}/cancel`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || sessionStorage.getItem("token")}`
+          }
+        }
+      );
+      
+      if (response.status === 200) {
+        toast.success("Booking cancelled successfully");
+        // Update the booking status in the local state
+        setMyBookings(prevBookings => 
+          prevBookings.map(booking => 
+            booking._id === bookingId 
+              ? { ...booking, status: 'cancelled' } 
+              : booking
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast.error(error.response?.data?.message || "Failed to cancel booking");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add this near your other handler functions
+  const handleRescheduleClick = (bookingId) => {
+    // Find the booking to reschedule
+    const bookingToReschedule = myBookings.find(booking => booking._id === bookingId);
+    if (bookingToReschedule) {
+      // Make sure we're storing the complete booking object with all properties
+      setSelectedAppointment(bookingToReschedule);
+      setRescheduleBookingId(bookingId);
+      setShowRescheduleModal(true);
+      
+      // Log to verify the appointment type is being captured
+      console.log("Selected appointment type:", bookingToReschedule.appointmentType);
+    } else {
+      toast.error("Booking not found");
+    }
+  };
+
   return (
     <>
       <div className="page-container">
@@ -917,34 +994,29 @@ const LawyerAppointment = () => {
         <ClientSidebar onToggle={setIsSidebarCollapsed} />
         <div className={`main-content ${isSidebarCollapsed ? '' : 'sidebar-expanded'}`}>
           <div className="appointment-container">
-            <h2>Book Appointment with {lawyerDetails?.fullname}</h2>
+            <div className="appointment-header">
+              <h1>Book Appointment with {lawyerDetails?.fullName}</h1>
+            </div>
 
-            {/* Add Video Call Button - Only show if lawyer has accepted an appointment */}
-            {lawyerDetails && hasAcceptedAppointment && (
-              <div className="video-call-section">
-                <button 
-                  className="video-call-button"
-                  onClick={handleVideoCall}
-                  disabled={isVideoCallLoading}
-                >
-                  <i className="fas fa-video"></i>
-                  {isVideoCallLoading ? 'Sending Video Consultation Request...' : 'Request Video Consultation'}
-                </button>
-                <p className="video-call-info">
-                  Connect instantly with {lawyerDetails.fullname} via video call for quick consultation
-                </p>
+            <div className="video-consultation-section">
+              <button 
+                className="video-consultation-button"
+                onClick={handleVideoCall}
+                disabled={isVideoCallLoading || !hasAcceptedAppointment}
+              >
+                <i className="fas fa-video"></i>
+                {isVideoCallLoading ? 'Sending Request...' : 'Request Video Consultation'}
+              </button>
+              
+              <p className="video-consultation-info">
+                Connect instantly with {lawyerDetails?.fullName} via secure video call for quick consultation
+              </p>
+              
+              <div className="connection-status">
+                <span className="status-dot"></span>
+                <span className="status-text">Ready for video consultation</span>
               </div>
-            )}
-
-            {/* Show message if no accepted appointments yet */}
-            {lawyerDetails && !hasAcceptedAppointment && (
-              <div className="video-call-info-message">
-                <p>
-                  <i className="fas fa-info-circle"></i> 
-                  Video consultation will be available after the lawyer accepts your appointment
-                </p>
-              </div>
-            )}
+            </div>
 
             <div className="appointment-grid">
               {/* Left Side */}
@@ -1169,50 +1241,107 @@ const LawyerAppointment = () => {
                 <div className="loading">Loading bookings...</div>
               ) : myBookings.length > 0 ? (
                 <div className="bookings-list">
-                  {myBookings.map((booking, index) => (
-                    <div key={index} className="booking-card">
+                  {myBookings.map((booking) => (
+                    <div 
+                      key={booking._id} 
+                      className={`booking-card ${booking.status.toLowerCase()}`}
+                    >
                       <div className="booking-header">
-                        <span className="booking-date">
+                        <div className="booking-date">
+                          <i className="far fa-calendar-alt calendar-icon"></i>
                           {new Date(booking.appointmentDate).toLocaleDateString()}
-                        </span>
-                        <span 
-                          className="booking-status"
-                          style={{ backgroundColor: getStatusColor(booking.status) }}
-                        >
-                          {booking.status.toUpperCase()}
-                        </span>
                       </div>
-                      <div className="booking-details">
-                        <p><strong>Time:</strong> {booking.appointmentTime}</p>
-                        <p><strong>Lawyer:</strong> {booking.lawyerName}</p>
-                        {booking.notes && <p><strong>Notes:</strong> {booking.notes}</p>}
-                        {booking.rescheduleRequest?.requested && (
-                          <div className="reschedule-status">
-                            <p>
-                              <strong>Reschedule Status:</strong>
-                              <span className={`status-badge ${booking.rescheduleRequest.status || 'pending'}`}>
-                                {booking.rescheduleRequest.status ? 
-                                  booking.rescheduleRequest.status.toUpperCase() : 
-                                  'PENDING'}
-                              </span>
+                        <div className={`status-badge ${booking.status.toLowerCase()}`}>
+                          {booking.status === 'confirmed' && <i className="fas fa-check-circle"></i>}
+                          {booking.status === 'pending' && <i className="fas fa-clock"></i>}
+                          {booking.status === 'cancelled' && <i className="fas fa-times-circle"></i>}
+                          <span>{booking.status}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="lawyer-details">
+                        <div className="lawyer-info">
+                          <div className="lawyer-avatar">
+                            <i className="fas fa-user-tie"></i>
+                          </div>
+                          <div className="lawyer-text">
+                            <h4 className="lawyer-name">
+                              {booking.lawyerId.fullName}
+                            </h4>
+                            <p className="lawyer-specialization">
+                              <i className="fas fa-gavel"></i>
+                              {booking.lawyerId.specialization}
                             </p>
-                            {booking.rescheduleRequest.status === 'pending' && (
-                              <>
-                                <p><strong>Proposed Date:</strong> {new Date(booking.rescheduleRequest.proposedDate).toLocaleDateString()}</p>
-                                <p><strong>Proposed Time:</strong> {booking.rescheduleRequest.proposedTime}</p>
-                              </>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="consultation-type">
+                        <div className="type-icon">
+                          {booking.appointmentType === 'videoCall' ? (
+                            <i className="fas fa-video"></i>
+                          ) : (
+                            <i className="fas fa-handshake"></i>
+                        )}
+                      </div>
+                        <div className="type-details">
+                          <span className="type-label">Consultation Type:</span>
+                          <span className="type-text">
+                            {booking.appointmentType === 'videoCall' ? 'Video Call Consultation' : 'Face to Face Consultation'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="booking-time">
+                        <div className="time-icon">
+                          <i className="far fa-clock"></i>
+                        </div>
+                        <div className="time-details">
+                          <span className="time-label">Scheduled Time:</span>
+                          <span className="time-value">{booking.appointmentTime}</span>
+                        </div>
+                      </div>
+
+                      {booking.notes && (
+                        <div className="booking-notes">
+                          <div className="notes-icon">
+                            <i className="far fa-sticky-note"></i>
+                          </div>
+                          <div className="notes-content">
+                            <span className="notes-label">Notes:</span>
+                            <p className="notes-text">{booking.notes}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Add or restore the reschedule button in the booking card */}
+                      <div className="booking-actions">
+                        {booking.status !== "cancelled" && (
+                          <div className="booking-actions">
+                            {booking.status === "pending" && (
+                        <button
+                                className="action-button cancel-btn"
+                                onClick={() => handleCancelBooking(booking._id)}
+                        >
+                                <FaTimes />
+                                <span>Cancel</span>
+                        </button>
+                      )}
+                            {booking.status === "confirmed" && !booking.rescheduleRequest.requested && (
+                              <button
+                                className="action-button reschedule-btn"
+                                onClick={() => handleRescheduleClick(booking._id)}
+                              >
+                                <FaCalendar />
+                                <span>Reschedule</span>
+                              </button>
+                            )}
+                            {booking.rescheduleRequest.requested && booking.rescheduleRequest.status === null && (
+                              <span className="reschedule-pending">Reschedule request pending</span>
                             )}
                           </div>
                         )}
                       </div>
-                      {booking.status === 'confirmed' && !booking.rescheduleRequest?.requested && (
-                        <button
-                          onClick={() => handleRescheduleRequest(booking)}
-                          className="reschedule-btn"
-                        >
-                          Request Reschedule
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -1246,51 +1375,99 @@ const LawyerAppointment = () => {
 
       {showRescheduleModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>Request Appointment Reschedule</h3>
-            <div className="form-group">
-              <label>Reason for Reschedule *</label>
+          <div className="reschedule-request-container">
+            <div className="reschedule-header">
+              <h3>
+                <i className="fas fa-calendar-alt"></i>
+                Request Appointment Reschedule with
+                <span className="lawyer-name">{selectedAppointment?.lawyerId?.fullName}</span>
+              </h3>
+            </div>
+            
+            <form className="reschedule-form" onSubmit={handleRescheduleSubmit}>
+              <div className="form-row reason-row">
+                <label htmlFor="reschedule-reason">
+                  <i className="fas fa-comment-alt"></i>
+                  Reason for Reschedule
+                </label>
               <textarea
+                  id="reschedule-reason"
                 value={rescheduleData.reason}
-                onChange={(e) => setRescheduleData({
-                  ...rescheduleData,
-                  reason: e.target.value
-                })}
+                  onChange={(e) => setRescheduleData({...rescheduleData, reason: e.target.value})}
+                  placeholder="Please explain why you need to reschedule this appointment"
                 required
-              />
+                ></textarea>
             </div>
-            <div className="form-group">
-              <label>Proposed Date *</label>
+              
+              <div className="form-row">
+                <label>
+                  <i className="fas fa-handshake"></i>
+                  Consultation Type
+                </label>
+                <div className="consultation-type-display">
+                  {selectedAppointment && selectedAppointment.appointmentType === 'videoCall' 
+                    ? 'Video Call Consultation' 
+                    : 'Face to Face Consultation'}
+                </div>
+              </div>
+              
+              <div className="form-row">
+                <label htmlFor="proposed-date">
+                  <i className="fas fa-calendar"></i>
+                  Proposed Date
+                </label>
+                <div className="date-input">
               <input
+                    id="proposed-date"
                 type="date"
+                    value={rescheduleData.proposedDate || ''}
+                    onChange={(e) => setRescheduleData({...rescheduleData, proposedDate: e.target.value})}
                 min={new Date().toISOString().split('T')[0]}
-                onChange={(e) => setRescheduleData({
-                  ...rescheduleData,
-                  proposedDate: e.target.value
-                })}
                 required
               />
+                  <i className="fas fa-calendar-day"></i>
             </div>
-            <div className="form-group">
-              <label>Proposed Time *</label>
+              </div>
+              
+              <div className="form-row">
+                <label htmlFor="proposed-time">
+                  <i className="fas fa-clock"></i>
+                  Proposed Time
+                </label>
+                <div className="time-input">
               <input
+                    id="proposed-time"
                 type="time"
-                onChange={(e) => setRescheduleData({
-                  ...rescheduleData,
-                  proposedTime: e.target.value
-                })}
+                    value={rescheduleData.proposedTime}
+                    onChange={(e) => setRescheduleData({...rescheduleData, proposedTime: e.target.value})}
                 required
               />
+                  <i className="fas fa-hourglass-half"></i>
             </div>
-            <div className="modal-actions">
-              <button onClick={handleRescheduleSubmit}>Submit Request</button>
-              <button onClick={() => setShowRescheduleModal(false)}>Cancel</button>
             </div>
+              
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="form-button cancel-button"
+                  onClick={() => setShowRescheduleModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="form-button submit-button"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      <style jsx="true">{`
+      <style jsx>{`
         .page-container {
           min-height: 100vh;
           position: relative;
@@ -1742,284 +1919,1288 @@ const LawyerAppointment = () => {
         }
 
         .booking-card {
-          border: 1px solid #dee2e6;
-          border-radius: 6px;
-          padding: 1rem;
-          transition: all 0.2s;
+          background: white;
+          border-radius: 12px;
+          padding: 1.5rem;
+          margin-bottom: 1.25rem;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+          border-left: 5px solid #e2e8f0;
+          transition: all 0.3s ease;
+        }
+
+        .booking-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 100%;
+          background: linear-gradient(to right, rgba(255,255,255,0.1), transparent);
+          transform: translateX(-100%);
+          transition: transform 0.6s ease;
+        }
+
+        .booking-card:hover::before {
+          transform: translateX(100%);
         }
 
         .booking-card:hover {
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .booking-card.pending {
+          border-left-color: #FF9800;
+          background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 167, 38, 0.05));
+        }
+
+        .booking-card.confirmed {
+          border-left-color: #4CAF50;
+          background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(102, 187, 106, 0.05));
+        }
+
+        .booking-card.cancelled {
+          border-left-color: #F44336;
+          background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(239, 83, 80, 0.05));
+        }
+
+        .status-badge {
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          text-transform: capitalize;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-badge.pending {
+          background: #fff7ed;
+          color: #c2410c;
+          border: 1px solid #fed7aa;
+        }
+
+        .status-badge.confirmed {
+          background: #ecfdf5;
+          color: #047857;
+          border: 1px solid #a7f3d0;
+        }
+
+        .status-badge.cancelled {
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+        }
+
+        .lawyer-details {
+          margin: 1.25rem 0;
+          padding: 1rem;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(0, 0, 0, 0.05);
+          backdrop-filter: blur(8px);
+          transition: all 0.3s ease;
+        }
+
+        .lawyer-details:hover {
+          background: rgba(255, 255, 255, 0.95);
+          transform: translateX(5px);
+        }
+
+        .lawyer-name {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #1e293b;
+          margin-bottom: 0.5rem;
+        }
+
+        .lawyer-name::before {
+          content: '👨‍⚖️';
+          font-size: 1.2rem;
+        }
+
+        .lawyer-specialization {
+          color: #4f46e5;
+          font-weight: 500;
+          font-size: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .lawyer-specialization::before {
+          content: '🔹';
+          position: absolute;
+          left: 0.5rem;
+        }
+
+        .lawyer-specialization i {
+          color: #6366f1;
+        }
+
+        .booking-time {
+          margin: 0.75rem 0;
+          color: #2c3e50;
+          font-size: 1.1rem;
+          padding: 0.5rem 0;
+        }
+
+        .booking-notes {
+          margin-top: 1rem;
+          padding: 1rem;
+          border-radius: 10px;
+          background: #f8fafc;
+          color: #64748b;
+          font-size: 0.875rem;
+          border: 1px dashed rgba(0, 0, 0, 0.1);
+        }
+
+        .reschedule-btn {
+          margin-top: 1rem;
+          padding: 0.75rem 1.25rem;
+          background: linear-gradient(135deg, #6366F1, #7C3AED);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .reschedule-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+          background: linear-gradient(135deg, #5558DA, #6B2EE2);
         }
 
         .booking-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 0.5rem;
+          margin-bottom: 1.25rem;
         }
 
         .booking-date {
-          font-weight: 500;
-          color: #495057;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #2d3748;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
-        .booking-status {
-          padding: 4px 8px;
-          border-radius: 4px;
+        .calendar-icon {
+          color: #4f46e5;
+          font-size: 1.2rem;
+        }
+
+        @media (max-width: 640px) {
+          .booking-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+
+          .status-badge {
+            width: 100%;
+            text-align: center;
+          }
+        }
+
+        /* Popup Overlay Animation */
+        .popup-overlay {
+          animation: fadeIn 0.3s ease;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
+        }
+
+        /* Popup Content Animation */
+        .popup-content {
+          animation: slideUp 0.4s ease;
+          background: #ffffff;
+          border-radius: 16px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          max-width: 600px;
+          width: 90%;
+          overflow: hidden;
+        }
+
+        /* Popup Header Styling */
+        .popup-header {
+          background: linear-gradient(135deg, #2c3e50, #3498db);
+          padding: 1.25rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           color: white;
-          font-size: 0.875rem;
-          font-weight: 500;
         }
 
-        .booking-details {
-          color: #666;
+        .popup-header h3 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 600;
         }
 
-        .booking-details p {
-          margin: 0.25rem 0;
+        .close-button {
+          background: transparent;
+          border: none;
+          color: white;
+          font-size: 1.75rem;
+          cursor: pointer;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.3s ease;
         }
 
-        .loading, .no-bookings {
+        .close-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: rotate(90deg);
+        }
+
+        /* Popup Body Styling */
+        .popup-body {
+          padding: 1.5rem;
+          max-height: 70vh;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e0 #f7fafc;
+        }
+
+        /* Loading State */
+        .loading {
           text-align: center;
           padding: 2rem;
-          color: #666;
+          color: #64748b;
+          font-size: 1.1rem;
+          animation: pulse 2s infinite;
         }
 
+        /* No Bookings State */
+        .no-bookings {
+          text-align: center;
+          padding: 3rem 2rem;
+          color: #64748b;
+          font-size: 1.1rem;
+          background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+          border-radius: 12px;
+          border: 2px dashed #e2e8f0;
+        }
+
+        /* Scrollbar Styling */
+        .popup-body::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .popup-body::-webkit-scrollbar-track {
+          background: #f7fafc;
+        }
+
+        .popup-body::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 4px;
+        }
+
+        .popup-body::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+          .popup-content {
+            width: 95%;
+            margin: 10px;
+          }
+
+          .booking-card {
+            padding: 1rem;
+          }
+
+          .status-badge {
+            width: 100%;
+            text-align: center;
+            margin-top: 0.5rem;
+          }
+
+          .lawyer-details {
+            margin: 1rem 0;
+            padding: 0.75rem;
+          }
+        }
+
+        /* Animations */
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
 
-        @keyframes slideIn {
+        @keyframes slideUp {
           from {
-            transform: translateY(-20px);
             opacity: 0;
+            transform: translateY(20px);
           }
           to {
-            transform: translateY(0);
             opacity: 1;
+            transform: translateY(0);
           }
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+
+        /* Book Appointment Section Styling */
+        .appointment-header {
+          background: linear-gradient(135deg, #1a365d, #2c5282);
+          padding: 2rem;
+          border-radius: 16px;
+          margin-bottom: 2rem;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          color: white;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .appointment-header::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: url('/path-to-pattern.svg') repeat;
+          opacity: 0.1;
+          z-index: 1;
+        }
+
+        .appointment-header h1 {
+          font-size: 2.5rem;
+          font-weight: 700;
+          margin-bottom: 1rem;
+          position: relative;
+          z-index: 2;
+          animation: slideInLeft 0.6s ease;
+        }
+
+        /* Video Consultation Button Section */
+        .video-consultation-section {
+          background: linear-gradient(135deg, #ffffff, #f8fafc);
+          border-radius: 12px;
+          padding: 1.5rem;
+          margin: 1rem 0 2rem;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .video-consultation-section:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .video-consultation-button {
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          color: white;
+          border: none;
+          padding: 1rem 2rem;
+          border-radius: 50px;
+          font-size: 1.1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          width: fit-content;
+          margin: 0 auto;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .video-consultation-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transform: translateX(-100%);
+        }
+
+        .video-consultation-button:hover::before {
+          animation: shimmer 1.5s infinite;
+        }
+
+        .video-consultation-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+          background: linear-gradient(135deg, #4f46e5, #4338ca);
+        }
+
+        .video-consultation-button:active {
+          transform: translateY(1px);
+        }
+
+        .video-consultation-button i {
+          font-size: 1.2rem;
+          animation: pulse 2s infinite;
+        }
+
+        .video-consultation-info {
+          text-align: center;
+          margin-top: 1rem;
+          color: #4b5563;
+          font-size: 0.95rem;
+          line-height: 1.5;
+          padding: 0 1rem;
+        }
+
+        /* Connection Status Indicator */
+        .connection-status {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 1rem;
+          justify-content: center;
+        }
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #10b981;
+          animation: blink 1.5s infinite;
+        }
+
+        .status-text {
+          font-size: 0.9rem;
+          color: #6b7280;
+        }
+
+        /* Animations */
+        @keyframes shimmer {
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .appointment-header {
+            padding: 1.5rem;
+            text-align: center;
+          }
+
+          .appointment-header h1 {
+            font-size: 2rem;
+          }
+
+          .video-consultation-button {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+          .video-consultation-section {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border-color: rgba(255, 255, 255, 0.1);
+          }
+
+          .video-consultation-info {
+            color: #9ca3af;
+          }
+
+          .status-text {
+            color: #9ca3af;
+          }
+        }
+
+        .consultation-type {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin: 1rem 0;
+          padding: 0.75rem;
+          border-radius: 8px;
+          background: rgba(0, 0, 0, 0.03);
+          transition: all 0.3s ease;
+        }
+
+        .type-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          color: white;
+          font-size: 1rem;
+        }
+
+        .type-text {
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: #4b5563;
+        }
+
+        .booking-card.pending .consultation-type {
+          background: rgba(255, 152, 0, 0.05);
+        }
+
+        .booking-card.confirmed .consultation-type {
+          background: rgba(76, 175, 80, 0.05);
+        }
+
+        .booking-card.cancelled .consultation-type {
+          background: rgba(244, 67, 54, 0.05);
+        }
+
+        .booking-card.pending .type-icon {
+          background: linear-gradient(135deg, #FF9800, #FFA726);
+        }
+
+        .booking-card.confirmed .type-icon {
+          background: linear-gradient(135deg, #4CAF50, #66BB6A);
+        }
+
+        .booking-card.cancelled .type-icon {
+          background: linear-gradient(135deg, #F44336, #EF5350);
+        }
+
+        .consultation-type:hover {
+          transform: translateX(5px);
+          background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Animation for icons */
+        .type-icon i {
+          transition: all 0.3s ease;
+        }
+
+        .consultation-type:hover .type-icon i {
+          transform: scale(1.1);
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+          .consultation-type {
+            background: rgba(255, 255, 255, 0.05);
+          }
+
+          .type-text {
+            color: #e5e7eb;
+          }
+
+          .booking-card.pending .consultation-type {
+            background: rgba(255, 152, 0, 0.1);
+          }
+
+          .booking-card.confirmed .consultation-type {
+            background: rgba(76, 175, 80, 0.1);
+          }
+
+          .booking-card.cancelled .consultation-type {
+            background: rgba(244, 67, 54, 0.1);
+          }
+        }
+
+        .calendar-icon {
+          margin-right: 8px;
+          color: #6366f1;
+        }
+
+        .lawyer-info {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .lawyer-avatar {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.5rem;
+          box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .lawyer-text {
+          flex: 1;
+        }
+
+        .lawyer-name {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.1rem;
+          color: #1f2937;
+          margin-bottom: 0.25rem;
+        }
+
+        .lawyer-specialization {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #6b7280;
+          font-size: 0.9rem;
+        }
+
+        .lawyer-specialization i {
+          color: #818cf8;
+        }
+
+        .type-details, .time-details, .notes-content {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .type-label, .time-label, .notes-label {
+          font-size: 0.85rem;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .type-text, .time-value, .notes-text {
+          color: #374151;
+          font-size: 1rem;
+        }
+
+        .booking-time, .booking-notes {
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+          padding: 0.75rem;
+          background: rgba(0, 0, 0, 0.02);
+          border-radius: 8px;
+          margin-top: 1rem;
+        }
+
+        .time-icon, .notes-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          margin-right: 1rem;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          color: white;
+          box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .status-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .status-badge i {
+          font-size: 1rem;
+        }
+
+        /* Status-specific colors for icons */
+        .booking-card.pending .time-icon,
+        .booking-card.pending .notes-icon {
+          background: linear-gradient(135deg, #FF9800, #FFA726);
+        }
+
+        .booking-card.confirmed .time-icon,
+        .booking-card.confirmed .notes-icon {
+          background: linear-gradient(135deg, #4CAF50, #66BB6A);
+        }
+
+        .booking-card.cancelled .time-icon,
+        .booking-card.cancelled .notes-icon {
+          background: linear-gradient(135deg, #F44336, #EF5350);
+        }
+
+        /* Hover effects */
+        .booking-card:hover .lawyer-avatar,
+        .booking-card:hover .time-icon,
+        .booking-card:hover .notes-icon {
+          transform: scale(1.05);
+          transition: transform 0.3s ease;
+        }
+
+        /* Dark mode adjustments */
+        @media (prefers-color-scheme: dark) {
+          .type-text, .time-value, .notes-text {
+            color: #e5e7eb;
+          }
+
+          .type-label, .time-label, .notes-label {
+            color: #9ca3af;
+          }
+
+          .lawyer-name {
+            color: #f3f4f6;
+          }
+        }
+
+        /* Consultation Type Section Enhancement */
+        .consultation-type {
+          background: #ffffff;  /* Lighter background */
+          padding: 1.25rem;
+          border-radius: 12px;
+          margin: 1.25rem 0;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .type-details {
+          flex: 1;
+        }
+
+        .type-label {
+          display: block;
+          color: #4b5563;  /* Darker gray for better readability */
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
+        }
+
+        .type-text {
+          color: #111827;  /* Almost black for maximum readability */
+          font-size: 1.1rem;
+          font-weight: 600;
+          display: block;
+        }
+
+        /* Booking Time Section Enhancement - matching styles */
+        .booking-time {
+          background: #ffffff;
+          padding: 1.25rem;
+          border-radius: 12px;
+          margin: 1.25rem 0;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .time-label {
+          display: block;
+          color: #4b5563;
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
+        }
+
+        .time-value {
+          color: #111827;
+          font-size: 1.1rem;
+          font-weight: 600;
+          display: block;
+        }
+
+        /* Status-specific background colors */
+        .booking-card.pending .consultation-type,
+        .booking-card.pending .booking-time {
+          background: #fffbeb;  /* Light yellow background for pending */
+        }
+
+        .booking-card.confirmed .consultation-type,
+        .booking-card.confirmed .booking-time {
+          background: #f0fdf4;  /* Light green background for confirmed */
+        }
+
+        .booking-card.cancelled .consultation-type,
+        .booking-card.cancelled .booking-time {
+          background: #fef2f2;  /* Light red background for cancelled */
+        }
+
+        /* Dark mode adjustments */
+        @media (prefers-color-scheme: dark) {
+          .consultation-type,
+          .booking-time {
+            background: #1f2937;
+            border-color: #374151;
+          }
+
+          .type-label,
+          .time-label {
+            color: #9ca3af;  /* Lighter gray in dark mode */
+          }
+
+          .type-text,
+          .time-value {
+            color: #ffffff;  /* White text in dark mode */
+          }
+
+          .booking-card.pending .consultation-type,
+          .booking-card.pending .booking-time {
+            background: rgba(255, 251, 235, 0.05);
+          }
+
+          .booking-card.confirmed .consultation-type,
+          .booking-card.confirmed .booking-time {
+            background: rgba(240, 253, 244, 0.05);
+          }
+
+          .booking-card.cancelled .consultation-type,
+          .booking-card.cancelled .booking-time {
+            background: rgba(254, 242, 242, 0.05);
+          }
+        }
+
+        /* Consultation Type Section */
+        .consultation-type {
+          background: #ffffff;
+          padding: 1.25rem;
+          border-radius: 12px;
+          margin: 1.25rem 0;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .type-icon {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.3rem;
+          box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+          flex-shrink: 0;
+        }
+
+        .type-details {
+          flex: 1;
+        }
+
+        .type-label {
+          display: block;
+          color: #000000;  /* Changed to black */
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
+        }
+
+        .type-text {
+          color: #000000;  /* Changed to black */
+          font-size: 1.1rem;
+          font-weight: 600;
+          display: block;
+        }
+
+        /* Booking Time Section */
+        .booking-time {
+          background: #ffffff;
+          padding: 1.25rem;
+          border-radius: 12px;
+          margin: 1.25rem 0;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .time-icon {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.3rem;
+          box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+          flex-shrink: 0;
+        }
+
+        .time-details {
+          flex: 1;
+        }
+
+        .time-label {
+          display: block;
+          color: #000000;  /* Changed to black */
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
+        }
+
+        .time-value {
+          color: #000000;  /* Changed to black */
+          font-size: 1.1rem;
+          font-weight: 600;
+          display: block;
+        }
+
+        /* Status-specific background colors with improved contrast */
+        .booking-card.pending .consultation-type,
+        .booking-card.pending .booking-time {
+          background: #fff8e1;  /* Lighter yellow background */
+        }
+
+        .booking-card.confirmed .consultation-type,
+        .booking-card.confirmed .booking-time {
+          background: #e8f5e9;  /* Lighter green background */
+        }
+
+        .booking-card.cancelled .consultation-type,
+        .booking-card.cancelled .booking-time {
+          background: #ffebee;  /* Lighter red background */
+        }
+
+        /* Dark mode adjustments */
+        @media (prefers-color-scheme: dark) {
+          .consultation-type,
+          .booking-time {
+            background: #1f2937;
+          }
+
+          .type-label,
+          .time-label {
+            color: #ffffff;  /* White text in dark mode */
+          }
+
+          .type-text,
+          .time-value {
+            color: #ffffff;  /* White text in dark mode */
+          }
+
+          /* Status-specific dark mode backgrounds */
+          .booking-card.pending .consultation-type,
+          .booking-card.pending .booking-time {
+            background: #2c2410;  /* Dark yellow */
+          }
+
+          .booking-card.confirmed .consultation-type,
+          .booking-card.confirmed .booking-time {
+            background: #132e1a;  /* Dark green */
+          }
+
+          .booking-card.cancelled .consultation-type,
+          .booking-card.cancelled .booking-time {
+            background: #2d1517;  /* Dark red */
+          }
+        }
+
+        /* Booking Notes Section Enhancement */
+        .booking-notes {
+          background: #ffffff;
+          padding: 1.25rem;
+          border-radius: 12px;
+          margin: 1.25rem 0;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: flex-start;
+          gap: 1.25rem;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .notes-icon {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, #6366f1, #4f46e5);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.3rem;
+          box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+          flex-shrink: 0;
+        }
+
+        .notes-content {
+          flex: 1;
+        }
+
+        .notes-label {
+          display: block;
+          color: #000000;  /* Changed to black */
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.5rem;
+        }
+
+        .notes-text {
+          color: #000000;  /* Changed to black */
+          font-size: 1.1rem;
+          font-weight: 500;
+          line-height: 1.5;
+          display: block;
+        }
+
+        /* Status-specific background colors for notes */
+        .booking-card.pending .booking-notes {
+          background: #fff8e1;  /* Lighter yellow background */
+        }
+
+        .booking-card.confirmed .booking-notes {
+          background: #e8f5e9;  /* Lighter green background */
+        }
+
+        .booking-card.cancelled .booking-notes {
+          background: #ffebee;  /* Lighter red background */
+        }
+
+        /* Dark mode adjustments for notes */
+        @media (prefers-color-scheme: dark) {
+          .booking-notes {
+            background: #1f2937;
+            border-color: #374151;
+          }
+
+          .notes-label {
+            color: #ffffff;  /* White text in dark mode */
+          }
+
+          .notes-text {
+            color: #ffffff;  /* White text in dark mode */
+          }
+
+          /* Status-specific dark mode backgrounds for notes */
+          .booking-card.pending .booking-notes {
+            background: #2c2410;  /* Dark yellow */
+          }
+
+          .booking-card.confirmed .booking-notes {
+            background: #132e1a;  /* Dark green */
+          }
+
+          .booking-card.cancelled .booking-notes {
+            background: #2d1517;  /* Dark red */
+          }
+        }
+
+        /* Booking Card Actions */
+        .booking-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          margin-top: 1.25rem;
+          padding-top: 1rem;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .action-button {
+          padding: 0.5rem 1rem;
+          border-radius: 0.375rem;
+          font-weight: 500;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          border: none;
         }
 
         .reschedule-btn {
-          background-color: #6c757d;
+          background-color: #3b82f6;
           color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-          margin-top: 10px;
         }
 
+        .reschedule-btn:hover {
+          background-color: #2563eb;
+        }
+
+        .cancel-btn {
+          background-color: #ef4444;
+          color: white;
+        }
+
+        .cancel-btn:hover {
+          background-color: #dc2626;
+        }
+
+        /* Status-specific button visibility */
+        .booking-card.cancelled .booking-actions {
+          display: none;
+        }
+
+        /* Dark mode adjustments for buttons */
+        @media (prefers-color-scheme: dark) {
+          .booking-actions {
+            border-color: #374151;
+          }
+        }
+
+        /* Add these styles to improve the reschedule modal appearance */
+
+        /* Reschedule Modal Styling */
         .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
+          background-color: rgba(0, 0, 0, 0.7);
           display: flex;
           justify-content: center;
           align-items: center;
           z-index: 1000;
+          backdrop-filter: blur(4px);
         }
 
-        .modal-content {
+        .reschedule-modal {
           background: white;
-          padding: 20px;
-          border-radius: 8px;
+          border-radius: 12px;
           width: 90%;
-          max-width: 500px;
+          max-width: 550px;
+          padding: 0;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          animation: modalFadeIn 0.3s ease-out;
+          overflow: hidden;
         }
 
-        .modal-actions {
+        .modal-header {
+          background: linear-gradient(135deg, #4f46e5, #6366f1);
+          color: white;
+          padding: 1.25rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
+        }
+
+        .modal-header h3 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 600;
+        }
+
+        .modal-close {
+          background: transparent;
+          border: none;
+          color: white;
+          font-size: 1.5rem;
+          cursor: pointer;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+          padding: 1.5rem;
+        }
+
+        .reschedule-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .form-group label {
+          font-weight: 600;
+          color: #374151;
+          font-size: 1rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+          padding: 0.75rem;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+          border-color: #6366f1;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-group textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+
+        .modal-footer {
+          padding: 1.25rem;
           display: flex;
           justify-content: flex-end;
-          gap: 10px;
-          margin-top: 20px;
-        }
-
-        .modal-actions button {
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .modal-actions button:first-child {
-          background-color: #007bff;
-          color: white;
-          border: none;
-        }
-
-        .modal-actions button:last-child {
-          background-color: #6c757d;
-          color: white;
-          border: none;
-        }
-
-        .reschedule-status {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid #eee;
-        }
-
-        .status-badge.pending {
-          background-color: #ffc107;
-        }
-
-        .status-badge.approved {
-          background-color: #28a745;
-        }
-
-        .status-badge.rejected {
-          background-color: #dc3545;
-        }
-
-        .required {
-          color: #dc3545;
-          margin-left: 4px;
-        }
-
-        .optional {
-          color: #6c757d;
-          font-size: 0.875rem;
-          margin-left: 4px;
-        }
-
-        .char-count {
-          display: block;
-          text-align: right;
-          color: #6c757d;
-          font-size: 0.75rem;
-          margin-top: 0.25rem;
-        }
-
-        .form-group input.error,
-        .form-group textarea.error {
-          border-color: #dc3545;
-          background-color: #fff8f8;
-        }
-
-        .form-group input.error:focus,
-        .form-group textarea.error:focus {
-          box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-        }
-
-        .info-display {
-          padding: 0.75rem;
-          background-color: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
-          color: #4a5568;
-          font-size: 0.95rem;
-        }
-
-        .info-display:empty::before {
-          content: "Not available";
-          color: #6c757d;
-          font-style: italic;
-        }
-
-        .form-group input[type="tel"] {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #e0e0e0;
-          border-radius: 6px;
-          font-size: 1rem;
-          transition: border-color 0.3s ease;
-          background-color: #fff;
-        }
-
-        .form-group input[type="tel"]:focus {
-          outline: none;
-          border-color: #1a237e;
-          box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
-        }
-
-        .form-group input[type="tel"].error {
-          border-color: #dc3545;
-          background-color: #fff8f8;
-        }
-
-        .form-group input[type="tel"].error:focus {
-          box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
-        }
-
-        .form-group input[type="tel"]::placeholder {
-          color: #6c757d;
-          font-size: 0.9rem;
-        }
-
-        .appointment-type-selector {
-          margin-bottom: 2rem;
-        }
-        
-        .appointment-type-buttons {
-          display: flex;
           gap: 1rem;
-          margin-top: 0.5rem;
-        }
-        
-        .appointment-type-btn {
-          padding: 0.75rem 1rem;
-          border: 1px solid #e5e7eb;
-          background-color: #f9fafb;
-          border-radius: 0.375rem;
-          font-size: 0.875rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          flex: 1;
-        }
-        
-        .appointment-type-btn:hover {
-          background-color: #f3f4f6;
-        }
-        
-        .appointment-type-btn.active {
-          background-color: #2563eb;
-          color: white;
-          border-color: #2563eb;
+          border-top: 1px solid #e5e7eb;
         }
 
-        .time-slots-container {
-          margin-bottom: 2rem;
-        }
-        
-        .no-slots-message {
-          text-align: center;
-          color: #666;
-          padding: 1rem;
-          background-color: #f8f9fa;
-          border-radius: 4px;
-        }
-
-        .info-text {
-          color: #666;
-          font-size: 0.9rem;
-          margin-bottom: 1rem;
-          padding: 0.5rem;
-          background-color: #f8f9fa;
-          border-left: 3px solid #2563eb;
-          border-radius: 4px;
-        }
-
-        .consultation-type-section {
-          margin-bottom: 2rem;
-        }
-
-        .consultation-buttons {
-          display: flex;
-          gap: 1rem;
-          margin-top: 1rem;
-        }
-
-        .consultation-btn {
-          flex: 1;
-          padding: 1rem;
-          border: 2px solid #e2e8f0;
+        .btn {
+          padding: 0.75rem 1.5rem;
           border-radius: 8px;
-          background: white;
+          font-weight: 600;
+          font-size: 1rem;
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
@@ -2028,213 +3209,272 @@ const LawyerAppointment = () => {
           gap: 0.5rem;
         }
 
-        .consultation-btn.active {
-          border-color: #2563eb;
-          background: #2563eb;
-          color: white;
+        .btn-cancel {
+          background: #f3f4f6;
+          color: #4b5563;
+          border: 1px solid #d1d5db;
         }
 
-        .booking-form {
-          margin-top: 2rem;
-          padding: 1.5rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+        .btn-cancel:hover {
+          background: #e5e7eb;
         }
 
-        .form-summary {
-          margin-bottom: 1.5rem;
-          padding: 1rem;
-          background: #f8fafc;
-          border-radius: 6px;
-        }
-
-        .video-call-section {
-          margin: 1.5rem 0;
-          padding: 1.5rem;
-          background: #f0f7ff;
-          border-radius: 10px;
-          border: 1px solid #cce5ff;
-          text-align: center;
-        }
-
-        .video-call-button {
-          padding: 0.75rem 1.5rem;
-          background-color: #9C27B0;
+        .btn-submit {
+          background: #4f46e5;
           color: white;
           border: none;
-          border-radius: 6px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 1rem;
         }
 
-        .video-call-button:hover:not(:disabled) {
-          background-color: #7B1FA2;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        .btn-submit:hover {
+          background: #4338ca;
         }
 
-        .video-call-button:disabled {
-          background-color: #D1C4E9;
+        .btn-submit:disabled {
+          background: #9ca3af;
           cursor: not-allowed;
         }
 
-        .video-call-button i {
-          font-size: 1.2rem;
-        }
-
-        .video-call-info {
-          margin-top: 0.75rem;
-          color: #555;
-          font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-          .video-call-section {
-            padding: 1rem;
-          }
-          
-          .video-call-button {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-
-        .consultation-requests-section {
-          margin: 2rem 0;
-          padding: 1.5rem;
-          background-color: #fff;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .consultation-requests-section h3 {
+        /* Calendar styling in modal */
+        .reschedule-calendar {
           margin-bottom: 1rem;
-          color: #333;
-          font-size: 1.25rem;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
-        .consultation-list {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        
-        .consultation-item {
-          padding: 1rem;
-          border-radius: 6px;
-          border-left: 4px solid #ccc;
-          background-color: #f9f9f9;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        
-        .consultation-item.pending {
-          border-left-color: #f0ad4e;
-          background-color: #fff9f0;
-        }
-        
-        .consultation-item.accepted {
-          border-left-color: #5cb85c;
-          background-color: #f0fff0;
-        }
-        
-        .consultation-item.declined {
-          border-left-color: #d9534f;
-          background-color: #fff0f0;
-          opacity: 0.8;
-        }
-        
-        .consultation-details {
-          flex: 1;
-        }
-        
-        .request-time {
-          font-size: 0.85rem;
-          color: #666;
-          margin-bottom: 0.5rem;
-        }
-        
-        .request-message {
-          font-size: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        .request-status {
-          font-weight: 600;
-          text-transform: capitalize;
-        }
-        
-        .scheduled-time {
-          margin-top: 0.5rem;
-          font-weight: 600;
-          color: #5cb85c;
-        }
-        
-        .start-call-btn {
-          background-color: #9C27B0;
-          color: white;
+
+        .reschedule-calendar .react-calendar {
+          width: 100%;
           border: none;
+        }
+
+        .time-slots-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          gap: 0.75rem;
+          margin-top: 1rem;
+        }
+
+        .time-slot {
+          padding: 0.5rem;
+          border: 1px solid #d1d5db;
           border-radius: 6px;
-          padding: 0.75rem 1.25rem;
-          font-weight: 600;
+          text-align: center;
           cursor: pointer;
           transition: all 0.2s;
-          display: inline-flex;
+        }
+
+        .time-slot:hover {
+          border-color: #6366f1;
+          background: #f5f5ff;
+        }
+
+        .time-slot.selected {
+          background: #6366f1;
+          color: white;
+          border-color: #6366f1;
+        }
+
+        /* Animation */
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+          .reschedule-modal {
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+          }
+
+          .time-slots-container {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+          }
+        }
+
+        /* Reschedule Request Form Styling */
+        .reschedule-request-container {
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+          overflow: hidden;
+          margin: 2rem 0;
+          border: 1px solid #e2e8f0;
+        }
+
+        .reschedule-header {
+          background: linear-gradient(135deg, #4f46e5, #6366f1);
+          color: white;
+          padding: 1.5rem;
+          position: relative;
+        }
+
+        .reschedule-header h3 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .reschedule-header h3 i {
+          font-size: 1.25rem;
+        }
+
+        .reschedule-header .lawyer-name {
+          font-weight: 700;
+          margin-left: 0.25rem;
+        }
+
+        .reschedule-form {
+          padding: 1.5rem;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          align-items: center;
+          gap: 1.5rem;
+          padding: 1rem;
+          background: #f8fafc;
+          border-radius: 8px;
+          border-left: 4px solid #6366f1;
+        }
+
+        .form-row label {
+          font-weight: 600;
+          color: #1e293b;
+          font-size: 1rem;
+          display: flex;
           align-items: center;
           gap: 0.5rem;
         }
-        
-        .start-call-btn:hover {
-          background-color: #7B1FA2;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+        .form-row label i {
+          color: #6366f1;
+          font-size: 1.1rem;
         }
-        
-        .pending-message {
-          color: #f0ad4e;
-          font-style: italic;
-          padding: 0.5rem 1rem;
+
+        .form-row input,
+        .form-row textarea,
+        .form-row select {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          font-size: 1rem;
+          background: white;
+          transition: all 0.2s;
         }
-        
-        .declined-message {
-          color: #d9534f;
-          font-style: italic;
-          padding: 0.5rem 1rem;
+
+        .form-row input:focus,
+        .form-row textarea:focus,
+        .form-row select:focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+          outline: none;
         }
-        
+
+        .form-row textarea {
+          min-height: 120px;
+          resize: vertical;
+        }
+
+        .form-row.reason-row {
+          grid-template-columns: 1fr;
+        }
+
+        .form-row.reason-row label {
+          margin-bottom: 0.75rem;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 1rem;
+          padding: 1.5rem;
+          background: #f8fafc;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .form-button {
+          padding: 0.75rem 1.5rem;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .cancel-button {
+          background: #f1f5f9;
+          color: #64748b;
+          border: 1px solid #cbd5e1;
+        }
+
+        .cancel-button:hover {
+          background: #e2e8f0;
+        }
+
+        .submit-button {
+          background: #4f46e5;
+          color: white;
+          border: none;
+        }
+
+        .submit-button:hover {
+          background: #4338ca;
+        }
+
+        .submit-button:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
+        }
+
+        .date-time-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        .date-input, .time-input {
+          position: relative;
+        }
+
+        .date-input i, .time-input i {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #64748b;
+          pointer-events: none;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-          .consultation-item {
-            flex-direction: column;
-            align-items: flex-start;
+          .form-row {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
           }
           
-          .start-call-btn {
-            margin-top: 1rem;
-            width: 100%;
-            justify-content: center;
+          .date-time-container {
+            grid-template-columns: 1fr;
           }
-        }
-
-        .video-call-info-message {
-          margin: 1.5rem 0;
-          padding: 1.5rem;
-          background: #f0f7ff;
-          border-radius: 10px;
-          border: 1px solid #cce5ff;
-          text-align: center;
-        }
-
-        .video-call-info-message p {
-          margin: 0;
-          color: #555;
-          font-size: 0.9rem;
         }
       `}</style>
     </>

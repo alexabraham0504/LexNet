@@ -229,25 +229,24 @@ router.put("/status/:id", async (req, res) => {
 });
 
 // Get appointments for a client
-router.get("/client/:email", async (req, res) => {
+router.get("/client/:clientEmail", async (req, res) => {
   try {
-    const appointments = await Appointment.find({
-      clientEmail: req.params.email
+    const appointments = await Appointment.find({ 
+      clientEmail: req.params.clientEmail 
     })
-    .sort({ appointmentDate: -1, appointmentTime: 1 })
-    .populate('lawyerId', 'fullname'); // This will get the lawyer's name
+    .populate('lawyerId', 'fullName specialization')
+    .sort({ appointmentDate: -1 });
 
-    // Format the response to include lawyer name
-    const formattedAppointments = appointments.map(apt => ({
-      ...apt._doc,
-      lawyerName: apt.lawyerId.fullname
-    }));
-
-    res.json({ 
-      success: true, 
-      appointments: formattedAppointments 
+    res.json({
+      success: true,
+      appointments: appointments.map(appointment => ({
+        ...appointment.toJSON(),
+        lawyerName: appointment.lawyerId.fullName,
+        lawyerSpecialization: appointment.lawyerId.specialization
+      }))
     });
   } catch (error) {
+    console.error("Error fetching appointments:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching appointments",
@@ -387,12 +386,86 @@ router.get("/date/:lawyerId/:date", async (req, res) => {
       }
     });
     
-    res.json({ appointments });
+    // Get payment information for each appointment
+    const Payment = require('../models/Payment');
+    
+    // Use Promise.all to fetch payment info for all appointments in parallel
+    const appointmentsWithPayment = await Promise.all(
+      appointments.map(async (appointment) => {
+        const appointmentObj = appointment.toObject();
+        
+        // Find payment for this appointment
+        const payment = await Payment.findOne({ appointmentId: appointment._id });
+        
+        if (payment) {
+          appointmentObj.paymentInfo = {
+            status: payment.status,
+            amount: payment.amount,
+            paymentDate: payment.paidAt || payment.createdAt
+          };
+        }
+        
+        return appointmentObj;
+      })
+    );
+    
+    res.json({ appointments: appointmentsWithPayment });
   } catch (error) {
     console.error("Error fetching appointments for date:", error);
     res.status(500).json({ 
       success: false,
       message: "Error fetching appointments for date",
+      error: error.message 
+    });
+  }
+});
+
+// Add this new route to get all appointments for a lawyer with payment information
+router.get("/lawyer/:lawyerId", isAuthenticated, async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
+    
+    // Verify the authenticated user is the lawyer
+    if (req.user.id !== lawyerId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to lawyer appointments"
+      });
+    }
+    
+    // Find all appointments for the lawyer
+    const appointments = await Appointment.find({ lawyerId })
+      .sort({ appointmentDate: -1, appointmentTime: 1 });
+    
+    // Get payment information for each appointment
+    const Payment = require('../models/Payment');
+    
+    // Use Promise.all to fetch payment info for all appointments in parallel
+    const appointmentsWithPayment = await Promise.all(
+      appointments.map(async (appointment) => {
+        const appointmentObj = appointment.toObject();
+        
+        // Find payment for this appointment
+        const payment = await Payment.findOne({ appointmentId: appointment._id });
+        
+        if (payment) {
+          appointmentObj.payment = {
+            status: payment.status,
+            amount: payment.amount,
+            paymentDate: payment.createdAt
+          };
+        }
+        
+        return appointmentObj;
+      })
+    );
+    
+    res.json(appointmentsWithPayment);
+  } catch (error) {
+    console.error("Error fetching lawyer appointments:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Error fetching lawyer appointments",
       error: error.message 
     });
   }

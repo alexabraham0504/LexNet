@@ -510,58 +510,6 @@ const LawyerDashboard = () => {
             </div>
           )}
 
-          {/* Video Consultation Requests Section */}
-          <div className="dashboard-card consultation-requests">
-            <h3>Video Consultation Requests</h3>
-            
-            {isLoadingConsultations ? (
-              <div className="loading-spinner">Loading consultation requests...</div>
-            ) : consultationRequests.length > 0 ? (
-              <div className="consultation-list">
-                {consultationRequests.map(request => (
-                  <div key={request._id} className={`consultation-item ${request.status}`}>
-                    <div className="consultation-details">
-                      <p className="client-name">{request.clientName}</p>
-                      <p className="request-time">
-                        {new Date(request.createdAt).toLocaleString()}
-                      </p>
-                      <p className="request-message">{request.message}</p>
-                      <p className="request-status">Status: {request.status}</p>
-                    </div>
-                    
-                    {request.status === 'pending' && (
-                      <div className="consultation-actions">
-                        <button 
-                          className="accept-btn"
-                          onClick={() => handleConsultationRequest(request._id, 'accept')}
-                        >
-                          Accept
-                        </button>
-                        <button 
-                          className="decline-btn"
-                          onClick={() => handleConsultationRequest(request._id, 'decline')}
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    )}
-                    
-                    {request.status === 'accepted' && (
-                      <button 
-                        className="start-call-btn"
-                        onClick={() => handleStartVideoCall(request)}
-                      >
-                        Start Call
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-consultations">No pending consultation requests</p>
-            )}
-          </div>
-
           {/* HERO SECTION */}
           <div className="container-fluid">
             <div className="row">
@@ -630,6 +578,58 @@ const LawyerDashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Video Consultation Requests Section - Moved before footer */}
+          <div className="dashboard-card consultation-requests">
+            <h3>Video Consultation Requests</h3>
+            
+            {isLoadingConsultations ? (
+              <div className="loading-spinner">Loading consultation requests...</div>
+            ) : consultationRequests.length > 0 ? (
+              <div className="consultation-list">
+                {consultationRequests.map(request => (
+                  <div key={request._id} className={`consultation-item ${request.status}`}>
+                    <div className="consultation-details">
+                      <p className="client-name">{request.clientName}</p>
+                      <p className="request-time">
+                        {new Date(request.createdAt).toLocaleString()}
+                      </p>
+                      <p className="request-message">{request.message}</p>
+                      <p className="request-status">Status: {request.status}</p>
+                    </div>
+                    
+                    {request.status === 'pending' && (
+                      <div className="consultation-actions">
+                        <button 
+                          className="accept-btn"
+                          onClick={() => handleConsultationRequest(request._id, 'accept')}
+                        >
+                          Accept
+                        </button>
+                        <button 
+                          className="decline-btn"
+                          onClick={() => handleConsultationRequest(request._id, 'decline')}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )}
+                    
+                    {request.status === 'accepted' && (
+                      <button 
+                        className="start-call-btn"
+                        onClick={() => handleStartVideoCall(request)}
+                      >
+                        Start Call
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="no-consultations">No pending consultation requests</p>
+            )}
           </div>
 
           <Footer />
@@ -844,6 +844,123 @@ const LawyerDashboard = () => {
         
         .decline-call-btn:hover {
           background-color: #c82333;
+        }
+
+        /* Add styles for consultation requests section */
+        .dashboard-card.consultation-requests {
+          background-color: #fff;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          padding: 20px;
+          margin: 20px;
+        }
+        
+        .dashboard-card h3 {
+          font-size: 1.5rem;
+          margin-bottom: 20px;
+          color: #333;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 10px;
+        }
+        
+        .consultation-list {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
+        
+        .consultation-item {
+          border-radius: 6px;
+          padding: 15px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        
+        .consultation-item.pending {
+          background-color: #fff8e1;
+          border: 1px solid #ffe082;
+        }
+        
+        .consultation-item.accepted {
+          background-color: #e8f5e9;
+          border: 1px solid #a5d6a7;
+        }
+        
+        .consultation-item.declined {
+          background-color: #ffebee;
+          border: 1px solid #ef9a9a;
+          opacity: 0.8;
+        }
+        
+        .consultation-details {
+          flex: 1;
+        }
+        
+        .client-name {
+          font-weight: bold;
+          font-size: 1.1rem;
+          margin-bottom: 5px;
+        }
+        
+        .request-time {
+          color: #666;
+          font-size: 0.9rem;
+          margin-bottom: 5px;
+        }
+        
+        .request-message {
+          margin-bottom: 5px;
+        }
+        
+        .request-status {
+          font-weight: bold;
+          text-transform: capitalize;
+        }
+        
+        .consultation-actions {
+          display: flex;
+          gap: 10px;
+        }
+        
+        .accept-btn, .start-call-btn {
+          background-color: #4caf50;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
+        .decline-btn {
+          background-color: #f44336;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
+        .accept-btn:hover, .start-call-btn:hover {
+          background-color: #388e3c;
+        }
+        
+        .decline-btn:hover {
+          background-color: #d32f2f;
+        }
+        
+        .no-consultations {
+          color: #666;
+          font-style: italic;
+          text-align: center;
+          padding: 20px;
+        }
+        
+        .loading-spinner {
+          text-align: center;
+          padding: 20px;
+          color: #666;
         }
       `}</style>
     </>
