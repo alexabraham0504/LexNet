@@ -37,8 +37,19 @@ const LawyerDashboard = () => {
   const [incomingCalls, setIncomingCalls] = useState([]);
   const [pendingMeetings, setPendingMeetings] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [consultationRequests, setConsultationRequests] = useState([]);
-  const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
+  const [assignedCases, setAssignedCases] = useState([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+
+  // Define the getCaseTypeBadge function within component scope
+  const getCaseTypeBadge = (caseType) => {
+    switch(caseType) {
+      case 'criminal': return 'danger';
+      case 'civil': return 'primary';
+      case 'family': return 'success';
+      case 'corporate': return 'info';
+      default: return 'secondary';
+    }
+  };
 
   useEffect(() => {
     const fetchLawyerData = async () => {
@@ -267,136 +278,35 @@ const LawyerDashboard = () => {
     }
   };
 
+  const userName = sessionStorage.getItem("name") || "Lawyer";
+
   useEffect(() => {
-    const fetchConsultationRequests = async () => {
-      if (!user?._id) return;
+    const fetchAssignedCases = async () => {
+      if (!lawyerData?._id) return;
       
       try {
-        setIsLoadingConsultations(true);
-        const token = sessionStorage.getItem("token");
-        
-        if (!token) {
-          console.error("No authentication token found");
-          toast.error("Authentication error. Please log in again.");
-          navigate('/login');
-          return;
-        }
-        
+        setLoadingCases(true);
         const response = await axios.get(
-          `http://localhost:5000/api/consultations/lawyer/${user._id}`,
+          `http://localhost:5000/api/cases/assigned/${lawyerData._id}`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${sessionStorage.getItem('token')}`
             }
           }
         );
         
         if (response.data.success) {
-          setConsultationRequests(response.data.consultationRequests);
+          setAssignedCases(response.data.cases);
         }
       } catch (error) {
-        console.error("Error fetching consultation requests:", error);
+        console.error('Error fetching assigned cases:', error);
       } finally {
-        setIsLoadingConsultations(false);
+        setLoadingCases(false);
       }
     };
     
-    fetchConsultationRequests();
-    
-    // Set up an interval to refresh consultation requests
-    const intervalId = setInterval(fetchConsultationRequests, 30000); // every 30 seconds
-    
-    return () => clearInterval(intervalId);
-  }, [user?._id, navigate]);
-
-  const handleConsultationRequest = async (requestId, action) => {
-    try {
-      const token = sessionStorage.getItem("token");
-      
-      if (!token) {
-        toast.error("Authentication error. Please log in again.");
-        navigate('/login');
-        return;
-      }
-      
-      const response = await axios.put(
-        `http://localhost:5000/api/consultations/${requestId}/status`,
-        {
-          status: action === 'accept' ? 'accepted' : 'declined'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (response.data.success) {
-        toast.success(`Consultation request ${action === 'accept' ? 'accepted' : 'declined'}`);
-        
-        // Update the local state
-        setConsultationRequests(prevRequests => 
-          prevRequests.map(req => 
-            req._id === requestId 
-              ? { ...req, status: action === 'accept' ? 'accepted' : 'declined' } 
-              : req
-          )
-        );
-        
-        // If accepted, offer to start the call
-        if (action === 'accept') {
-          const request = consultationRequests.find(req => req._id === requestId);
-          if (request) {
-            const startCall = window.confirm("Would you like to start the video call now?");
-            if (startCall) {
-              handleStartVideoCall(request);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error handling consultation request:", error);
-      toast.error("Error handling consultation request");
-    }
-  };
-
-  const handleStartVideoCall = (consultationRequest) => {
-    const { roomName, clientName } = consultationRequest;
-    
-    // Create URL with encoded parameters for external video service
-    const lawyerName = encodeURIComponent(
-      user?.fullName || 
-      user?.name || 
-      sessionStorage.getItem('userName') || 
-      localStorage.getItem('userName') || 
-      'Lawyer'
-    );
-    const encodedRoomName = encodeURIComponent(roomName);
-    
-    // Simplified URL with essential parameters for better compatibility
-    const videoServiceUrl = `https://meet.jit.si/${encodedRoomName}#userInfo.displayName="${lawyerName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
-    
-    // Open in new window with specific features
-    const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800,noopener,noreferrer');
-    
-    // If window was blocked, show message and navigate to video call page as fallback
-    if (!videoWindow || videoWindow.closed || typeof videoWindow.closed === 'undefined') {
-      toast.error('Please allow pop-ups to open the video call');
-      
-      // Navigate to the video call page as fallback
-      navigate(`/video-call/${roomName}`, {
-        state: {
-          roomName: roomName,
-          isLawyer: true,
-          lawyerName: lawyerName,
-          clientName: clientName,
-          autoJoin: true
-        }
-      });
-    }
-  };
-
-  const userName = sessionStorage.getItem("name") || "Lawyer";
+    fetchAssignedCases();
+  }, [lawyerData]);
 
   return (
     <>
@@ -510,6 +420,71 @@ const LawyerDashboard = () => {
             </div>
           )}
 
+          {/* Assigned Cases Section */}
+          <div className="container mt-5">
+            <div className="row">
+              <div className="col-12">
+                <div className="card shadow-sm">
+                  <div className="card-header bg-light">
+                    <h5 className="mb-0">
+                      <FontAwesomeIcon icon={faFileAlt} className="me-2" />
+                      Recent Case Assignments
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    {loadingCases ? (
+                      <div className="text-center py-3">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      </div>
+                    ) : assignedCases.length > 0 ? (
+                      <div className="table-responsive">
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              <th>Case Title</th>
+                              <th>Client</th>
+                              <th>Case Type</th>
+                              <th>Assigned</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {assignedCases.map(caseItem => (
+                              <tr key={caseItem._id}>
+                                <td>{caseItem.title}</td>
+                                <td>{caseItem.clientId?.name || "Client"}</td>
+                                <td>
+                                  <span className={`badge bg-${getCaseTypeBadge(caseItem.caseType)}`}>
+                                    {caseItem.caseType.charAt(0).toUpperCase() + caseItem.caseType.slice(1)}
+                                  </span>
+                                </td>
+                                <td>{new Date(caseItem.updatedAt).toLocaleDateString()}</td>
+                                <td>
+                                  <Link 
+                                    to={`/lawyer/case/${caseItem._id}`} 
+                                    className="btn btn-sm btn-primary"
+                                  >
+                                    View Details
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="mb-0 text-muted">No case assignments yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* HERO SECTION */}
           <div className="container-fluid">
             <div className="row">
@@ -578,58 +553,6 @@ const LawyerDashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Video Consultation Requests Section - Moved before footer */}
-          <div className="dashboard-card consultation-requests">
-            <h3>Video Consultation Requests</h3>
-            
-            {isLoadingConsultations ? (
-              <div className="loading-spinner">Loading consultation requests...</div>
-            ) : consultationRequests.length > 0 ? (
-              <div className="consultation-list">
-                {consultationRequests.map(request => (
-                  <div key={request._id} className={`consultation-item ${request.status}`}>
-                    <div className="consultation-details">
-                      <p className="client-name">{request.clientName}</p>
-                      <p className="request-time">
-                        {new Date(request.createdAt).toLocaleString()}
-                      </p>
-                      <p className="request-message">{request.message}</p>
-                      <p className="request-status">Status: {request.status}</p>
-                    </div>
-                    
-                    {request.status === 'pending' && (
-                      <div className="consultation-actions">
-                        <button 
-                          className="accept-btn"
-                          onClick={() => handleConsultationRequest(request._id, 'accept')}
-                        >
-                          Accept
-                        </button>
-                        <button 
-                          className="decline-btn"
-                          onClick={() => handleConsultationRequest(request._id, 'decline')}
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    )}
-                    
-                    {request.status === 'accepted' && (
-                      <button 
-                        className="start-call-btn"
-                        onClick={() => handleStartVideoCall(request)}
-                      >
-                        Start Call
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-consultations">No pending consultation requests</p>
-            )}
           </div>
 
           <Footer />
@@ -844,123 +767,6 @@ const LawyerDashboard = () => {
         
         .decline-call-btn:hover {
           background-color: #c82333;
-        }
-
-        /* Add styles for consultation requests section */
-        .dashboard-card.consultation-requests {
-          background-color: #fff;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          padding: 20px;
-          margin: 20px;
-        }
-        
-        .dashboard-card h3 {
-          font-size: 1.5rem;
-          margin-bottom: 20px;
-          color: #333;
-          border-bottom: 1px solid #eee;
-          padding-bottom: 10px;
-        }
-        
-        .consultation-list {
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
-        }
-        
-        .consultation-item {
-          border-radius: 6px;
-          padding: 15px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        
-        .consultation-item.pending {
-          background-color: #fff8e1;
-          border: 1px solid #ffe082;
-        }
-        
-        .consultation-item.accepted {
-          background-color: #e8f5e9;
-          border: 1px solid #a5d6a7;
-        }
-        
-        .consultation-item.declined {
-          background-color: #ffebee;
-          border: 1px solid #ef9a9a;
-          opacity: 0.8;
-        }
-        
-        .consultation-details {
-          flex: 1;
-        }
-        
-        .client-name {
-          font-weight: bold;
-          font-size: 1.1rem;
-          margin-bottom: 5px;
-        }
-        
-        .request-time {
-          color: #666;
-          font-size: 0.9rem;
-          margin-bottom: 5px;
-        }
-        
-        .request-message {
-          margin-bottom: 5px;
-        }
-        
-        .request-status {
-          font-weight: bold;
-          text-transform: capitalize;
-        }
-        
-        .consultation-actions {
-          display: flex;
-          gap: 10px;
-        }
-        
-        .accept-btn, .start-call-btn {
-          background-color: #4caf50;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        
-        .decline-btn {
-          background-color: #f44336;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        
-        .accept-btn:hover, .start-call-btn:hover {
-          background-color: #388e3c;
-        }
-        
-        .decline-btn:hover {
-          background-color: #d32f2f;
-        }
-        
-        .no-consultations {
-          color: #666;
-          font-style: italic;
-          text-align: center;
-          padding: 20px;
-        }
-        
-        .loading-spinner {
-          text-align: center;
-          padding: 20px;
-          color: #666;
         }
       `}</style>
     </>

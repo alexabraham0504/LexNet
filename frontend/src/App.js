@@ -38,13 +38,16 @@ import DeletedCases from './pages/client/DeletedCases';
 import LawyerProfile from './pages/client/LawyerProfile';
 import PaymentReceiptsList from "./pages/client/PaymentReceiptsList";
 import PaymentReceipt from "./pages/client/PaymentReceipt";
-
+import ReviewForm from "./pages/client/ReviewForm";
+import ReviewLawyersList from "./pages/client/ReviewLawyersList";
+import SendCaseDetails from './pages/client/SendCaseDetails';
 // Lawyer pages
 import LawyerDashboard from "./pages/lawyer/LawyerDashboard";
 import LawyerRegistration from "./pages/lawyer/LawyerRegistration";
 import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 import Messages from "./pages/lawyer/Messages";
 import IPCSection from "./pages/lawyer/IPCSection";
+import LawyerCaseDetails from "./pages/lawyer/LawyerCaseDetails";
 
 function App() {
   return (
@@ -109,7 +112,14 @@ function App() {
           <Route path="/video-call/:roomId" element={<VideoCall />} />
           <Route path="/client/payment-receipts" element={<PaymentReceiptsList />} />
           <Route path="/client/payment-receipt/:receiptId" element={<PaymentReceipt />} />
-
+          <Route path="/client/review/:lawyerId" element={<ReviewForm />} />
+          <Route path="/client/review-lawyers" element={<ReviewLawyersList />} />
+          <Route path="/client/send-case-details" element={
+            <ProtectedRoute>
+              <SendCaseDetails />
+            </ProtectedRoute>
+          } />
+          
           {/* Lawyer Pages */}
           <Route path="/lawyerdashboard" element={
             <ProtectedRoute>
@@ -120,6 +130,11 @@ function App() {
           <Route path="/lawyeravailability" element={<LawyerAvailability />} />
           <Route path="/message" element={<Messages />} />
           <Route path="/ipc-sections" element={<IPCSection />} />
+          <Route path="/lawyer/case/:caseId" element={
+            <ProtectedRoute>
+              <LawyerCaseDetails />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

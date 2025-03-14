@@ -43,8 +43,14 @@ const FindLawyers = () => {
   const { user } = useAuth();
   const [activeChats, setActiveChats] = useState([]);
   const MAX_ACTIVE_CHATS = 3;
+  const [showCaseSelectionModal, setShowCaseSelectionModal] = useState(false);
+  const [selectedLawyerForCase, setSelectedLawyerForCase] = useState(null);
+  const [userCases, setUserCases] = useState([]);
+  const [selectedCaseId, setSelectedCaseId] = useState('');
+  const [caseNotes, setCaseNotes] = useState('');
+  const [sendingCase, setSendingCase] = useState(false);
 
-  // IPC to Specialization mapping
+  // Updated IPC to Specialization mapping
   const IPC_SPECIALIZATION_MAP = {
     // Environmental Laws
     '268': 'Environmental Law',
@@ -57,14 +63,17 @@ const FindLawyers = () => {
     '307': 'Criminal Law',
     '378': 'Criminal Law',
     '379': 'Criminal Law',
+    '380': 'Criminal Law',
+    '420': 'Criminal Law', // Cheating is under Criminal Law
     
     // Property Laws
+    '425': 'Property Law',
+    '426': 'Property Law',
+    '427': 'Property Law',
     '441': 'Real Estate Law',
     '447': 'Real Estate Law',
-    '425': 'Property Law',
     
     // Civil Laws
-    '420': 'Civil Law',
     '406': 'Civil Law',
     
     // Family Laws
@@ -78,12 +87,21 @@ const FindLawyers = () => {
         setLoading(true);
         setError(null);
 
-        // Determine the required specialization based on IPC section
-        const requiredSpecialization = ipcSection ? IPC_SPECIALIZATION_MAP[ipcSection] : caseSpecialization;
+        // Determine the required specialization based on IPC section or direct specialization
+        let requiredSpecialization;
+        
+        if (ipcSection) {
+          // If IPC section is provided, use the mapping
+          requiredSpecialization = IPC_SPECIALIZATION_MAP[ipcSection] || 'General Practice';
+        } else {
+          // If no IPC section but specialization is provided directly
+          requiredSpecialization = caseSpecialization;
+        }
 
         console.log('Fetching lawyers for:', {
           ipcSection,
-          requiredSpecialization
+          requiredSpecialization,
+          providedSpecialization: caseSpecialization
         });
 
         // Fetch all verified lawyers
@@ -119,6 +137,45 @@ const FindLawyers = () => {
 
     fetchLawyers();
   }, [ipcSection, caseSpecialization]);
+
+  useEffect(() => {
+    const fetchUserCases = async () => {
+      try {
+        if (!user || !user._id) {
+          console.log('No user found, skipping case fetch');
+          return;
+        }
+        
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          console.log('No token found, skipping case fetch');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5000/api/cases/user/${user._id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.data && response.data.cases) {
+          setUserCases(response.data.cases);
+        } else {
+          console.log('No cases found in response:', response.data);
+          setUserCases([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user cases:', error);
+        // Only show toast error if user is logged in
+        if (user && user._id) {
+          toast.error('Could not load your cases');
+        }
+        setUserCases([]);
+      }
+    };
+    
+    fetchUserCases();
+  }, [user]);
 
   const filteredLawyers = lawyers.filter(lawyer => {
     // Search term filter
@@ -338,10 +395,53 @@ const FindLawyers = () => {
   };
 
   const handleSendCaseDetails = (lawyer) => {
-    // Implement send case details functionality
-    console.log("Sending case details to:", lawyer.fullName);
-    // You can navigate to a case details form or open a modal
-    navigate(`/send-case-details/${lawyer._id}`);
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    
+    if (userCases.length === 0) {
+      toast.error('You need to create a case first');
+      navigate('/case-details/' + user._id);
+      return;
+    }
+    
+    setSelectedLawyerForCase(lawyer);
+    setShowCaseSelectionModal(true);
+  };
+
+  const handleSendCaseToLawyer = async () => {
+    if (!selectedCaseId) {
+      toast.error('Please select a case');
+      return;
+    }
+    
+    try {
+      setSendingCase(true);
+      
+      const response = await axios.post('http://localhost:5000/api/cases/send-to-lawyer', {
+        caseId: selectedCaseId,
+        lawyerId: selectedLawyerForCase._id,
+        notes: caseNotes
+      }, {
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.data.success) {
+        toast.success(`Case details sent to ${selectedLawyerForCase.fullName}`);
+        setShowCaseSelectionModal(false);
+        setSelectedLawyerForCase(null);
+        setSelectedCaseId('');
+        setCaseNotes('');
+      }
+    } catch (error) {
+      console.error('Error sending case:', error);
+      toast.error('Failed to send case details');
+    } finally {
+      setSendingCase(false);
+    }
   };
 
   const containerVariants = {
@@ -635,6 +735,71 @@ const FindLawyers = () => {
                         <i className="fas fa-comment"></i>
                         Chat Now
                         <span className="fee-label">Free</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Case Selection Modal */}
+            {showCaseSelectionModal && selectedLawyerForCase && (
+              <div className="modal-overlay">
+                <div className="modal-content case-selection-modal">
+                  <button 
+                    className="modal-close" 
+                    onClick={() => setShowCaseSelectionModal(false)}
+                  >
+                    ×
+                  </button>
+                  
+                  <div className="modal-header">
+                    <h2>Send Case Details to {selectedLawyerForCase.fullName}</h2>
+                  </div>
+                  
+                  <div className="case-selection-form">
+                    <div className="form-group">
+                      <label htmlFor="case-select">Select a Case</label>
+                      <select 
+                        id="case-select"
+                        className="form-control"
+                        value={selectedCaseId}
+                        onChange={(e) => setSelectedCaseId(e.target.value)}
+                      >
+                        <option value="">-- Select a case --</option>
+                        {userCases.map(caseItem => (
+                          <option key={caseItem._id} value={caseItem._id}>
+                            {caseItem.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label htmlFor="case-notes">Additional Notes (Optional)</label>
+                      <textarea
+                        id="case-notes"
+                        className="form-control"
+                        rows="4"
+                        value={caseNotes}
+                        onChange={(e) => setCaseNotes(e.target.value)}
+                        placeholder="Add any additional information you want to share with the lawyer..."
+                      ></textarea>
+                    </div>
+                    
+                    <div className="form-actions">
+                      <button 
+                        className="btn btn-secondary"
+                        onClick={() => setShowCaseSelectionModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={handleSendCaseToLawyer}
+                        disabled={!selectedCaseId || sendingCase}
+                      >
+                        {sendingCase ? 'Sending...' : 'Send Case Details'}
                       </button>
                     </div>
                   </div>
@@ -943,5 +1108,75 @@ export default FindLawyers;
     .modal-btn {
       padding: 0.8rem 0.4rem;
     }
+  }
+
+  .case-selection-modal {
+    max-width: 600px;
+  }
+
+  .case-selection-form {
+    padding: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+
+  .btn-primary {
+    background-color: #2196F3;
+    color: white;
+  }
+
+  .btn-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+  }
+
+  .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: #0d8aee;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #e9e9e9;
   }
 `}</style> 

@@ -1165,7 +1165,7 @@ router.post("/analyze-direct", isAuthenticated, upload.single('file'), async (re
         model: "gemini-1.5-pro-latest",
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 1024
+          maxOutputTokens:10000
         }
       });
       
@@ -1313,8 +1313,7 @@ router.get("/suggest-lawyers/:sectionNumber", async (req, res) => {
 
     // Get specialization based on IPC section
     const specializationInfo = getExactSpecialization(sectionNumber);
-    console.log('Specialization Info:', specializationInfo);
-
+    
     // Find lawyers with matching specialization
     const query = {
       $and: [
@@ -1684,6 +1683,49 @@ router.post('/save-analysis', isAuthenticated, async (req, res) => {
       success: false,
       message: 'Error saving analysis results',
       error: error.message
+    });
+  }
+});
+
+// Get cases assigned to a lawyer
+router.get('/assigned/:lawyerId', isAuthenticated, async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(lawyerId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid lawyer ID format'
+      });
+    }
+    
+    // Ensure the requesting user is the lawyer
+    if (req.user.role !== 'lawyer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized access'
+      });
+    }
+    
+    // Find cases where the lawyer is assigned
+    const cases = await Case.find({ 
+      assignedLawyers: lawyerId,
+      isDeleted: false
+    })
+    .populate('clientId', 'name email')
+    .sort({ updatedAt: -1 });
+    
+    res.json({
+      success: true,
+      cases
+    });
+  } catch (error) {
+    console.error('Error fetching assigned cases:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching assigned cases',
+      error: error.message 
     });
   }
 });

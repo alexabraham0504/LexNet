@@ -10,6 +10,8 @@ import {
   faFileAlt,
   faMessage,
   faReceipt,
+  faPaperPlane,
+  faStar
 } from "@fortawesome/free-solid-svg-icons";
 import Navbar from "../../components/navbar/navbar-client";
 import Footer from "../../components/footer/footer-client";
@@ -140,6 +142,14 @@ const ClientDashboard = () => {
     navigate('/client/payment-receipts');
   };
 
+  const handleSendCaseDetails = () => {
+    navigate('/client/send-case-details');
+  };
+
+  const handleReviewLawyer = () => {
+    navigate('/client/review-lawyers');
+  };
+
   return (
     <div className="client-dashboard">
       <Navbar />
@@ -199,6 +209,28 @@ const ClientDashboard = () => {
                   <p>View your payment history and receipts</p>
                 </div>
               </Link>
+              
+              <div 
+                onClick={handleSendCaseDetails} 
+                className="action-card"
+              >
+                <div className="card-content">
+                  <FontAwesomeIcon icon={faPaperPlane} className="card-icon" />
+                  <h3>Send Case Details</h3>
+                  <p>Share case information with your lawyer</p>
+                </div>
+              </div>
+
+              <div 
+                onClick={handleReviewLawyer} 
+                className="action-card"
+              >
+                <div className="card-content">
+                  <FontAwesomeIcon icon={faStar} className="card-icon" />
+                  <h3>Review Lawyer</h3>
+                  <p>Rate your experience with lawyers</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -237,10 +269,10 @@ const ClientDashboard = () => {
           .dashboard-content {
             position: relative;
             z-index: 2;
-            width: 100%;
-            max-width: 1200px;
+            width: 90%;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 3rem 2rem;
+            padding: 2rem 1.5rem;
             min-height: calc(100vh - 76px);
             display: flex;
             flex-direction: column;
@@ -283,8 +315,8 @@ const ClientDashboard = () => {
 
           .action-cards {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
             margin-top: auto;
             animation: fadeInUp 1s ease 0.3s forwards;
             opacity: 0;
@@ -295,38 +327,44 @@ const ClientDashboard = () => {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            padding: 2rem;
+            border-radius: 10px;
+            padding: 1.25rem;
             text-decoration: none;
             color: white;
             transition: all 0.3s ease;
+            cursor: pointer;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .card-content {
+            text-align: center;
+            width: 100%;
+          }
+
+          .card-icon {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: rgb(232, 189, 134);
+          }
+
+          .card-content h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+            color: white;
+          }
+
+          .card-content p {
+            color: #ebe2d6;
+            font-size: 0.8rem;
           }
 
           .action-card:hover {
             transform: translateY(-5px);
             background: rgba(255, 255, 255, 0.15);
             border-color: rgba(255, 255, 255, 0.3);
-          }
-
-          .card-content {
-            text-align: center;
-          }
-
-          .card-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: rgb(232, 189, 134);
-          }
-
-          .card-content h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: white;
-          }
-
-          .card-content p {
-            color: #ebe2d6;
-            font-size: 0.9rem;
           }
 
           @keyframes fadeInUp {
@@ -340,7 +378,7 @@ const ClientDashboard = () => {
             }
           }
 
-          @media (max-width: 1200px) {
+          @media (max-width: 992px) {
             .action-cards {
               grid-template-columns: repeat(2, 1fr);
             }
@@ -348,24 +386,17 @@ const ClientDashboard = () => {
 
           @media (max-width: 768px) {
             .dashboard-content {
-              padding: 2rem 1rem;
-            }
-
-            .dashboard-title {
-              font-size: 2.5rem;
-            }
-
-            .dashboard-subtitle {
-              font-size: 1.8rem;
+              width: 95%;
+              padding: 1.5rem 1rem;
             }
 
             .action-cards {
               grid-template-columns: 1fr;
-              gap: 1rem;
             }
 
             .action-card {
-              padding: 1.5rem;
+              padding: 1rem;
+              min-height: 120px;
             }
           }
         `}</style>

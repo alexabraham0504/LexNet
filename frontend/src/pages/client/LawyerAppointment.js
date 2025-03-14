@@ -61,6 +61,8 @@ const LawyerAppointment = () => {
   const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
   const [hasAcceptedAppointment, setHasAcceptedAppointment] = useState(false);
   const [rescheduleBookingId, setRescheduleBookingId] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
   const navigate = useNavigate();
 
   // Fetch lawyer details on component mount
@@ -396,6 +398,7 @@ const LawyerAppointment = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Load Razorpay script
   const loadRazorpayScript = async () => {
     const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
     if (!res) {
@@ -405,12 +408,135 @@ const LawyerAppointment = () => {
     return true;
   };
 
+  // Handle payment initiation
+  const initiatePayment = async (appointmentId) => {
+    try {
+      setIsPaymentLoading(true);
+      
+      console.log("Initiating payment for appointment:", appointmentId);
+      
+      // Create order on the server
+      const orderResponse = await axios.post(
+        "http://localhost:5000/api/payments/create-order",
+        { appointmentId: appointmentId }
+      );
+      
+      if (!orderResponse.data.success) {
+        throw new Error(orderResponse.data.message || "Failed to create payment order");
+      }
+      
+      const orderData = orderResponse.data.data;
+      
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) return;
+      
+      // Configure Razorpay options
+      const options = {
+        key: "rzp_test_bD1Alu6Su7sKSO", // Use your Razorpay key
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Lex Net Legal Services",
+        description: `Appointment with ${orderData.lawyerName}`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            // Verify payment on server
+            const verifyResponse = await axios.post(
+              "http://localhost:5000/api/payments/verify",
+              {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                appointmentId
+              }
+            );
+            
+            if (verifyResponse.data.success) {
+              setSuccess(true);
+              toast.success("Payment successful! Appointment booked.");
+              
+              // Reset form
+              setFormData({
+                ...formData,
+                notes: "",
+              });
+              setSelectedTimeSlot(null);
+              setSelectedDate(null);
+              
+              // Fetch updated bookings
+              fetchMyBookings();
+            } else {
+              setPaymentError("Payment verification failed. Please contact support.");
+              
+              // Cancel the appointment since payment failed
+              await axios.put(
+                `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+              );
+            }
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            setPaymentError("Payment verification failed. Please contact support.");
+            
+            // Cancel the appointment since payment failed
+            await axios.put(
+              `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+            );
+          } finally {
+            setIsPaymentLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.fullName || user?.name || formData.clientName,
+          email: user?.email || formData.clientEmail,
+          contact: user?.phone || formData.clientPhone
+        },
+        theme: {
+          color: "#1a237e"
+        },
+        modal: {
+          ondismiss: async function() {
+            setIsPaymentLoading(false);
+            setPaymentError("Payment cancelled. Appointment not confirmed.");
+            
+            // Cancel the appointment since payment was cancelled
+            await axios.put(
+              `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+            );
+          }
+        }
+      };
+      
+      // Create Razorpay instance and open payment modal
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      
+      // Handle payment modal close
+      razorpay.on('payment.failed', async function (response) {
+        setPaymentError(`Payment failed: ${response.error.description}`);
+        setIsPaymentLoading(false);
+        
+        // Cancel the appointment since payment failed
+        await axios.put(
+          `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+        );
+      });
+      
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      setPaymentError(error.response?.data?.message || error.message || "Failed to initiate payment");
+      setIsPaymentLoading(false);
+    }
+  };
+
+  // Update handleSubmit to initiate payment
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       setIsLoading(true);
       setError(null);
+      setPaymentError(null);
       
       // Format the date for the API
       const year = selectedDate.getFullYear();
@@ -421,6 +547,7 @@ const LawyerAppointment = () => {
       // Validate all required fields
       if (!selectedDate || !selectedTimeSlot || !formData.clientName || !formData.clientEmail || !formData.clientPhone) {
         setError("Please fill in all required fields");
+        setIsLoading(false);
         return;
       }
 
@@ -442,129 +569,43 @@ const LawyerAppointment = () => {
         appointmentData
       );
 
-      if (response.data.success !== false) {
-        setSuccess(true);
-        setError(null);
-        
-        // Reset form
-        setSelectedTimeSlot(null);
-        setFormData({
-          ...formData,
-          notes: ''
-        });
+      console.log("Appointment creation response:", response.data);
 
-        // Show payment modal if needed
-        if (response.data.requiresPayment) {
-          setAppointmentId(response.data.appointmentId);
-          setPaymentAmount(response.data.paymentAmount);
-          setShowPaymentModal(true);
+      if (response.data) {
+        // Try different ways to extract the appointment ID
+        let appointmentId = null;
+        
+        // Check all possible locations of the ID in the response
+        if (response.data._id) {
+          appointmentId = response.data._id;
+        } else if (response.data.appointmentId) {
+          appointmentId = response.data.appointmentId;
+        } else if (response.data.appointment && response.data.appointment._id) {
+          appointmentId = response.data.appointment._id;
+        } else if (response.data.data && response.data.data._id) {
+          appointmentId = response.data.data._id;
+        } else if (response.data.id) {
+          appointmentId = response.data.id;
         }
+        
+        if (!appointmentId) {
+          console.error("Could not find appointment ID in response:", response.data);
+          throw new Error('No appointment ID returned from server');
+        }
+        
+        console.log("Successfully extracted appointment ID:", appointmentId);
+        
+        // Initiate payment process
+        await initiatePayment(appointmentId);
+        
+      } else {
+        setError('Error booking appointment: No response data');
       }
     } catch (error) {
-      console.error('Error booking appointment:', error);
-      setError(error.response?.data?.message || 'Error booking appointment. Please try again.');
+      console.error('Error in appointment booking:', error);
+      setError(error.message || 'Error booking appointment. Please try again.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const initiatePayment = async (appointmentId) => {
-    try {
-      setIsPaymentLoading(true);
-      
-      // Create order on the server
-      const orderResponse = await axios.post(
-        "http://localhost:5000/api/payments/create-order",
-        { appointmentId }
-      );
-      
-      if (!orderResponse.data.success) {
-        throw new Error(orderResponse.data.message || "Failed to create payment order");
-      }
-      
-      const orderData = orderResponse.data.data;
-      
-      // Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) return;
-      
-      // Configure Razorpay options
-      const options = {
-        key: "rzp_test_bD1Alu6Su7sKSO", // Hardcoded for now to ensure it works
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Lex Net Legal Services",
-        description: `Appointment with ${orderData.lawyerName} on ${new Date(orderData.appointmentDate).toLocaleDateString()} at ${orderData.appointmentTime}`,
-        order_id: orderData.orderId,
-        handler: async function (response) {
-          try {
-            // Verify payment on server
-            const verifyResponse = await axios.post(
-              "http://localhost:5000/api/payments/verify",
-              {
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                appointmentId
-              }
-            );
-            
-            if (verifyResponse.data.success) {
-              setPaymentSuccess(true);
-              setSuccess(true);
-              
-              // Reset form data
-              setFormData({
-                ...formData,
-                notes: "",
-              });
-              setSelectedTimeSlot(null);
-              setSelectedDate(null);
-              
-              // Refresh bookings if needed
-              if (fetchMyBookings) {
-                fetchMyBookings();
-              }
-            } else {
-              setPaymentError("Payment verification failed. Please contact support.");
-            }
-          } catch (error) {
-            console.error("Payment verification error:", error);
-            setPaymentError("Payment verification failed. Please contact support.");
-          } finally {
-            setIsPaymentLoading(false);
-          }
-        },
-        prefill: {
-          name: user?.fullName || user?.name || formData.clientName,
-          email: user?.email || formData.clientEmail,
-          contact: user?.phone || formData.clientPhone
-        },
-        theme: {
-          color: "#1a237e"
-        },
-        modal: {
-          ondismiss: function() {
-            setIsPaymentLoading(false);
-            setPaymentError("Payment cancelled. You can try again.");
-          }
-        }
-      };
-      
-      // Create Razorpay instance and open payment modal
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-      
-      // Handle payment modal close
-      razorpay.on('payment.failed', function (response) {
-        setPaymentError(`Payment failed: ${response.error.description}`);
-        setIsPaymentLoading(false);
-      });
-      
-    } catch (error) {
-      console.error("Payment initiation error:", error);
-      setPaymentError(error.response?.data?.message || error.message || "Failed to initiate payment");
-      setIsPaymentLoading(false);
     }
   };
 
@@ -745,7 +786,7 @@ const LawyerAppointment = () => {
     setSelectedTimeSlot(null); // Reset selected time slot when changing appointment type
   };
 
-  // Update the handleVideoCall function to send a consultation request instead of immediately starting a call
+  // Add the handleVideoCall function
   const handleVideoCall = () => {
     if (!user) {
       navigate("/login");
@@ -762,7 +803,7 @@ const LawyerAppointment = () => {
     const roomName = `meeting_${user._id}_${lawyerId}_${timestamp}`;
 
     // Show loading toast
-    toast.loading("Sending video consultation request...");
+    toast.loading("Initiating video call...");
     setIsVideoCallLoading(true);
 
     // Get token from sessionStorage
@@ -772,19 +813,17 @@ const LawyerAppointment = () => {
       toast.dismiss();
       toast.error('Authentication error. Please log in again.');
       navigate('/login');
-      setIsVideoCallLoading(false);
       return;
     }
 
-    // Send consultation request to the lawyer
-    axios.post('http://localhost:5000/api/consultations/request', {
+    // Send meeting request to the lawyer
+    axios.post('http://localhost:5000/api/meetings/create', {
       lawyerId: lawyerId,
       roomName: roomName,
-      clientName: user?.fullName || user?.name || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Client',
-      clientId: user?._id,
-      lawyerName: lawyerDetails?.fullName || lawyerDetails?.fullname || lawyerDetails?.name || 'Lawyer',
-      status: 'pending',
-      message: "I would like to schedule a video consultation with you."
+      clientName: user.fullName || user.name || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Client',
+      clientId: user._id,
+      lawyerName: lawyerDetails?.fullName || 'Lawyer',
+      status: 'pending'
     }, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -793,35 +832,56 @@ const LawyerAppointment = () => {
     .then(response => {
       toast.dismiss();
       setIsVideoCallLoading(false);
-      
       if (response.data.success) {
-        toast.success('Video consultation request sent to lawyer');
-        // Show a confirmation message to the client
-        setSuccess(true);
-        setError(null);
+        toast.success('Video call request sent to lawyer');
+        
+        // Create URL with encoded parameters for external video service
+        const clientName = encodeURIComponent(
+          user.fullName || 
+          user.name || 
+          sessionStorage.getItem('userName') || 
+          localStorage.getItem('userName') || 
+          'Client'
+        );
+        const encodedRoomName = encodeURIComponent(roomName);
+        
+        // Simplified URL with essential parameters for better compatibility
+        const videoServiceUrl = `https://meet.jit.si/${encodedRoomName}#userInfo.displayName="${clientName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
+        
+        // Open in new window with specific features
+        const videoWindow = window.open(videoServiceUrl, '_blank', 'width=1200,height=800,noopener,noreferrer');
+        
+        // If window was blocked, show message and navigate to video call page as fallback
+        if (!videoWindow || videoWindow.closed || typeof videoWindow.closed === 'undefined') {
+          toast.error('Please allow pop-ups to open the video call');
+          
+          // Navigate to the video call page as fallback
+          navigate(`/video-call/${roomName}`, {
+            state: {
+              roomName: roomName,
+              lawyerName: lawyerDetails?.fullName || 'Lawyer',
+              lawyerId: lawyerId,
+              meetingId: response.data.meeting._id,
+              clientName: clientName,
+              autoJoin: true
+            }
+          });
+        }
       } else {
-        toast.error(response.data.message || 'Failed to send consultation request');
-        setError(response.data.message || 'Failed to send consultation request');
+        toast.error('Failed to initiate video call');
       }
     })
     .catch(error => {
       toast.dismiss();
       setIsVideoCallLoading(false);
-      console.error('Error sending consultation request:', error);
-      
-      // Log more detailed error information
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-      }
+      console.error('Error initiating video call:', error);
       
       if (error.response && error.response.status === 401) {
         toast.error('Authentication error. Please log in again.');
         sessionStorage.removeItem('token');
         navigate('/login');
       } else {
-        toast.error(error.response?.data?.message || 'Error sending consultation request. Please try again.');
-        setError('Error sending consultation request. Please try again.');
+        toast.error('Error initiating video call. Please try again.');
       }
     });
   };
@@ -984,6 +1044,21 @@ const LawyerAppointment = () => {
       console.log("Selected appointment type:", bookingToReschedule.appointmentType);
     } else {
       toast.error("Booking not found");
+    }
+  };
+
+  // Add a function to fetch receipt details
+  const fetchReceiptDetails = async (paymentId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/payments/receipt/${paymentId}`
+      );
+      
+      if (response.data.success) {
+        setReceiptData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching receipt:", error);
     }
   };
 
@@ -1210,10 +1285,16 @@ const LawyerAppointment = () => {
 
                     <button
                       type="submit"
-                      className="submit-button"
-                      disabled={!selectedDate || !selectedTimeSlot || isLoading || !formData.clientName || !formData.clientEmail || !formData.clientPhone}
+                      className={`btn btn-primary btn-block ${isLoading || isPaymentLoading ? 'btn-loading' : ''}`}
+                      disabled={isLoading || isPaymentLoading}
                     >
-                      {isLoading ? 'Booking...' : 'Book Appointment'}
+                      {isLoading ? (
+                        <span><i className="fas fa-spinner fa-spin"></i> Processing...</span>
+                      ) : isPaymentLoading ? (
+                        <span><i className="fas fa-spinner fa-spin"></i> Processing Payment...</span>
+                      ) : (
+                        'Book Appointment'
+                      )}
                     </button>
                   </form>
                 </div>
@@ -3475,6 +3556,15 @@ const LawyerAppointment = () => {
           .date-time-container {
             grid-template-columns: 1fr;
           }
+        }
+
+        .btn-loading {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        
+        .btn-loading i {
+          margin-right: 8px;
         }
       `}</style>
     </>

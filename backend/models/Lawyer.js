@@ -85,6 +85,10 @@ const Lawyer = mongoose.models.Lawyer || mongoose.model('Lawyer', new mongoose.S
     type: Number,
     default: 0
   },
+  reviewCount: {
+    type: Number,
+    default: 0
+  },
   ratingsCount: {
     type: Number,
     default: 0

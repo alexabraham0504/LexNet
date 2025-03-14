@@ -64,35 +64,4 @@ const appointmentSchema = new mongoose.Schema({
   }
 });
 
-// Add a pre-find middleware to populate lawyer details
-appointmentSchema.pre('find', function(next) {
-  this.populate({
-    path: 'lawyerId',
-    select: 'fullName specialization' // Select the fields you want to populate
-  });
-  next();
-});
-
-// Add a pre-findOne middleware to populate lawyer details
-appointmentSchema.pre('findOne', function(next) {
-  this.populate({
-    path: 'lawyerId',
-    select: 'fullName specialization'
-  });
-  next();
-});
-
-// Virtual properties to get lawyer details
-appointmentSchema.virtual('lawyerName').get(function() {
-  return this.lawyerId ? this.lawyerId.fullName : null;
-});
-
-appointmentSchema.virtual('lawyerSpecialization').get(function() {
-  return this.lawyerId ? this.lawyerId.specialization : null;
-});
-
-// Enable virtuals in JSON
-appointmentSchema.set('toJSON', { virtuals: true });
-appointmentSchema.set('toObject', { virtuals: true });
-
 module.exports = mongoose.model("Appointment", appointmentSchema);
