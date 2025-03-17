@@ -33,7 +33,7 @@ const ProtectedRoute = ({ children }) => {
         }
 
         // Verify token with backend
-        const response = await axios.get('http://localhost:5000/api/auth/check-status', {
+        const response = await axios.get('https://lexnet-backend.onrender.com/api/auth/check-status', {
           headers: {
             Authorization: `Bearer ${token}`
           }

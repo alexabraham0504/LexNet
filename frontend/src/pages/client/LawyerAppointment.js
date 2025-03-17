@@ -70,7 +70,7 @@ const LawyerAppointment = () => {
     const fetchLawyerDetails = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/lawyers/${lawyerId}`
+          `https://lexnet-backend.onrender.com/api/lawyers/${lawyerId}`
         );
         setLawyerDetails(response.data);
       } catch (error) {
@@ -103,7 +103,7 @@ const LawyerAppointment = () => {
         console.log("Client fetching availability for date:", formattedDate, "lawyerId:", lawyerId);
         
         const response = await axios.get(
-          `http://localhost:5000/api/lawyer/availability/${lawyerId}/${formattedDate}`
+          `https://lexnet-backend.onrender.com/api/lawyer/availability/${lawyerId}/${formattedDate}`
         );
         
         if (response.data.availability) {
@@ -124,7 +124,7 @@ const LawyerAppointment = () => {
           
           // Fetch existing appointments to filter out booked slots
           const appointmentsResponse = await axios.get(
-            `http://localhost:5000/api/appointments/date/${lawyerId}/${formattedDate}`
+            `https://lexnet-backend.onrender.com/api/appointments/date/${lawyerId}/${formattedDate}`
           );
           
           const bookedAppointments = appointmentsResponse.data.appointments || [];
@@ -417,7 +417,7 @@ const LawyerAppointment = () => {
       
       // Create order on the server
       const orderResponse = await axios.post(
-        "http://localhost:5000/api/payments/create-order",
+        "https://lexnet-backend.onrender.com/api/payments/create-order",
         { appointmentId: appointmentId }
       );
       
@@ -443,7 +443,7 @@ const LawyerAppointment = () => {
           try {
             // Verify payment on server
             const verifyResponse = await axios.post(
-              "http://localhost:5000/api/payments/verify",
+              "https://lexnet-backend.onrender.com/api/payments/verify",
               {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -471,7 +471,7 @@ const LawyerAppointment = () => {
               
               // Cancel the appointment since payment failed
               await axios.put(
-                `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+                `https://lexnet-backend.onrender.com/api/appointments/${appointmentId}/cancel`
               );
             }
           } catch (error) {
@@ -480,7 +480,7 @@ const LawyerAppointment = () => {
             
             // Cancel the appointment since payment failed
             await axios.put(
-              `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+              `https://lexnet-backend.onrender.com/api/appointments/${appointmentId}/cancel`
             );
           } finally {
             setIsPaymentLoading(false);
@@ -501,7 +501,7 @@ const LawyerAppointment = () => {
             
             // Cancel the appointment since payment was cancelled
             await axios.put(
-              `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+              `https://lexnet-backend.onrender.com/api/appointments/${appointmentId}/cancel`
             );
           }
         }
@@ -518,7 +518,7 @@ const LawyerAppointment = () => {
         
         // Cancel the appointment since payment failed
         await axios.put(
-          `http://localhost:5000/api/appointments/${appointmentId}/cancel`
+          `https://lexnet-backend.onrender.com/api/appointments/${appointmentId}/cancel`
         );
       });
       
@@ -565,7 +565,7 @@ const LawyerAppointment = () => {
 
       // Make the API call to create appointment
       const response = await axios.post(
-        'http://localhost:5000/api/appointments',
+        'https://lexnet-backend.onrender.com/api/appointments',
         appointmentData
       );
 
@@ -614,7 +614,7 @@ const LawyerAppointment = () => {
       setIsLoadingBookings(true);
       const clientEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("email");
       const response = await axios.get(
-        `http://localhost:5000/api/appointments/client/${clientEmail}`
+        `https://lexnet-backend.onrender.com/api/appointments/client/${clientEmail}`
       );
 
       // Fetch lawyer details for each booking if not already included
@@ -623,7 +623,7 @@ const LawyerAppointment = () => {
           if (!booking.lawyerName || !booking.lawyerSpecialization) {
             try {
               const lawyerResponse = await axios.get(
-                `http://localhost:5000/api/lawyers/${booking.lawyerId}`
+                `https://lexnet-backend.onrender.com/api/lawyers/${booking.lawyerId}`
               );
               return {
                 ...booking,
@@ -698,7 +698,7 @@ const LawyerAppointment = () => {
       }
 
       const response = await axios.post(
-        `http://localhost:5000/api/appointments/reschedule/${selectedAppointment._id}`,
+        `https://lexnet-backend.onrender.com/api/appointments/reschedule/${selectedAppointment._id}`,
         {
           reason: rescheduleData.reason,
           proposedDate: rescheduleData.proposedDate,
@@ -817,7 +817,7 @@ const LawyerAppointment = () => {
     }
 
     // Send meeting request to the lawyer
-    axios.post('http://localhost:5000/api/meetings/create', {
+    axios.post('https://lexnet-backend.onrender.com/api/meetings/create', {
       lawyerId: lawyerId,
       roomName: roomName,
       clientName: user.fullName || user.name || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Client',
@@ -908,7 +908,7 @@ const LawyerAppointment = () => {
           console.log("Using token:", token.substring(0, 10) + "...");
           
           const response = await axios.get(
-            `http://localhost:5000/api/consultations/client/${user._id}`,
+            `https://lexnet-backend.onrender.com/api/consultations/client/${user._id}`,
             {
               headers: {
                 'Authorization': `Bearer ${token}`
@@ -1002,7 +1002,7 @@ const LawyerAppointment = () => {
     try {
       setIsLoading(true);
       const response = await axios.put(
-        `http://localhost:5000/api/appointments/${bookingId}/cancel`,
+        `https://lexnet-backend.onrender.com/api/appointments/${bookingId}/cancel`,
         {},
         {
           headers: {
@@ -1051,7 +1051,7 @@ const LawyerAppointment = () => {
   const fetchReceiptDetails = async (paymentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/payments/receipt/${paymentId}`
+        `https://lexnet-backend.onrender.com/api/payments/receipt/${paymentId}`
       );
       
       if (response.data.success) {

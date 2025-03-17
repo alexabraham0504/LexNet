@@ -127,7 +127,7 @@ const LawyerRegistration = () => {
         if (!userEmail) return;
 
         const response = await axios.get(
-          `http://localhost:5000/api/lawyers/user-details/${userEmail}`
+          `https://lexnet-backend.onrender.com/api/lawyers/user-details/${userEmail}`
         );
 
         console.log("Received data:", response.data);
@@ -304,7 +304,7 @@ const LawyerRegistration = () => {
       });
 
       const response = await axios.post(
-        `http://localhost:5000/api/lawyers/add-certificate/${lawyerData.id}`,
+        `https://lexnet-backend.onrender.com/api/lawyers/add-certificate/${lawyerData.id}`,
         formData,
         {
           headers: {
@@ -336,7 +336,7 @@ const LawyerRegistration = () => {
 
       // Refresh the lawyer data
       const refreshResponse = await axios.get(
-        `http://localhost:5000/api/lawyers/user-details/${lawyerData.email}`
+        `https://lexnet-backend.onrender.com/api/lawyers/user-details/${lawyerData.email}`
       );
 
       setLawyerData((prev) => ({
@@ -358,7 +358,7 @@ const LawyerRegistration = () => {
   const handleRemoveCertificate = async (certificateId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/lawyers/remove-certificate/${lawyerData.id}/${certificateId}`
+        `https://lexnet-backend.onrender.com/api/lawyers/remove-certificate/${lawyerData.id}/${certificateId}`
       );
 
       setLawyerData((prev) => ({
@@ -527,7 +527,7 @@ const LawyerRegistration = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:5000/api/lawyers/register',
+        'https://lexnet-backend.onrender.com/api/lawyers/register',
         formData,
         {
           headers: {
@@ -562,7 +562,7 @@ const LawyerRegistration = () => {
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
     if (imagePath instanceof File) return URL.createObjectURL(imagePath);
-    return `http://localhost:5000/uploads/${imagePath}`;
+    return `https://lexnet-backend.onrender.com/uploads/${imagePath}`;
   };
 
   // Add handleFeeErrorClose function
@@ -1047,7 +1047,7 @@ const LawyerRegistration = () => {
                   </div>
                   <div style={styles.certificateActions}>
                     <a
-                      href={`http://localhost:5000/uploads/${cert.file}`}
+                      href={`https://lexnet-backend.onrender.com/uploads/${cert.file}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={styles.viewLink}

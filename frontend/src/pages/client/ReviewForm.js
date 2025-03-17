@@ -35,7 +35,7 @@ const ReviewForm = () => {
         };
 
         const response = await axios.get(
-          `http://localhost:5000/api/lawyers/${lawyerId}`,
+          `https://lexnet-backend.onrender.com/api/lawyers/${lawyerId}`,
           config
         );
 
@@ -60,7 +60,7 @@ const ReviewForm = () => {
 
     try {
       setIsSubmitting(true);
-      const response = await axios.post("http://localhost:5000/api/reviews", {
+      const response = await axios.post("https://lexnet-backend.onrender.com/api/reviews", {
         clientID,
         lawyerID: lawyerId,
         rating,

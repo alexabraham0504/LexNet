@@ -31,7 +31,7 @@ const ReviewLawyersList = () => {
 
         // First, fetch cases to get lawyers the client has worked with
         const casesResponse = await axios.get(
-          "http://localhost:5000/api/cases/list",
+          "https://lexnet-backend.onrender.com/api/cases/list",
           config
         );
         
@@ -54,7 +54,7 @@ const ReviewLawyersList = () => {
         
         // Fetch details for each lawyer
         const lawyersPromises = Array.from(lawyerIds).map(id => 
-          axios.get(`http://localhost:5000/api/lawyers/${id}`, config)
+          axios.get(`https://lexnet-backend.onrender.com/api/lawyers/${id}`, config)
         );
         
         const lawyersResponses = await Promise.all(lawyersPromises);
@@ -131,7 +131,7 @@ const ReviewLawyersList = () => {
                   <div className="lawyer-info">
                     <img 
                       src={lawyer.profilePicture ? 
-                        `http://localhost:5000/uploads/${lawyer.profilePicture}` : 
+                        `https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}` : 
                         '/default-lawyer-avatar.png'
                       } 
                       alt={lawyer.fullName} 

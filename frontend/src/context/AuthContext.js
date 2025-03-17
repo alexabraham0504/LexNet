@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
       const token = sessionStorage.getItem("token");
       if (!token) return false;
 
-      const response = await axios.get("http://localhost:5000/api/auth/check-status", {
+      const response = await axios.get("https://lexnet-backend.onrender.com/api/auth/check-status", {
         headers: {
           Authorization: `Bearer ${token}`
         }

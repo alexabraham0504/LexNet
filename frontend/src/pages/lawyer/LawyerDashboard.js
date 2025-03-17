@@ -79,7 +79,7 @@ const LawyerDashboard = () => {
 
         // First get lawyer details using email
         const response = await axios.get(
-          `http://localhost:5000/api/lawyers/user-details/${userEmail}`
+          `https://lexnet-backend.onrender.com/api/lawyers/user-details/${userEmail}`
         );
         console.log("API Response:", response.data);
         setLawyerData(response.data);
@@ -115,7 +115,7 @@ const LawyerDashboard = () => {
         return;
       }
       
-      const newSocket = io("http://localhost:5000", {
+      const newSocket = io("https://lexnet-backend.onrender.com", {
         auth: {
           token: `Bearer ${token}` // Ensure proper token format
         },
@@ -163,7 +163,7 @@ const LawyerDashboard = () => {
   const fetchPendingMeetings = async (lawyerId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/meetings/pending/${lawyerId}`,
+        `https://lexnet-backend.onrender.com/api/meetings/pending/${lawyerId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('token')}`
@@ -202,7 +202,7 @@ const LawyerDashboard = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:5000/api/meetings/accept',
+        'https://lexnet-backend.onrender.com/api/meetings/accept',
         {
           meetingId,
           lawyerId: lawyerData._id
@@ -263,7 +263,7 @@ const LawyerDashboard = () => {
   const handleDeclineCall = async (meetingId) => {
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/meetings/decline',
+        'https://lexnet-backend.onrender.com/api/meetings/decline',
         {
           meetingId
         },
@@ -306,7 +306,7 @@ const LawyerDashboard = () => {
         
         // Add a timeout to the request
         const response = await axios.get(
-          `http://localhost:5000/api/cases/assigned/${lawyerData._id}`,
+          `https://lexnet-backend.onrender.com/api/cases/assigned/${lawyerData._id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -379,7 +379,7 @@ const LawyerDashboard = () => {
           console.log('Using lawyerId directly:', lawyerData._id);
           
           const directResponse = await axios.get(
-            `http://localhost:5000/api/cases/assignments/lawyer/${lawyerData._id}`,
+            `https://lexnet-backend.onrender.com/api/cases/assignments/lawyer/${lawyerData._id}`,
             {
               headers: {
                 'Authorization': `Bearer ${token}`
@@ -399,7 +399,7 @@ const LawyerDashboard = () => {
         // If direct approach fails, try the lawyer ID lookup endpoint
         console.log('Trying to get lawyer ID from API');
         const userIdResponse = await axios.get(
-          `http://localhost:5000/api/cases/get-lawyer-id`,
+          `https://lexnet-backend.onrender.com/api/cases/get-lawyer-id`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -419,7 +419,7 @@ const LawyerDashboard = () => {
         
         // Now use this ID to fetch assignments
         const response = await axios.get(
-          `http://localhost:5000/api/cases/assignments/lawyer/${correctLawyerId}`,
+          `https://lexnet-backend.onrender.com/api/cases/assignments/lawyer/${correctLawyerId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -445,7 +445,7 @@ const LawyerDashboard = () => {
           try {
             console.log('Trying fallback to old cases endpoint');
             const fallbackResponse = await axios.get(
-              `http://localhost:5000/api/cases/lawyer/${lawyerData._id}`,
+              `https://lexnet-backend.onrender.com/api/cases/lawyer/${lawyerData._id}`,
               {
                 headers: {
                   'Authorization': `Bearer ${token}`

@@ -2129,13 +2129,13 @@ router.get('/lawyer/:lawyerId/:caseId', isAuthenticated, async (req, res) => {
         
         // Use document ID for reliable reference
         if (doc._id) {
-          documentWithUrl.downloadUrl = `http://localhost:5000/api/cases/document/${caseId}/${doc._id}`;
+          documentWithUrl.downloadUrl = `https://lexnet-backend.onrender.com/api/cases/document/${caseId}/${doc._id}`;
           console.log(`Document ${doc._id} download URL: ${documentWithUrl.downloadUrl}`);
         } else {
           console.log('Warning: Document has no ID:', doc);
           // As a fallback, try to use filename
           const filename = doc.filename || doc.originalname || 'unknown';
-          documentWithUrl.downloadUrl = `http://localhost:5000/api/cases/download/${filename}`;
+          documentWithUrl.downloadUrl = `https://lexnet-backend.onrender.com/api/cases/download/${filename}`;
         }
         
         return documentWithUrl;

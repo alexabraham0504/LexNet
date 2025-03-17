@@ -58,7 +58,7 @@ const LawyerCaseDetails = () => {
         
         // First, get the correct lawyer ID that matches the authenticated user
         const userIdResponse = await axios.get(
-          `http://localhost:5000/api/cases/get-lawyer-id`,
+          `https://lexnet-backend.onrender.com/api/cases/get-lawyer-id`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -78,7 +78,7 @@ const LawyerCaseDetails = () => {
         // Now use this ID to fetch the case details
         console.log(`Fetching case details for case ${caseId} with lawyer ID ${correctLawyerId}`);
         const response = await axios.get(
-          `http://localhost:5000/api/cases/lawyer/${correctLawyerId}/${caseId}`,
+          `https://lexnet-backend.onrender.com/api/cases/lawyer/${correctLawyerId}/${caseId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -119,7 +119,7 @@ const LawyerCaseDetails = () => {
     const loadingToast = toast.loading('Downloading document...');
     
     // Use the emergency download route
-    const emergencyUrl = `http://localhost:5000/api/cases/emergency-download/${caseId}/${doc._id}`;
+    const emergencyUrl = `https://lexnet-backend.onrender.com/api/cases/emergency-download/${caseId}/${doc._id}`;
     console.log('Using emergency download URL:', emergencyUrl);
     
     axios({

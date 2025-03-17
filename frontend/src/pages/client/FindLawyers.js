@@ -105,7 +105,7 @@ const FindLawyers = () => {
         });
 
         // Fetch all verified lawyers
-        const response = await axios.get('http://localhost:5000/api/lawyers/verified', {
+        const response = await axios.get('https://lexnet-backend.onrender.com/api/lawyers/verified', {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('token')}`
           }
@@ -152,7 +152,7 @@ const FindLawyers = () => {
           return;
         }
 
-        const response = await axios.get(`http://localhost:5000/api/cases/user/${user._id}`, {
+        const response = await axios.get(`https://lexnet-backend.onrender.com/api/cases/user/${user._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -327,7 +327,7 @@ const FindLawyers = () => {
     }
 
     // Send meeting request to the lawyer
-    axios.post('http://localhost:5000/api/meetings/create', {
+    axios.post('https://lexnet-backend.onrender.com/api/meetings/create', {
       lawyerId: lawyerId,
       roomName: roomName,
       clientName: user.fullName || user.name || sessionStorage.getItem('userName') || localStorage.getItem('userName') || 'Client',
@@ -419,7 +419,7 @@ const FindLawyers = () => {
     try {
       setSendingCase(true);
       
-      const response = await axios.post('http://localhost:5000/api/cases/send-to-lawyer', {
+      const response = await axios.post('https://lexnet-backend.onrender.com/api/cases/send-to-lawyer', {
         caseId: selectedCaseId,
         lawyerId: selectedLawyerForCase._id,
         notes: caseNotes
@@ -594,7 +594,7 @@ const FindLawyers = () => {
                     <div className="lawyer-header">
                       <img 
                         src={lawyer.profilePicture ? 
-                          `http://localhost:5000/uploads/${lawyer.profilePicture}` : 
+                          `https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}` : 
                           '/default-lawyer-avatar.png'
                         } 
                         alt={lawyer.fullName} 
@@ -653,7 +653,7 @@ const FindLawyers = () => {
                   <div className="modal-header">
                     <img 
                       src={selectedLawyer.profilePicture ? 
-                        `http://localhost:5000/uploads/${selectedLawyer.profilePicture}` : 
+                        `https://lexnet-backend.onrender.com/uploads/${selectedLawyer.profilePicture}` : 
                         '/default-lawyer-avatar.png'
                       }
                       alt={selectedLawyer.fullName}

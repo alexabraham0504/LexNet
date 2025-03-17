@@ -51,7 +51,7 @@ const VideoCall = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:5000/api/meetings/room/${roomId}`,
+        `https://lexnet-backend.onrender.com/api/meetings/room/${roomId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -203,7 +203,7 @@ const VideoCall = () => {
         }
         
         const response = await axios.get(
-          `http://localhost:5000/api/payments/status/video-call/${roomId}`,
+          `https://lexnet-backend.onrender.com/api/payments/status/video-call/${roomId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -241,7 +241,7 @@ const VideoCall = () => {
 
       // Create order
       const orderResponse = await axios.post(
-        "http://localhost:5000/api/payments/create-video-call-order",
+        "https://lexnet-backend.onrender.com/api/payments/create-video-call-order",
         {
           roomId,
           clientId: user._id,
@@ -270,7 +270,7 @@ const VideoCall = () => {
         handler: async function (response) {
           try {
             const verifyResponse = await axios.post(
-              "http://localhost:5000/api/payments/verify-video-call",
+              "https://lexnet-backend.onrender.com/api/payments/verify-video-call",
               {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,

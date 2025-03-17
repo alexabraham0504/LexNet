@@ -312,7 +312,7 @@ const SendCaseDetails = () => {
       
       // Use the update-assignment endpoint with proper authentication
       const response = await axios.post(
-        'http://localhost:5000/api/cases/update-assignment',
+        'https://lexnet-backend.onrender.com/api/cases/update-assignment',
         {
           caseId: selectedCaseId,
           lawyerId: selectedLawyerId,
@@ -500,7 +500,7 @@ const SendCaseDetails = () => {
               if (lawyer.profilePicture.startsWith('http')) {
                 profilePicUrl = lawyer.profilePicture;
               } else {
-                profilePicUrl = `http://localhost:5000/uploads/${lawyer.profilePicture}`;
+                profilePicUrl = `https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`;
               }
             }
             
@@ -601,7 +601,7 @@ const SendCaseDetails = () => {
             if (lawyer.profilePicture.startsWith('http')) {
               profilePicUrl = lawyer.profilePicture;
             } else {
-              profilePicUrl = `http://localhost:5000/uploads/${lawyer.profilePicture}`;
+              profilePicUrl = `https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`;
             }
           }
           

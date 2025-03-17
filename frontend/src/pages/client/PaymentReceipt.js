@@ -32,7 +32,7 @@ const PaymentReceipt = () => {
         };
         
         const response = await axios.get(
-          `http://localhost:5000/api/payments/receipt/${receiptId}`,
+          `https://lexnet-backend.onrender.com/api/payments/receipt/${receiptId}`,
           config
         );
         

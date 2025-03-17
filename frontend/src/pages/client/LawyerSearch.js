@@ -38,7 +38,7 @@ const LawyerSearch = () => {
         setLoading(true);
         setError(null);
         const response = await axios.get(
-          `http://localhost:5000/api/lawyers/verified${
+          `https://lexnet-backend.onrender.com/api/lawyers/verified${
             searchTerm ? `?search=${searchTerm}` : ""
           }`
         );
@@ -257,7 +257,7 @@ const LawyerSearch = () => {
                   <div className="profile-section">
                     {lawyer.profilePicture ? (
                       <img
-                        src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                        src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                         alt={`${lawyer.fullname || lawyer.fullName}'s profile`}
                         className="profile-picture"
                       />
@@ -308,7 +308,7 @@ const LawyerSearch = () => {
                     <div className="profile-section">
                       {selectedLawyer.profilePicture ? (
                         <img
-                          src={`http://localhost:5000/uploads/${selectedLawyer.profilePicture}`}
+                          src={`https://lexnet-backend.onrender.com/uploads/${selectedLawyer.profilePicture}`}
                           alt={`${selectedLawyer.fullname || selectedLawyer.fullName}'s profile`}
                           className="profile-picture"
                         />

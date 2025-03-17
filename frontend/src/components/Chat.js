@@ -18,7 +18,7 @@ const Chat = ({ chatRoomId, receiverId, receiverName }) => {
 
   // Create axios instance with interceptor
   const api = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: "https://lexnet-backend.onrender.com/api",
   });
 
   // Add request interceptor to handle token expiration
@@ -63,7 +63,7 @@ const Chat = ({ chatRoomId, receiverId, receiverName }) => {
     });
 
     // Connect to Socket.IO
-    const newSocket = io("http://localhost:5000", {
+    const newSocket = io("https://lexnet-backend.onrender.com", {
       auth: {
         token: sessionStorage.getItem("token")
       },

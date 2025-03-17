@@ -349,7 +349,7 @@ const AdminUserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/auth/users");
+      const response = await axios.get("https://lexnet-backend.onrender.com/api/auth/users");
       const filteredUsers = response.data.filter(
         (user) => user.role && user.role !== "Admin"
       );
@@ -364,7 +364,7 @@ const AdminUserManagement = () => {
   const handleApproval = async (userId, action) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/approve`,
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/approve`,
         { action }
       );
       fetchUsers();
@@ -394,7 +394,7 @@ const AdminUserManagement = () => {
       }
 
       const response = await axios.post(
-        `http://localhost:5000/api/auth/users/${userId}/${action}`,
+        `https://lexnet-backend.onrender.com/api/auth/users/${userId}/${action}`,
         requestData
       );
 

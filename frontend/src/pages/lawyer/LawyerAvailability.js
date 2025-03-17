@@ -41,7 +41,7 @@ const LawyerAvailability = () => {
 
         const lawyerEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("email");
         const userResponse = await axios.get(
-          `http://localhost:5000/api/lawyers/user-details/${lawyerEmail}`
+          `https://lexnet-backend.onrender.com/api/lawyers/user-details/${lawyerEmail}`
         );
         const lawyerId = userResponse.data._id;
 
@@ -56,7 +56,7 @@ const LawyerAvailability = () => {
         console.log("FETCH: Formatted date for API:", formattedDate);
 
         const availabilityResponse = await axios.get(
-          `http://localhost:5000/api/lawyer/availability/${lawyerId}/${formattedDate}`
+          `https://lexnet-backend.onrender.com/api/lawyer/availability/${lawyerId}/${formattedDate}`
         );
 
         if (availabilityResponse.data.availability) {
@@ -103,7 +103,7 @@ const LawyerAvailability = () => {
 
         // Fetch and filter appointments for the exact selected date
         const appointmentsResponse = await axios.get(
-          `http://localhost:5000/api/appointments/lawyer/${lawyerId}`
+          `https://lexnet-backend.onrender.com/api/appointments/lawyer/${lawyerId}`
         );
 
         const filteredAppointments = appointmentsResponse.data.appointments.filter(apt => {
@@ -180,7 +180,7 @@ const LawyerAvailability = () => {
       if (type === 'all') {
         // Delete the entire availability record
         await axios.delete(
-          `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
+          `https://lexnet-backend.onrender.com/api/lawyer/availability/${existingAvailability._id}`
         );
         
         setTimeSlots([]);
@@ -198,7 +198,7 @@ const LawyerAvailability = () => {
             updateData.videoCallTimeSlots = existingAvailability.videoCallTimeSlots;
             
             const response = await axios.put(
-              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`,
+              `https://lexnet-backend.onrender.com/api/lawyer/availability/${existingAvailability._id}`,
               updateData
             );
             
@@ -207,7 +207,7 @@ const LawyerAvailability = () => {
           } else {
             // If no video call slots, delete the entire record
             await axios.delete(
-              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
+              `https://lexnet-backend.onrender.com/api/lawyer/availability/${existingAvailability._id}`
             );
             
             setTimeSlots([]);
@@ -222,7 +222,7 @@ const LawyerAvailability = () => {
             updateData.videoCallTimeSlots = [];
             
             const response = await axios.put(
-              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`,
+              `https://lexnet-backend.onrender.com/api/lawyer/availability/${existingAvailability._id}`,
               updateData
             );
             
@@ -231,7 +231,7 @@ const LawyerAvailability = () => {
           } else {
             // If no in-person slots, delete the entire record
             await axios.delete(
-              `http://localhost:5000/api/lawyer/availability/${existingAvailability._id}`
+              `https://lexnet-backend.onrender.com/api/lawyer/availability/${existingAvailability._id}`
             );
             
             setTimeSlots([]);
@@ -349,7 +349,7 @@ const LawyerAvailability = () => {
       setIsLoading(true);
       const lawyerEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("email");
       const userResponse = await axios.get(
-        `http://localhost:5000/api/lawyers/user-details/${lawyerEmail}`
+        `https://lexnet-backend.onrender.com/api/lawyers/user-details/${lawyerEmail}`
       );
       const lawyerId = userResponse.data._id;
 
@@ -371,7 +371,7 @@ const LawyerAvailability = () => {
       };
 
       const response = await axios.post(
-        "http://localhost:5000/api/lawyer/availability",
+        "https://lexnet-backend.onrender.com/api/lawyer/availability",
         availabilityData
       );
 
@@ -406,7 +406,7 @@ const LawyerAvailability = () => {
   const handleAppointmentStatus = async (appointmentId, newStatus) => {
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/appointments/status/${appointmentId}`,
+        `https://lexnet-backend.onrender.com/api/appointments/status/${appointmentId}`,
         { status: newStatus }
       );
 
@@ -429,7 +429,7 @@ const LawyerAvailability = () => {
   const handleRescheduleRequest = async (appointmentId, action) => {
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/appointments/reschedule/${appointmentId}/${action}`
+        `https://lexnet-backend.onrender.com/api/appointments/reschedule/${appointmentId}/${action}`
       );
 
       if (response.data.success) {

@@ -8,7 +8,7 @@ const TestDownload = () => {
     
     // Direct URL to the file
     axios({
-      url: 'http://localhost:5000/api/cases/emergency-download/any/any',
+      url: 'https://lexnet-backend.onrender.com/api/cases/emergency-download/any/any',
       method: 'GET',
       responseType: 'blob',
     })

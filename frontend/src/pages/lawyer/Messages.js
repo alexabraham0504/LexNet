@@ -28,7 +28,7 @@ const Messages = () => {
 
         console.log("Fetching chats for lawyer:", userId);
         const response = await axios.get(
-          `http://localhost:5000/api/messages/active-chats/${userId}`,
+          `https://lexnet-backend.onrender.com/api/messages/active-chats/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${sessionStorage.getItem("token")}`,
@@ -57,7 +57,7 @@ const Messages = () => {
     let socket;
     if (user?._id) {
       // Initialize socket connection
-      socket = io("http://localhost:5000", {
+      socket = io("https://lexnet-backend.onrender.com", {
         auth: {
           token: sessionStorage.getItem("token")
         },
@@ -142,7 +142,7 @@ const Messages = () => {
     if (chat.unreadCount > 0) {
       try {
         await axios.put(
-          `http://localhost:5000/api/messages/read/${chat.chatRoomId}`,
+          `https://lexnet-backend.onrender.com/api/messages/read/${chat.chatRoomId}`,
           { userId: user._id },
           {
             headers: {
@@ -166,7 +166,7 @@ const Messages = () => {
   const markMessagesAsRead = async (chatRoomId) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/messages/read/${chatRoomId}`,
+        `https://lexnet-backend.onrender.com/api/messages/read/${chatRoomId}`,
         { userId: user._id },
         {
           headers: {

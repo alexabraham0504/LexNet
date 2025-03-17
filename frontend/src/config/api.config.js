@@ -5,12 +5,12 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 export const API_BASE_URL = isMobile 
   ? `http://${window.location.hostname}:5000` 
   : window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
+    ? 'https://lexnet-backend.onrender.com' 
     : `http://${window.location.hostname}:5000`;
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: 'https://lexnet-backend.onrender.com',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'

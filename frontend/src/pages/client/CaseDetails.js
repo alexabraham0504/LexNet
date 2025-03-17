@@ -676,7 +676,7 @@ const CaseDetails = () => {
       /*
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/cases/${caseId}`,
+          `https://lexnet-backend.onrender.com/api/cases/${caseId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -1589,7 +1589,7 @@ const CaseDetails = () => {
                       {caseItem.documents.map((doc, index) => (
                         <a
                           key={index}
-                          href={`http://localhost:5000/${doc.filePath}`}
+                          href={`https://lexnet-backend.onrender.com/${doc.filePath}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="document-chip"

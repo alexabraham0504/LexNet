@@ -573,7 +573,7 @@ const ReportsAnalytics = () => {
 
   // Split the useEffect to avoid dependency issues
   useEffect(() => {
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io("https://lexnet-backend.onrender.com");
     setSocket(newSocket);
 
     return () => newSocket.close();
@@ -594,7 +594,7 @@ const ReportsAnalytics = () => {
 
     const fetchInitialData = async () => {
       try {
-        const baseURL = "http://localhost:5000";
+        const baseURL = "https://lexnet-backend.onrender.com";
         const [users, appointments, lawyers] = await Promise.all([
           axios.get(`${baseURL}/api/admin/analytics/users`),
           axios.get(`${baseURL}/api/admin/analytics/appointments`),
@@ -626,7 +626,7 @@ const ReportsAnalytics = () => {
     const fetchLawyers = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/admin/analytics/lawyers"
+          "https://lexnet-backend.onrender.com/api/admin/analytics/lawyers"
         );
         console.log("Lawyers data:", response.data);
         if (response.data && response.data.topLawyers) {
@@ -645,7 +645,7 @@ const ReportsAnalytics = () => {
     const fetchClients = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/admin/analytics/clients"
+          "https://lexnet-backend.onrender.com/api/admin/analytics/clients"
         );
         console.log("Raw clients response:", response);
         console.log("Clients data:", response.data);
@@ -726,7 +726,7 @@ const ReportsAnalytics = () => {
   // Add refresh function
   const refreshData = async () => {
     try {
-      const baseURL = "http://localhost:5000";
+      const baseURL = "https://lexnet-backend.onrender.com";
       const [users, appointments, lawyers, clientsData] = await Promise.all([
         axios.get(`${baseURL}/api/admin/analytics/users`),
         axios.get(`${baseURL}/api/admin/analytics/appointments`),

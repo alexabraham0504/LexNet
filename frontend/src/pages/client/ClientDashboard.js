@@ -46,7 +46,7 @@ const ClientDashboard = () => {
 
         try {
           const casesResponse = await axios.get(
-            "http://localhost:5000/api/cases/list",
+            "https://lexnet-backend.onrender.com/api/cases/list",
             config
           );
           const transformedCases = casesResponse.data.cases
@@ -68,7 +68,7 @@ const ClientDashboard = () => {
 
         try {
           const appointmentsResponse = await axios.get(
-            "http://localhost:5000/api/appointments",
+            "https://lexnet-backend.onrender.com/api/appointments",
             config
           );
           const transformedAppointments = appointmentsResponse.data.map(apt => ({
@@ -83,7 +83,7 @@ const ClientDashboard = () => {
 
         try {
           const messagesResponse = await axios.get(
-            "http://localhost:5000/api/messages",
+            "https://lexnet-backend.onrender.com/api/messages",
             config
           );
           setMessages(messagesResponse.data || []);
@@ -94,7 +94,7 @@ const ClientDashboard = () => {
 
           // try {
           //   const documentsResponse = await axios.get(
-          //     "http://localhost:5000/api/documents",
+          //     "https://lexnet-backend.onrender.com/api/documents",
           //     config
           //   );
           //   setDocuments(documentsResponse.data || []);
@@ -106,7 +106,7 @@ const ClientDashboard = () => {
         try {
           if (email) {
             const receiptsResponse = await axios.get(
-              `http://localhost:5000/api/payments/receipts/client/${email}`,
+              `https://lexnet-backend.onrender.com/api/payments/receipts/client/${email}`,
               config
             );
             setReceipts(receiptsResponse.data.data.receipts || []);

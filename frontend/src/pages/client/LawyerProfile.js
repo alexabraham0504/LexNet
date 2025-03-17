@@ -30,7 +30,7 @@ const LawyerProfile = () => {
   useEffect(() => {
     const fetchLawyerProfile = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/lawyers/${lawyerId}`, {
+        const response = await axios.get(`https://lexnet-backend.onrender.com/api/lawyers/${lawyerId}`, {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('token')}`
           }
@@ -62,7 +62,7 @@ const LawyerProfile = () => {
               <div className="profile-image">
                 <img
                   src={lawyer.profilePicture ? 
-                    `http://localhost:5000/uploads/${lawyer.profilePicture}` : 
+                    `https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}` : 
                     '/default-lawyer-avatar.png'
                   }
                   alt={lawyer.fullName}

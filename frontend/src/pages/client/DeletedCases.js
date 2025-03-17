@@ -37,7 +37,7 @@ const DeletedCases = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('http://localhost:5000/api/cases/deleted', {
+      const response = await axios.get('https://lexnet-backend.onrender.com/api/cases/deleted', {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem('token')}`
         }
@@ -57,7 +57,7 @@ const DeletedCases = () => {
   const handleRestoreCase = async (caseId) => {
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/cases/${caseId}/restore`,
+        `https://lexnet-backend.onrender.com/api/cases/${caseId}/restore`,
         {},
         {
           headers: {
@@ -123,7 +123,7 @@ const DeletedCases = () => {
     }
 
     try {
-      const response = await axios.delete(`http://localhost:5000/api/cases/${caseId}`, {
+      const response = await axios.delete(`https://lexnet-backend.onrender.com/api/cases/${caseId}`, {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem('token')}`
         }
@@ -171,7 +171,7 @@ const DeletedCases = () => {
     try {
       const restorePromises = Array.from(selectedCases).map(async (caseId) => {
         const response = await axios.put(
-          `http://localhost:5000/api/cases/${caseId}/restore`,
+          `https://lexnet-backend.onrender.com/api/cases/${caseId}/restore`,
           {},
           {
             headers: {
@@ -245,7 +245,7 @@ const DeletedCases = () => {
 
     try {
       const promises = Array.from(selectedCases).map(caseId =>
-        axios.delete(`http://localhost:5000/api/cases/${caseId}`, {
+        axios.delete(`https://lexnet-backend.onrender.com/api/cases/${caseId}`, {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem('token')}`
           }
@@ -519,7 +519,7 @@ const DeletedCases = () => {
                         {selectedCase.documents.map((doc, index) => (
                           <a
                             key={index}
-                            href={`http://localhost:5000/${doc.filePath}`}
+                            href={`https://lexnet-backend.onrender.com/${doc.filePath}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="document-card"

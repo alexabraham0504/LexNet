@@ -17,8 +17,8 @@ const LawyerVerification = () => {
       setIsLoading(true);
       try {
         const [unverifiedRes, verifiedRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/lawyers/unverified"),
-          axios.get("http://localhost:5000/api/lawyers/verified")
+          axios.get("https://lexnet-backend.onrender.com/api/lawyers/unverified"),
+          axios.get("https://lexnet-backend.onrender.com/api/lawyers/verified")
         ]);
         
         console.log("Raw unverified lawyer data:", unverifiedRes.data[0]);
@@ -54,7 +54,7 @@ const LawyerVerification = () => {
   const fetchVerifiedLawyers = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/lawyers/verified"
+        "https://lexnet-backend.onrender.com/api/lawyers/verified"
       );
       if (Array.isArray(response.data)) {
         // Transform the data to handle both fullName and fullname
@@ -75,7 +75,7 @@ const LawyerVerification = () => {
 
   const handleApprove = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/lawyers/approve/${id}`);
+      await axios.put(`https://lexnet-backend.onrender.com/api/lawyers/approve/${id}`);
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
@@ -101,7 +101,7 @@ const LawyerVerification = () => {
 
   const handleReject = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/lawyers/reject/${id}`);
+      await axios.delete(`https://lexnet-backend.onrender.com/api/lawyers/reject/${id}`);
       setUnverifiedLawyers((prevLawyers) =>
         prevLawyers.filter((lawyer) => lawyer._id !== id)
       );
@@ -127,7 +127,7 @@ const LawyerVerification = () => {
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       const action = currentStatus === 'active' ? 'deactivate' : 'activate';
-      const response = await axios.put(`http://localhost:5000/api/lawyers/${action}/${id}`);
+      const response = await axios.put(`https://lexnet-backend.onrender.com/api/lawyers/${action}/${id}`);
       
       if (response.data.success) {
         await fetchVerifiedLawyers(); // Refresh the list
@@ -205,7 +205,7 @@ const LawyerVerification = () => {
                           <div key={lawyer._id} className="lawyer-card">
                             <div className="lawyer-info">
                               <img
-                                src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                                src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                                 alt={lawyer.fullname}
                                 className="profile-pic"
                                 onError={(e) => {
@@ -219,7 +219,7 @@ const LawyerVerification = () => {
                             </div>
                             <div className="document-links">
                               <a
-                                href={`http://localhost:5000/uploads/${lawyer.lawDegreeCertificate}`}
+                                href={`https://lexnet-backend.onrender.com/uploads/${lawyer.lawDegreeCertificate}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="doc-link"
@@ -227,7 +227,7 @@ const LawyerVerification = () => {
                                 View Law Degree
                               </a>
                               <a
-                                href={`http://localhost:5000/uploads/${lawyer.barCouncilCertificate}`}
+                                href={`https://lexnet-backend.onrender.com/uploads/${lawyer.barCouncilCertificate}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="doc-link"
@@ -265,7 +265,7 @@ const LawyerVerification = () => {
                           <div key={lawyer._id} className={`lawyer-card ${lawyer.visibleToClients ? 'active' : 'inactive'}`}>
                             <div className="lawyer-info">
                               <img
-                                src={`http://localhost:5000/uploads/${lawyer.profilePicture}`}
+                                src={`https://lexnet-backend.onrender.com/uploads/${lawyer.profilePicture}`}
                                 alt={lawyer.fullname}
                                 className="profile-pic"
                                 onError={(e) => {
