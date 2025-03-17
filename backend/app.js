@@ -59,13 +59,24 @@ try {
 
   const app = express();
 
-  // Middleware setup - IMPORTANT: These must come before routes
-  app.use(cors({
-    origin: "https://lexnet.onrender.com", // Or use an array of allowed origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  // CORS configuration
+  const corsOptions = {
+    origin: [
+      'https://lexnet.onrender.com',    // Production frontend
+      'http://localhost:3000'           // Local development
+    ],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['set-cookie'],
+  };
+
+  // Apply CORS before any routes
+  app.use(cors(corsOptions));
+
+  // Enable pre-flight requests for all routes
+  app.options('*', cors(corsOptions));
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
