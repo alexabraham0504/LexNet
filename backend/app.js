@@ -35,7 +35,7 @@ console.log('Environment Variables:', {
 });
 
 try {
-  // Verify required environment variables
+  // Verify required environment variables and credentials file
   const requiredEnvVars = [
     'GOOGLE_CLOUD_PROJECT_ID',
     'GOOGLE_APPLICATION_CREDENTIALS',
@@ -48,6 +48,14 @@ try {
       process.exit(1);
     }
   });
+
+  // Verify credentials file exists
+  const fs = require('fs');
+  if (!fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+    console.error(`Google Cloud credentials file not found at: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+    console.error('Please ensure the credentials file is properly configured');
+    process.exit(1);
+  }
 
   const app = express();
 
@@ -111,7 +119,7 @@ try {
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log('Google Cloud Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
-    console.log('Credentials path:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    console.log('Credentials file exists at:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
   });
 
   module.exports = app;
