@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
 
 const Navbar_Client = () => {
   const navigate = useNavigate();
-  const { logout: authLogout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const userName = sessionStorage.getItem("name");
@@ -23,23 +21,10 @@ const Navbar_Client = () => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      sessionStorage.setItem("isLoggingOut", "true");
-      
-      setShowDropdown(false);
-      
-      if (authLogout) {
-        await authLogout();
-      }
-      
-      sessionStorage.clear();
-      
-      window.location.replace('/');
-    } catch (error) {
-      console.error("Logout error:", error);
-      window.location.href = '/';
-    }
+  const handleLogout = () => {
+    sessionStorage.clear();
+    setShowDropdown(false);
+    window.location.href = "/";
   };
 
   const links = [

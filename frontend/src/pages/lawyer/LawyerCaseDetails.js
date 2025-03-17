@@ -11,7 +11,8 @@ import {
   faClock, 
   faGavel, 
   faInfoCircle,
-  faFileDownload
+  faFileDownload,
+  faCommentAlt
 } from '@fortawesome/free-solid-svg-icons';
 
 const LawyerCaseDetails = () => {
@@ -19,6 +20,7 @@ const LawyerCaseDetails = () => {
   const [caseDetails, setCaseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [assignmentDetails, setAssignmentDetails] = useState(null);
   const navigate = useNavigate();
   
   // Define helper functions within component scope
@@ -46,26 +48,143 @@ const LawyerCaseDetails = () => {
       try {
         setLoading(true);
         
-        const response = await axios.get(`http://localhost:5000/api/cases/${caseId}`, {
-          headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          setError('Authentication token missing. Please log in again.');
+          toast.error('Please log in again');
+          navigate('/login');
+          return;
+        }
+        
+        // First, get the correct lawyer ID that matches the authenticated user
+        const userIdResponse = await axios.get(
+          `http://localhost:5000/api/cases/get-lawyer-id`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
           }
-        });
+        );
+        
+        if (!userIdResponse.data.success) {
+          setError('Could not retrieve your lawyer profile');
+          toast.error('Error loading case: Profile not found');
+          return;
+        }
+        
+        const correctLawyerId = userIdResponse.data.lawyerId;
+        console.log('Retrieved correct lawyer ID:', correctLawyerId);
+        
+        // Now use this ID to fetch the case details
+        console.log(`Fetching case details for case ${caseId} with lawyer ID ${correctLawyerId}`);
+        const response = await axios.get(
+          `http://localhost:5000/api/cases/lawyer/${correctLawyerId}/${caseId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
         
         if (response.data.success) {
+          console.log("Case details received:", response.data.case);
           setCaseDetails(response.data.case);
+          
+          // If there's assignment information, save it too
+          if (response.data.assignment) {
+            setAssignmentDetails(response.data.assignment);
+          }
+        } else {
+          setError(response.data.message || 'Failed to load case details');
         }
       } catch (error) {
         console.error('Error fetching case details:', error);
-        setError('Failed to load case details');
-        toast.error('Error loading case details');
+        const errorMessage = error.response?.data?.message || 'Failed to load case details';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
     };
+
+    if (caseId) {
+      fetchCaseDetails();
+    }
+  }, [caseId, navigate]);
+  
+  const handleEmergencyDownload = (e, doc) => {
+    e.preventDefault();
     
-    fetchCaseDetails();
-  }, [caseId]);
+    // Show loading toast
+    const loadingToast = toast.loading('Downloading document...');
+    
+    // Use the emergency download route
+    const emergencyUrl = `http://localhost:5000/api/cases/emergency-download/${caseId}/${doc._id}`;
+    console.log('Using emergency download URL:', emergencyUrl);
+    
+    axios({
+      url: emergencyUrl,
+      method: 'GET',
+      responseType: 'blob',
+    })
+    .then((response) => {
+      toast.dismiss(loadingToast);
+      
+      // Determine file type from Content-Type header or document metadata
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
+      
+      // Get base filename from document or use default
+      let baseFilename = doc.filename || doc.originalname || 'document';
+      baseFilename = baseFilename.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      
+      // Remove any existing extension
+      baseFilename = baseFilename.replace(/\.[^/.]+$/, "");
+      
+      // Add appropriate extension based on content type
+      let filename = baseFilename;
+      if (contentType.includes('pdf')) {
+        filename += '.pdf';
+      } else if (contentType.includes('jpeg') || contentType.includes('jpg')) {
+        filename += '.jpg';
+      } else if (contentType.includes('png')) {
+        filename += '.png';
+      } else {
+        // Try to get extension from original filename
+        const originalExt = (doc.filename || '').split('.').pop();
+        if (originalExt && originalExt.length < 5) {
+          filename += '.' + originalExt;
+        }
+      }
+      
+      // Create blob with the correct content type
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      // Append to html page
+      document.body.appendChild(link);
+      
+      // Start download
+      link.click();
+      
+      // Clean up and remove the link
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast.success(`Document downloaded successfully as ${filename}`);
+    })
+    .catch((error) => {
+      console.error('Emergency download error:', error);
+      toast.dismiss(loadingToast);
+      toast.error('Failed to download document. Please try again.');
+    });
+  };
   
   if (loading) {
     return (
@@ -183,32 +302,34 @@ const LawyerCaseDetails = () => {
             {/* Documents Section */}
             <h5 className="mt-4">Case Documents</h5>
             {caseDetails.documents && caseDetails.documents.length > 0 ? (
-              <div className="table-responsive">
+              <div className="table-responsive mt-4">
+                <h5>
+                  <FontAwesomeIcon icon={faFileAlt} className="me-2" />
+                  Case Documents
+                </h5>
                 <table className="table table-striped">
                   <thead>
                     <tr>
-                      <th>Document Name</th>
+                      <th>#</th>
+                      <th>Filename</th>
                       <th>Type</th>
-                      <th>Uploaded</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {caseDetails.documents.map((doc, index) => (
                       <tr key={index}>
-                        <td>{doc.fileName}</td>
-                        <td>{doc.fileType}</td>
-                        <td>{doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'N/A'}</td>
+                        <td>{index + 1}</td>
+                        <td>{doc.filename || 'Unnamed Document'}</td>
+                        <td>{doc.documentType || 'Unknown'}</td>
                         <td>
-                          <a 
-                            href={`http://localhost:5000/${doc.filePath}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                          <button 
                             className="btn btn-sm btn-primary"
+                            onClick={(e) => handleEmergencyDownload(e, doc)}
                           >
                             <FontAwesomeIcon icon={faFileDownload} className="me-1" />
                             Download
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -216,7 +337,10 @@ const LawyerCaseDetails = () => {
                 </table>
               </div>
             ) : (
-              <div className="alert alert-info">No documents available</div>
+              <div className="alert alert-info mt-4">
+                <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
+                No documents available for this case.
+              </div>
             )}
             
             {/* Analysis Results Section */}
@@ -228,6 +352,21 @@ const LawyerCaseDetails = () => {
                     <pre className="analysis-json">
                       {JSON.stringify(caseDetails.analysisResults, null, 2)}
                     </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Add this section to display client notes */}
+            {caseDetails.clientNotes && (
+              <div className="mt-4">
+                <h5>
+                  <FontAwesomeIcon icon={faCommentAlt} className="me-2" />
+                  Client Notes
+                </h5>
+                <div className="card">
+                  <div className="card-body">
+                    <p className="mb-0">{caseDetails.clientNotes}</p>
                   </div>
                 </div>
               </div>

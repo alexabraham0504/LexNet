@@ -48,6 +48,7 @@ import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 import Messages from "./pages/lawyer/Messages";
 import IPCSection from "./pages/lawyer/IPCSection";
 import LawyerCaseDetails from "./pages/lawyer/LawyerCaseDetails";
+import TestDownload from './pages/TestDownload';
 
 function App() {
   return (
@@ -135,6 +136,7 @@ function App() {
               <LawyerCaseDetails />
             </ProtectedRoute>
           } />
+          <Route path="/test-download" element={<TestDownload />} />
         </Routes>
       </Router>
     </AuthProvider>

@@ -13,6 +13,7 @@ const Case = require("./models/caseModel");
 const { isAuthenticated } = require("./middleware/auth");
 const { visionService } = require('./services/visionService');
 const { bertService } = require('./services/bertService');
+const Assignment = require('./models/assignmentModel');
 
 // Import your routes
 const authRoutes = require("./routes/auth");

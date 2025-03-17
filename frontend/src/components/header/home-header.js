@@ -11,7 +11,7 @@ const Header = () => {
           /* HEADER ====================== */
           .banner {
             background-color: #c2b697;
-            width: '100%', // Full width
+            width: 100%; /* Full width */
             color: #053661;
             font-size: 0.9rem;
             font-weight: 600;
@@ -60,6 +60,20 @@ const Header = () => {
             100% {
               transform: scale(1) rotate(0deg);
             }
+          }
+          
+          /* Button styling */
+          .banner .btn-outline-light {
+            background-color: transparent;
+            border: 1px solid #053661;
+            color: #053661;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+          
+          .banner .btn-outline-light:hover {
+            background-color: #053661;
+            color: #c2b697;
           }
         `}
       </style>

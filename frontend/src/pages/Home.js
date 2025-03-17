@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarCheck,
-  // faFileCircleCheck,  // Commented out since no longer used
-  // faCommentsDollar,  // Commented out since no longer used
+  faFileCircleCheck,
+  faCommentsDollar,
   // faGavel,
 } from "@fortawesome/free-solid-svg-icons";
 import Footer from "../components/footer/home-footer";
@@ -17,8 +17,9 @@ const Home = () => {
   return (
     <>
       <div className="home-page">
-        <Header />
+       
         <Navbar />
+        <Header />
         <Helmet>
           <title>Lex Net-Home</title>
           <meta
@@ -91,7 +92,18 @@ const Home = () => {
             </div>
             {/* small screens buttons */}
             <div className="mobile-btn d-md-none d-flex justify-content-between pt-2">
-              {/* Commenting out Request Evaluation button
+              {/* <Link to="/contact">
+                <button
+                  id="small"
+                  className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1"
+                  aria-label="Schedule Appointment"
+                >
+                  <span className="p-3">
+                    <FontAwesomeIcon icon={faCalendarCheck} size="1x" />
+                  </span>
+                  Schedule Appointment
+                </button>
+              </Link> */}
               <Link to="/contact">
                 <button
                   className="btn btn-outline-dark type-button p-2 mb-1 btn-md me-1"
@@ -103,7 +115,17 @@ const Home = () => {
                   Request Evaluation
                 </button>
               </Link>
-              */}
+              <Link to="/useful-info">
+                <button
+                  className="btn btn-outline-dark type-button p-2 btn-md"
+                  aria-label="Fees"
+                >
+                  <span className="p-3">
+                    <FontAwesomeIcon icon={faCommentsDollar} size="1x" />
+                  </span>
+                  Fees
+                </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -322,7 +344,21 @@ const Home = () => {
           .home-page {
             font-size: 0.9rem;
             max-width: 100%;
+            background-color: #f5f7fa; /* Light background for content areas */
           }
+          
+          /* Ensure proper stacking of elements */
+          .banner {
+            position: relative;
+            z-index: 200;
+          }
+          
+          /* Adjusting card backgrounds for better contrast */
+          .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+          }
+          
           .hero-section {
             background-image: url("/assets/hero.webp");
             height: 600px; /* Adjust as necessary */
@@ -330,6 +366,7 @@ const Home = () => {
             background-position: center;
             position: relative;
             display: flex;
+            margin-top: 0; /* Remove any top margin */
           }
           .hero-overlay {
             background-color: rgba(0, 0, 0, 0.6);

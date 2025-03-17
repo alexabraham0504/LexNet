@@ -4,41 +4,57 @@ const Lawyer = require("../models/lawyerModel");
 
 const isAuthenticated = (req, res, next) => {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
     
-    // Check if auth header exists and has the right format
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('No token or invalid token format');
+    if (!authHeader) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication failed: No token provided or invalid format'
+        message: 'No authorization header provided'
       });
     }
     
-    // Extract the token (remove 'Bearer ' prefix)
-    const token = authHeader.split(' ')[1];
-    
-    if (!token) {
-      console.log('Token is empty after splitting');
+    // Check for Bearer token format
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
       return res.status(401).json({
         success: false,
-        message: 'Authentication failed: Empty token'
+        message: 'Authorization header must be in format: Bearer [token]'
       });
     }
     
-    // Verify token
+    const token = parts[1];
+    
+    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Add user info to request
+    // Add user information to the request
     req.user = decoded;
+    
+    // Log successful authentication
+    console.log('Authenticated user:', req.user);
     
     next();
   } catch (error) {
-    console.error('Auth error:', error);
-    return res.status(401).json({
+    console.error('Authentication error:', error.message);
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired'
+      });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+    
+    res.status(401).json({
       success: false,
-      message: 'Authentication failed: ' + error.message
+      message: 'Authentication failed',
+      error: error.message
     });
   }
 };

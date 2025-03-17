@@ -4,8 +4,8 @@ import api, { API_BASE_URL } from '../config/api.config';
 import { auth, googleProvider } from "./firebaseConfig.js";
 import { signInWithPopup } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
-import Navbar from "../components/navbar/home-navbar";
 import SuspensionModal from '../components/SuspensionModal';
+import LoginHeader from "../components/header/login-header";
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -213,8 +213,10 @@ const Login = () => {
   };
 
   return (
-    <>
-      <Navbar />
+    <div className="login-page-wrapper">
+      <div className="top-bar"></div>
+      <LoginHeader />
+      
       <div style={styles.loginPage}>
         <div style={styles.overlay}>
           <div style={styles.loginContainer}>
@@ -318,6 +320,20 @@ const Login = () => {
 
       <style>
         {`
+          .login-page-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+          }
+          
+          .top-bar {
+            height: 80px;
+            background-color: #02182b;
+            width: 100%;
+            position: relative;
+            z-index: 100;
+          }
+          
           .glass-button {
             position: relative;
             overflow: hidden;
@@ -407,27 +423,23 @@ const Login = () => {
           }
         `}
       </style>
-    </>
+    </div>
   );
 };
 
 const styles = {
   loginPage: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    height: "100vh",
+    minHeight: "calc(100vh - 120px)", /* Adjust for header height + top bar */
     backgroundImage: "url('/assets/loginpicture.jpg')",
     backgroundSize: "cover",
     backgroundPosition: "center",
     fontFamily: "'Open Sans', sans-serif",
     overflow: "hidden",
-    paddingTop: "80px",
+    marginTop: "0",
   },
 
   overlay: {

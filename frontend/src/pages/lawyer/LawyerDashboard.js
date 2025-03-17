@@ -12,7 +12,8 @@ import {
   faCalendarAlt,
   faVideo,
   faPhoneSlash,
-  faBell
+  faBell,
+  faInfoCircle
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
@@ -39,6 +40,7 @@ const LawyerDashboard = () => {
   const [socket, setSocket] = useState(null);
   const [assignedCases, setAssignedCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
+  const [assignments, setAssignments] = useState([]);
 
   // Define the getCaseTypeBadge function within component scope
   const getCaseTypeBadge = (caseType) => {
@@ -85,6 +87,11 @@ const LawyerDashboard = () => {
         // Fetch pending meetings
         if (response.data._id) {
           fetchPendingMeetings(response.data._id);
+        }
+
+        // After setting lawyer data, fetch assignments
+        if (response.data._id) {
+          fetchAssignments();
         }
       } catch (error) {
         console.error("Error fetching lawyer data:", error);
@@ -286,20 +293,64 @@ const LawyerDashboard = () => {
       
       try {
         setLoadingCases(true);
+        const token = sessionStorage.getItem('token');
+        
+        if (!token) {
+          console.error('No authentication token found');
+          toast.error('Please log in again');
+          navigate('/login');
+          return;
+        }
+        
+        console.log('Fetching assigned cases for lawyer ID:', lawyerData._id);
+        
+        // Add a timeout to the request
         const response = await axios.get(
           `http://localhost:5000/api/cases/assigned/${lawyerData._id}`,
           {
             headers: {
-              'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-            }
+              'Authorization': `Bearer ${token}`
+            },
+            timeout: 10000 // 10 second timeout
           }
         );
         
+        console.log('Response from assigned cases endpoint:', response.data);
+        
         if (response.data.success) {
+          console.log('Assigned cases received:', response.data.cases);
           setAssignedCases(response.data.cases);
+        } else {
+          console.warn('No cases returned or unsuccessful response:', response.data);
+          setAssignedCases([]);
         }
       } catch (error) {
         console.error('Error fetching assigned cases:', error);
+        
+        // More detailed error logging
+        if (error.response) {
+          console.error('Error response status:', error.response.status);
+          console.error('Error response data:', error.response.data);
+          
+          if (error.response.status === 500) {
+            toast.error('Server error. Please try again later or contact support.');
+          } else if (error.response.status === 403) {
+            toast.error('You do not have permission to view these cases');
+          } else if (error.response.status === 401) {
+            toast.error('Authentication failed. Please log in again');
+            navigate('/login');
+          } else {
+            toast.error('Error loading assigned cases');
+          }
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+          toast.error('No response from server. Please check your connection');
+        } else {
+          console.error('Error message:', error.message);
+          toast.error('Error loading assigned cases');
+        }
+        
+        setAssignedCases([]);
       } finally {
         setLoadingCases(false);
       }
@@ -307,6 +358,231 @@ const LawyerDashboard = () => {
     
     fetchAssignedCases();
   }, [lawyerData]);
+
+  const fetchAssignments = async () => {
+    try {
+      setLoadingCases(true);
+      const token = sessionStorage.getItem('token');
+      
+      if (!token) {
+        console.error('No authentication token found');
+        toast.error('Please log in again');
+        navigate('/login');
+        return;
+      }
+      
+      console.log('Auth token from session:', token.substring(0, 20) + '...');
+      
+      try {
+        // First try to get assignments directly using lawyerData._id
+        if (lawyerData?._id) {
+          console.log('Using lawyerId directly:', lawyerData._id);
+          
+          const directResponse = await axios.get(
+            `http://localhost:5000/api/cases/assignments/lawyer/${lawyerData._id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              },
+              timeout: 10000
+            }
+          );
+          
+          if (directResponse.data.success) {
+            console.log('Assignments received directly:', directResponse.data.assignments);
+            setAssignments(directResponse.data.assignments);
+            setLoadingCases(false);
+            return;
+          }
+        }
+        
+        // If direct approach fails, try the lawyer ID lookup endpoint
+        console.log('Trying to get lawyer ID from API');
+        const userIdResponse = await axios.get(
+          `http://localhost:5000/api/cases/get-lawyer-id`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        if (!userIdResponse.data.success) {
+          console.error('Could not retrieve lawyer ID for authenticated user');
+          toast.error('Error loading assignments: Profile not found');
+          setLoadingCases(false);
+          return;
+        }
+        
+        const correctLawyerId = userIdResponse.data.lawyerId;
+        console.log('Retrieved correct lawyer ID:', correctLawyerId);
+        
+        // Now use this ID to fetch assignments
+        const response = await axios.get(
+          `http://localhost:5000/api/cases/assignments/lawyer/${correctLawyerId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            timeout: 10000
+          }
+        );
+        
+        console.log('Response from assignments endpoint:', response.data);
+        
+        if (response.data.success) {
+          console.log('Assignments received:', response.data.assignments);
+          setAssignments(response.data.assignments);
+        } else {
+          console.warn('No assignments returned or unsuccessful response:', response.data);
+          setAssignments([]);
+        }
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+        
+        // Fallback: Try to load assigned cases from the old endpoint if available
+        if (lawyerData?._id) {
+          try {
+            console.log('Trying fallback to old cases endpoint');
+            const fallbackResponse = await axios.get(
+              `http://localhost:5000/api/cases/lawyer/${lawyerData._id}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              }
+            );
+            
+            if (fallbackResponse.data.success && fallbackResponse.data.cases) {
+              // Convert cases to assignment-like format
+              const convertedAssignments = fallbackResponse.data.cases.map(caseItem => ({
+                _id: caseItem._id + '-assignment',
+                caseId: caseItem,
+                status: 'pending',
+                assignmentDate: caseItem.updatedAt || caseItem.createdAt,
+                clientId: caseItem.clientId
+              }));
+              
+              setAssignments(convertedAssignments);
+              console.log('Using fallback cases:', convertedAssignments);
+            } else {
+              setAssignments([]);
+            }
+          } catch (fallbackError) {
+            console.error('Fallback failed too:', fallbackError);
+            toast.error('Failed to load your cases');
+            setAssignments([]);
+          }
+        } else {
+          toast.error('Failed to load case assignments');
+          setAssignments([]);
+        }
+      }
+    } finally {
+      setLoadingCases(false);
+    }
+  };
+
+  useEffect(() => {
+    if (lawyerData?._id) {
+      fetchAssignments();
+    }
+  }, [lawyerData]);
+
+  const renderAssignments = () => {
+    if (loadingCases) {
+      return (
+        <div className="text-center py-4">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2">Loading your assigned cases...</p>
+        </div>
+      );
+    }
+
+    if (assignments.length === 0) {
+      return (
+        <div className="alert alert-info my-3">
+          <FontAwesomeIcon icon={faInfoCircle} className="me-2" />
+          You don't have any assigned cases yet.
+        </div>
+      );
+    }
+
+    return (
+      <div className="table-responsive">
+        <table className="table table-hover">
+          <thead className="table-light">
+            <tr>
+              <th>Case Title</th>
+              <th>Client</th>
+              <th>Type</th>
+              <th>Assigned On</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.map((assignment) => {
+              // Get case details from either the embedded caseDetails or the populated caseId
+              const caseData = assignment.caseDetails || assignment.caseId || {};
+              const caseTitle = caseData.title || 'Untitled Case';
+              const caseType = caseData.caseType || 'Unknown';
+              
+              return (
+                <tr key={assignment._id}>
+                  <td>{caseTitle}</td>
+                  <td>
+                    {assignment.clientId?.name || assignment.clientId?.email || 'Unknown Client'}
+                  </td>
+                  <td>
+                    <span className={`badge bg-${getCaseTypeBadge(caseType)}`}>
+                      {caseType}
+                    </span>
+                  </td>
+                  <td>{new Date(assignment.assignmentDate).toLocaleDateString()}</td>
+                  <td>
+                    <span className={`badge bg-${
+                      assignment.status === 'pending' ? 'warning' : 
+                      assignment.status === 'accepted' ? 'success' : 
+                      assignment.status === 'completed' ? 'info' : 'secondary'
+                    }`}>
+                      {assignment.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => navigate(`/lawyer/case/${assignment.caseId?._id || assignment.caseId}`)}
+                    >
+                      View Case
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Add these functions to the component
+  const handleAcceptMeeting = (meetingId) => {
+    // Assuming this is similar to the existing handleAcceptCall function
+    const meeting = pendingMeetings.find(m => m._id === meetingId);
+    if (meeting) {
+      handleAcceptCall(meetingId, meeting.roomName, meeting.clientName);
+    } else {
+      toast.error('Meeting details not found');
+    }
+  };
+
+  const handleRejectMeeting = (meetingId) => {
+    // This can just call the existing handleDeclineCall function
+    handleDeclineCall(meetingId);
+  };
 
   return (
     <>
@@ -365,48 +641,70 @@ const LawyerDashboard = () => {
             </div>
           )}
 
+          {/* Case Assignments Section - Prominently displayed */}
+          <div className="container mt-4">
+            <div className="card shadow-sm mb-4">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0">
+                  <FontAwesomeIcon icon={faFileAlt} className="me-2" />
+                  Your Case Assignments
+                </h5>
+              </div>
+              <div className="card-body">
+                <button 
+                  className="btn btn-outline-primary mb-3"
+                  onClick={fetchAssignments}
+                >
+                  <FontAwesomeIcon icon={faFileAlt} className="me-2" />
+                  Refresh Case Assignments
+                </button>
+                {renderAssignments()}
+              </div>
+            </div>
+          </div>
+
           {/* Pending Meetings Section */}
           {pendingMeetings.length > 0 && (
             <div className="meetings-section container mt-4">
               <div className="card">
-                <div className="card-header bg-light">
+                <div className="card-header bg-primary text-white">
                   <h5 className="mb-0">
-                    <FontAwesomeIcon icon={faBell} className="me-2" />
-                    Pending Video Call Requests
+                    <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                    Pending Meetings
                   </h5>
                 </div>
                 <div className="card-body">
                   <div className="table-responsive">
-                    <table className="table">
+                    <table className="table table-hover">
                       <thead>
                         <tr>
                           <th>Client</th>
-                          <th>Requested At</th>
+                          <th>Date</th>
                           <th>Status</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {pendingMeetings.map(meeting => (
+                        {pendingMeetings.map((meeting) => (
                           <tr key={meeting._id}>
                             <td>{meeting.clientName}</td>
-                            <td>{new Date(meeting.createdAt).toLocaleString()}</td>
+                            <td>
+                              {new Date(meeting.scheduledAt || meeting.createdAt).toLocaleString()}
+                            </td>
                             <td>
                               <span className="badge bg-warning">Pending</span>
                             </td>
                             <td>
-                              <button 
-                                className="btn btn-sm btn-primary me-2"
-                                onClick={() => handleAcceptCall(meeting._id, meeting.roomName, meeting.clientName)}
+                              <button
+                                className="btn btn-sm btn-success me-2"
+                                onClick={() => handleAcceptMeeting(meeting._id)}
                               >
-                                <FontAwesomeIcon icon={faVideo} className="me-1" />
-                                Join
+                                Accept
                               </button>
-                              <button 
+                              <button
                                 className="btn btn-sm btn-danger"
-                                onClick={() => handleDeclineCall(meeting._id)}
+                                onClick={() => handleRejectMeeting(meeting._id)}
                               >
-                                <FontAwesomeIcon icon={faPhoneSlash} className="me-1" />
                                 Decline
                               </button>
                             </td>
@@ -419,71 +717,6 @@ const LawyerDashboard = () => {
               </div>
             </div>
           )}
-
-          {/* Assigned Cases Section */}
-          <div className="container mt-5">
-            <div className="row">
-              <div className="col-12">
-                <div className="card shadow-sm">
-                  <div className="card-header bg-light">
-                    <h5 className="mb-0">
-                      <FontAwesomeIcon icon={faFileAlt} className="me-2" />
-                      Recent Case Assignments
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    {loadingCases ? (
-                      <div className="text-center py-3">
-                        <div className="spinner-border text-primary" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                      </div>
-                    ) : assignedCases.length > 0 ? (
-                      <div className="table-responsive">
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>Case Title</th>
-                              <th>Client</th>
-                              <th>Case Type</th>
-                              <th>Assigned</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {assignedCases.map(caseItem => (
-                              <tr key={caseItem._id}>
-                                <td>{caseItem.title}</td>
-                                <td>{caseItem.clientId?.name || "Client"}</td>
-                                <td>
-                                  <span className={`badge bg-${getCaseTypeBadge(caseItem.caseType)}`}>
-                                    {caseItem.caseType.charAt(0).toUpperCase() + caseItem.caseType.slice(1)}
-                                  </span>
-                                </td>
-                                <td>{new Date(caseItem.updatedAt).toLocaleDateString()}</td>
-                                <td>
-                                  <Link 
-                                    to={`/lawyer/case/${caseItem._id}`} 
-                                    className="btn btn-sm btn-primary"
-                                  >
-                                    View Details
-                                  </Link>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="mb-0 text-muted">No case assignments yet</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* HERO SECTION */}
           <div className="container-fluid">
@@ -499,15 +732,15 @@ const LawyerDashboard = () => {
                 {/* Horizontal Buttons */}
                 <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                   <div className="col flex-grow-1">
-                    <Link to="/lawyercasemanagement">
+                    <Link to="/lawyer/cases">
                       <button
                         className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
-                        aria-label="Case Details"
+                        aria-label="View All Cases"
                       >
                         <span className="p-3">
-                          <FontAwesomeIcon icon={faFileAlt} size="1x" />
+                          <FontAwesomeIcon icon={faGavel} size="1x" />
                         </span>
-                        Case Hub
+                        My Cases
                       </button>
                     </Link>
                   </div>

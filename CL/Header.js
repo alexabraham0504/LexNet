@@ -10,8 +10,8 @@ const Header = () => {
         {`
           /* HEADER ====================== */
           .banner {
-            background-color: #c2b697;
-            width: '100%', // Full width
+            background-color:rgb(148, 132, 92);
+            width: 100%; /* Full width */
             color: #053661;
             font-size: 0.9rem;
             font-weight: 600;

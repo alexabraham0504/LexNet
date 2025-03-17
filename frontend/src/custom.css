@@ -54,7 +54,7 @@
 
 .mobile-btn .btn:hover {
   background-color: #042b4e;
-  color: #ebe2d6ff;
+  color: rgb(18, 18, 18);
 }
 
 /* INTRO */
@@ -92,7 +92,7 @@
 .services-content {
   position: relative;
   z-index: 1;
-  color: #fff;
+  color: #0c0b0b;
 }
 
 .services-content p {
@@ -111,6 +111,75 @@
 
 .services-section .btn:hover {
   background-color: #2d6da5;
+  color: #fff;
+}
+
+/* HEADER */
+.banner {
+  background-color: #c2b697;
+  width: 100%;
+  color: #053661;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.banner-icon {
+  color: #be7413;
+}
+
+.banner-icon:hover {
+  color: #053661;
+}
+
+.phone-icon {
+  animation: ring 12s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes ring {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  10% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  20% {
+    transform: scale(1) rotate(-10deg);
+  }
+  30% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  40% {
+    transform: scale(1) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  60% {
+    transform: scale(1) rotate(-10deg);
+  }
+  70% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  80% {
+    transform: scale(1) rotate(-10deg);
+  }
+  90% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Banner buttons */
+.banner .btn-outline-light {
+  color: #053661;
+  border-color: #053661;
+}
+
+.banner .btn-outline-light:hover {
+  background-color: #053661;
   color: #fff;
 }
 

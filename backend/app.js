@@ -53,7 +53,7 @@ try {
 
   // Middleware setup - IMPORTANT: These must come before routes
   app.use(cors({
-    origin: "http://localhost:3000", // Or use an array of allowed origins
+    origin: "https://lexnet.onrender.com", // Or use an array of allowed origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']

@@ -113,6 +113,51 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
+      
+      <style>
+        {`
+          .nav {
+            position: relative;
+            z-index: 100;
+            width: 100%;
+            background-color: #02182b;
+          }
+          
+          .nav.scrolled {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.3s ease-in-out;
+          }
+          
+          .nav.hidden {
+            transform: translateY(-100%);
+            transition: transform 0.3s ease-in-out;
+          }
+          
+          @keyframes slideDown {
+            from {
+              transform: translateY(-100%);
+            }
+            to {
+              transform: translateY(0);
+            }
+          }
+          
+          .logo-title {
+            color: white;
+            margin-left: 10px;
+            font-size: 1.5rem;
+          }
+          
+          /* Ensure navbar is below header when not scrolled */
+          body {
+            padding-top: 0 !important;
+          }
+        `}
+      </style>
     </div>
   );
 };
@@ -120,15 +165,9 @@ const Navbar = () => {
 // Styles
 const styles = {
   navbar: {
-    backgroundColor: "transparent",
+    backgroundColor: "#02182b",
     transition: "all 0.3s ease",
   },
 };
-
-// Append CSS styles to the document
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = navbarStyles;
-document.head.appendChild(styleSheet);
 
 export default Navbar;
