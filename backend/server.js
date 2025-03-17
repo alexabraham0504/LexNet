@@ -36,10 +36,10 @@ const reviewsRoutes = require('./routes/reviews');
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
-
+console.log(process.env.uri);
 // Middleware setup
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002','https://lexnet.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -90,7 +90,7 @@ app.get("/", (req, res) => {
 // Set up Socket.io
 const io = socketIO(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002','https://lexnet.onrender.com'],
     methods: ["GET", "POST"],
     credentials: true
   }
