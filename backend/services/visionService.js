@@ -4,12 +4,19 @@ const fs = require('fs');
 
 class VisionService {
   constructor() {
+    this.client = null;
     try {
+      if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        console.warn('GOOGLE_APPLICATION_CREDENTIALS environment variable not set');
+        return;
+      }
+
       const credentialsPath = path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS);
       console.log('Credentials path:', credentialsPath);
       
       if (!fs.existsSync(credentialsPath)) {
-        throw new Error(`Credentials file not found at: ${credentialsPath}`);
+        console.warn(`Credentials file not found at: ${credentialsPath}`);
+        return;
       }
 
       this.client = new vision.ImageAnnotatorClient({
@@ -19,15 +26,16 @@ class VisionService {
 
       console.log('Vision API client initialized successfully');
     } catch (error) {
-      console.error('Vision API initialization error:', error);
-      throw error;
+      console.warn('Vision API initialization error:', error);
+      // Don't throw error, just continue without Vision API
     }
   }
 
   async extractTextFromImage(filePath) {
     try {
       if (!this.client) {
-        throw new Error('Vision API client not initialized');
+        console.warn('Vision API client not initialized - text extraction unavailable');
+        return null;
       }
 
       if (!filePath) {
@@ -49,7 +57,7 @@ class VisionService {
       return result.fullTextAnnotation.text;
     } catch (error) {
       console.error('Text extraction error:', error);
-      return '';
+      return null;
     }
   }
 }
