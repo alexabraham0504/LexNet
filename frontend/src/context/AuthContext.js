@@ -15,10 +15,13 @@ export const AuthProvider = ({ children }) => {
 
       const response = await axios.get("http://localhost:5000/api/auth/check-status", {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`  
         }
       });
       
+      console.log(response.data);
+
+
       if (response.data.status === "suspended") {
         handleSuspension(response.data);
         return false;
