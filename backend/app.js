@@ -11,6 +11,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const lawyerRoutes = require('./routes/lawyerRoutes');
 const lawyerRegistrationRoutes = require('./routes/lawyerRegistrationRoutes');
+const assignmentRoutes = require('./routes/assignments');
 
 
 
@@ -76,7 +77,29 @@ try {
     next();
   });
 
-  // API Routes - Move this BEFORE error handlers
+  // Add this before your routes
+  app.use((req, res, next) => {
+    console.log('Incoming Request:', {
+      method: req.method,
+      path: req.url,
+      body: req.body,
+      headers: req.headers
+    });
+    next();
+  });
+
+  // Add this logging middleware
+  app.use((req, res, next) => {
+    console.log('Request received:', {
+      method: req.method,
+      path: req.url,
+      body: req.body
+    });
+    next();
+  });
+
+  // API Routes
+  app.use('/api/assignments', assignmentRoutes);
   app.use('/api/ipc', ipcRoutes);
   app.use('/api', extractionRoutes);
   app.use('/api', analysisHistoryRoutes);
@@ -84,7 +107,6 @@ try {
   app.use('/cases', casesRouter);
   app.use('/api/lawyers', lawyerRoutes);
   app.use('/api/lawyer-registration', lawyerRegistrationRoutes);
- 
 
   // Add error handling middleware
   app.use((err, req, res, next) => {
@@ -96,7 +118,7 @@ try {
     });
   });
 
-  // 404 handler - This should be LAST
+  // Move the 404 handler to be the last middleware
   app.use((req, res) => {
     console.log(`404 - Not Found: ${req.method} ${req.url}`);
     res.status(404).json({

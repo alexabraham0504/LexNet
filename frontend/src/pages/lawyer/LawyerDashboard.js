@@ -14,7 +14,7 @@ import {
   faPhoneSlash,
   faBell
 } from "@fortawesome/free-solid-svg-icons";
-import axios from "axios";
+import api from '../../config/api.config';
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast";
 import io from "socket.io-client";
@@ -76,8 +76,8 @@ const LawyerDashboard = () => {
         }
 
         // First get lawyer details using email
-        const response = await axios.get(
-          `http://localhost:5000/api/lawyers/user-details/${userEmail}`
+        const response = await api.get(
+          `/api/lawyers/user-details/${userEmail}`
         );
         console.log("API Response:", response.data);
         setLawyerData(response.data);
@@ -155,8 +155,8 @@ const LawyerDashboard = () => {
   // Fetch pending meetings
   const fetchPendingMeetings = async (lawyerId) => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/api/meetings/pending/${lawyerId}`,
+      const response = await api.get(
+        `/api/meetings/pending/${lawyerId}`,
         {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('token')}`
@@ -194,8 +194,8 @@ const LawyerDashboard = () => {
         return; // Don't proceed with accepting the call
       }
 
-      const response = await axios.post(
-        'http://localhost:5000/api/meetings/accept',
+      const response = await api.post(
+        '/api/meetings/accept',
         {
           meetingId,
           lawyerId: lawyerData._id
@@ -255,15 +255,10 @@ const LawyerDashboard = () => {
   // Handle declining a call
   const handleDeclineCall = async (meetingId) => {
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/meetings/decline',
+      const response = await api.post(
+        '/api/meetings/decline',
         {
           meetingId
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-          }
         }
       );
 
@@ -280,31 +275,52 @@ const LawyerDashboard = () => {
 
   const userName = sessionStorage.getItem("name") || "Lawyer";
 
-  useEffect(() => {
-    const fetchAssignedCases = async () => {
-      if (!lawyerData?._id) return;
+  const fetchAssignedCases = async () => {
+    if (!lawyerData?._id) return;
+    
+    try {
+      setLoadingCases(true);
+      console.log('Fetching assigned cases for lawyer:', lawyerData._id);
       
+      // Use the api client instead of axios directly
+      const response = await api.get(
+        `/api/cases/assignments/lawyer/${lawyerData._id}`
+      );
+      
+      console.log('API Response:', response.data);
+      
+      if (response.data.success) {
+        setAssignedCases(response.data.assignments.map(assignment => ({
+          ...assignment.caseId,
+          clientId: assignment.clientId,
+          assignmentId: assignment._id,
+          assignmentStatus: assignment.status,
+          clientNotes: assignment.clientNotes
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching assigned cases:', error);
+      
+      // Fallback to the older endpoint if the new one fails
       try {
-        setLoadingCases(true);
-        const response = await axios.get(
-          `http://localhost:5000/api/cases/assigned/${lawyerData._id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-            }
-          }
+        console.log('Trying fallback endpoint for assigned cases');
+        const fallbackResponse = await api.get(
+          `/api/cases/assigned/${lawyerData._id}`
         );
         
-        if (response.data.success) {
-          setAssignedCases(response.data.cases);
+        if (fallbackResponse.data.success) {
+          setAssignedCases(fallbackResponse.data.cases);
         }
-      } catch (error) {
-        console.error('Error fetching assigned cases:', error);
-      } finally {
-        setLoadingCases(false);
+      } catch (fallbackError) {
+        console.error('Fallback endpoint also failed:', fallbackError);
+        toast.error('Failed to load assigned cases');
       }
-    };
-    
+    } finally {
+      setLoadingCases(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAssignedCases();
   }, [lawyerData]);
 
@@ -421,7 +437,7 @@ const LawyerDashboard = () => {
           )}
 
           {/* Assigned Cases Section */}
-          <div className="container mt-5">
+          {/* <div className="container mt-5">
             <div className="row">
               <div className="col-12">
                 <div className="card shadow-sm">
@@ -446,21 +462,34 @@ const LawyerDashboard = () => {
                               <th>Case Title</th>
                               <th>Client</th>
                               <th>Case Type</th>
+                              <th>Status</th>
                               <th>Assigned</th>
                               <th>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
                             {assignedCases.map(caseItem => (
-                              <tr key={caseItem._id}>
-                                <td>{caseItem.title}</td>
+                              <tr key={caseItem._id || caseItem.assignmentId || Math.random()}>
+                                <td>{caseItem.title || 'Untitled Case'}</td>
                                 <td>{caseItem.clientId?.name || "Client"}</td>
                                 <td>
-                                  <span className={`badge bg-${getCaseTypeBadge(caseItem.caseType)}`}>
-                                    {caseItem.caseType.charAt(0).toUpperCase() + caseItem.caseType.slice(1)}
+                                  <span className={`badge bg-${getCaseTypeBadge(caseItem.caseType || 'general')}`}>
+                                    {(caseItem.caseType || 'General')?.charAt(0).toUpperCase() + (caseItem.caseType || 'General')?.slice(1)}
                                   </span>
                                 </td>
-                                <td>{new Date(caseItem.updatedAt).toLocaleDateString()}</td>
+                                <td>
+                                  <span className={`badge bg-${
+                                    caseItem.assignmentStatus === 'pending' ? 'warning' :
+                                    caseItem.assignmentStatus === 'accepted' ? 'success' :
+                                    caseItem.status === 'active' ? 'success' :
+                                    caseItem.status === 'pending' ? 'warning' :
+                                    'secondary'
+                                  }`}>
+                                    {(caseItem.assignmentStatus || caseItem.status || 'Pending')?.charAt(0).toUpperCase() + 
+                                     (caseItem.assignmentStatus || caseItem.status || 'Pending')?.slice(1)}
+                                  </span>
+                                </td>
+                                <td>{new Date(caseItem.updatedAt || caseItem.createdAt || Date.now()).toLocaleDateString()}</td>
                                 <td>
                                   <Link 
                                     to={`/lawyer/case/${caseItem._id}`} 
@@ -483,7 +512,7 @@ const LawyerDashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* HERO SECTION */}
           <div className="container-fluid">
@@ -499,7 +528,7 @@ const LawyerDashboard = () => {
                 {/* Horizontal Buttons */}
                 <div className="horizontal-btn d-none d-md-flex justify-content-center align-items-end w-100 h-100">
                   <div className="col flex-grow-1">
-                    <Link to="/lawyercasemanagement">
+                    <Link to="/lawyer/casehub">
                       <button
                         className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
                         aria-label="Case Details"

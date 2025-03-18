@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../config/api.config'; // Import the api client
 import { toast } from 'react-toastify';
 import Navbar from '../../components/navbar/navbar-lawyer';
 import Footer from '../../components/footer/footer-lawyer';
@@ -11,7 +11,9 @@ import {
   faClock, 
   faGavel, 
   faInfoCircle,
-  faFileDownload
+  faFileDownload,
+  faEnvelope,
+  faCalendarCheck
 } from '@fortawesome/free-solid-svg-icons';
 
 const LawyerCaseDetails = () => {
@@ -46,18 +48,40 @@ const LawyerCaseDetails = () => {
       try {
         setLoading(true);
         
-        const response = await axios.get(`http://localhost:5000/api/cases/${caseId}`, {
-          headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        // First try to get case from assignments
+        try {
+          const assignmentResponse = await api.get(`/api/cases/assignments/case/${caseId}`);
+          
+          if (assignmentResponse.data.success) {
+            const assignmentData = assignmentResponse.data.assignment;
+            console.log('Assignment data:', assignmentData);
+            
+            setCaseDetails({
+              ...assignmentData.caseId,
+              clientId: {
+                name: assignmentData.clientName,
+                email: assignmentData.clientEmail
+              },
+              assignmentStatus: assignmentData.status,
+              assignmentDate: assignmentData.assignmentDate,
+              clientNotes: assignmentData.clientNotes,
+              assignmentId: assignmentData._id,
+              lawyerId: assignmentData.lawyerId
+            });
+            return;
           }
-        });
-        
-        if (response.data.success) {
-          setCaseDetails(response.data.case);
+        } catch (assignmentError) {
+          console.log('Assignment not found, trying case details endpoint');
+        }
+
+        // Fallback to direct case details
+        const caseResponse = await api.get(`/api/cases/details/${caseId}`);
+        if (caseResponse.data.success) {
+          setCaseDetails(caseResponse.data.case);
         }
       } catch (error) {
         console.error('Error fetching case details:', error);
-        setError('Failed to load case details');
+        setError(error.response?.data?.message || 'Failed to load case details');
         toast.error('Error loading case details');
       } finally {
         setLoading(false);
@@ -66,6 +90,64 @@ const LawyerCaseDetails = () => {
     
     fetchCaseDetails();
   }, [caseId]);
+  
+  // Update the Documents Section with proper download handling
+  const handleDocumentDownload = async (doc) => {
+    try {
+      console.log('Attempting to download document:', doc);
+      
+      // First try the document ID route
+      try {
+        const response = await api.get(`/api/cases/document/${doc._id}`, {
+          responseType: 'blob'
+        });
+        
+        // If successful, process the download
+        const blob = new Blob([response.data], { 
+          type: response.headers['content-type'] || doc.fileType || 'application/octet-stream' 
+        });
+        const url = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', doc.fileName || 'document');
+        document.body.appendChild(link);
+        link.click();
+        
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        
+        toast.success('Document download started');
+        return; // Exit if successful
+      } catch (idError) {
+        console.log('ID-based download failed, trying filename-based download');
+      }
+      
+      // If ID-based download fails, try the filename route
+      const response = await api.get(`/api/cases/file/${doc.fileName}`, {
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] || doc.fileType || 'application/octet-stream' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.fileName || 'document');
+      document.body.appendChild(link);
+      link.click();
+      
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      toast.success('Document download started');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error('Failed to download document. Please try again.');
+    }
+  };
   
   if (loading) {
     return (
@@ -132,7 +214,13 @@ const LawyerCaseDetails = () => {
                       <th>Client</th>
                       <td>
                         <FontAwesomeIcon icon={faUser} className="me-2" />
-                        {caseDetails.clientId?.name || caseDetails.clientId?.email || "Client"}
+                        <strong>{caseDetails.clientId?.name || "N/A"}</strong>
+                        {caseDetails.clientId?.email && (
+                          <div className="text-muted small">
+                            <FontAwesomeIcon icon={faEnvelope} className="me-1" />
+                            {caseDetails.clientId.email}
+                          </div>
+                        )}
                       </td>
                     </tr>
                     <tr>
@@ -159,6 +247,29 @@ const LawyerCaseDetails = () => {
                         </span>
                       </td>
                     </tr>
+                    {caseDetails.assignmentStatus && (
+                      <tr>
+                        <th>Assignment Status</th>
+                        <td>
+                          <span className={`badge bg-${getStatusBadge(caseDetails.assignmentStatus)}`}>
+                            {caseDetails.assignmentStatus.charAt(0).toUpperCase() + 
+                             caseDetails.assignmentStatus.slice(1)}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                    {caseDetails.assignmentDate && (
+                      <tr>
+                        <th>Assigned Date</th>
+                        <td>
+                          <FontAwesomeIcon icon={faCalendarCheck} className="me-2" />
+                          {new Date(caseDetails.assignmentDate).toLocaleDateString()}
+                          <div className="text-muted small">
+                            {new Date(caseDetails.assignmentDate).toLocaleTimeString()}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -195,20 +306,18 @@ const LawyerCaseDetails = () => {
                   </thead>
                   <tbody>
                     {caseDetails.documents.map((doc, index) => (
-                      <tr key={index}>
+                      <tr key={doc._id || index}>
                         <td>{doc.fileName}</td>
                         <td>{doc.fileType}</td>
-                        <td>{doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'N/A'}</td>
+                        <td>{new Date(doc.uploadDate || doc.createdAt).toLocaleDateString()}</td>
                         <td>
-                          <a 
-                            href={`http://localhost:5000/${doc.filePath}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                          <button 
+                            onClick={() => handleDocumentDownload(doc)}
                             className="btn btn-sm btn-primary"
                           >
                             <FontAwesomeIcon icon={faFileDownload} className="me-1" />
                             Download
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}

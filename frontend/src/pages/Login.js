@@ -275,6 +275,7 @@ const Login = () => {
                 {loading ? "Signing in..." : "Login"}
               </button>
 
+              {/* Google Sign-in button commented out
               <button
                 onClick={() => setIsRoleModalOpen(true)}
                 style={styles.googleButton}
@@ -283,6 +284,7 @@ const Login = () => {
               >
                 {loading ? "Signing in with Google..." : "Sign in with Google"}
               </button>
+              */}
 
               <Link to="/forgotpassword" style={styles.forgotPassword}>
                 Lost your password?

@@ -22,7 +22,8 @@ import {
   faStar,
   faBriefcase,
   faMoneyBill,
-  faCheck
+  faCheck,
+  faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../config/api.config';
@@ -40,6 +41,11 @@ const SendCaseDetails = () => {
   const [error, setError] = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Add state for confirmation modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // Add state for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -279,9 +285,11 @@ const SendCaseDetails = () => {
     }
   };
 
+  // Update the form submission handler
   const handleSendCase = async (e) => {
     e.preventDefault();
     
+    // Validate inputs before showing confirmation modal
     if (!selectedCaseId) {
       toast.error('Please select a case');
       return;
@@ -291,32 +299,47 @@ const SendCaseDetails = () => {
       toast.error('Please select a lawyer');
       return;
     }
-    
+
+    // Show confirmation modal only after clicking the send button
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSend = async () => {
     try {
       setSendingCase(true);
       
-      const response = await api.post('/api/cases/send-to-lawyer', {
+      // Get the selected case details
+      const selectedCase = cases.find(c => c._id === selectedCaseId);
+      if (!selectedCase) {
+        throw new Error('Selected case not found');
+      }
+      
+      // Create assignment payload
+      const assignmentData = {
         caseId: selectedCaseId,
         lawyerId: selectedLawyerId,
-        notes: caseNotes
-      }, {
-        headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        clientId: user._id,
+        clientNotes: caseNotes,
+        caseDetails: {
+          title: selectedCase.title,
+          description: selectedCase.description,
+          ipcSection: selectedCase.ipcSection,
+          caseType: selectedCase.caseType || 'general',
+          status: selectedCase.status || 'pending'
         }
-      });
+      };
+      
+      const response = await api.post('/api/cases/send-to-lawyer', assignmentData);
       
       if (response.data.success) {
-        toast.success('Case details sent successfully to the lawyer');
+        // Close confirmation modal and show success modal
+        setShowConfirmModal(false);
+        setShowSuccessModal(true);
         
-        // Reset form
+        // Clear form
         setSelectedCaseId('');
         setSelectedLawyerId('');
         setCaseNotes('');
-        
-        // Optionally navigate to dashboard or another page
-        // navigate('/client/dashboard');
-      } else {
-        toast.error(response.data.message || 'Failed to send case details');
       }
     } catch (error) {
       console.error('Error sending case:', error);
@@ -324,6 +347,13 @@ const SendCaseDetails = () => {
     } finally {
       setSendingCase(false);
     }
+  };
+
+  // Function to handle closing success modal
+  const handleCloseSuccess = () => {
+    setShowSuccessModal(false);
+    // Refresh the cases list
+    fetchUserCases();
   };
 
   // Add this function to get specialization for IPC section
@@ -520,7 +550,7 @@ const SendCaseDetails = () => {
                   <div className="lawyer-fees">
                     <div className="fee-item">
                       <span className="fee-label">Case Fee:</span>
-                      <span className="fee-amount">₹{caseHandlingFee}</span>
+                      <span className="fee-amount">{caseHandlingFee}</span>
                     </div>
                   </div>
                   
@@ -562,7 +592,6 @@ const SendCaseDetails = () => {
       );
     }
 
-    // Filter lawyers based on search term if needed
     const filteredLawyers = searchTerm 
       ? lawyers.filter(lawyer => 
           (lawyer.fullName || lawyer.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -573,7 +602,6 @@ const SendCaseDetails = () => {
     return (
       <div className="lawyer-cards-container">
         {filteredLawyers.map(lawyer => {
-          // Determine the correct profile picture URL
           let profilePicUrl = '/default-lawyer-avatar.png';
           if (lawyer.profilePicture) {
             if (lawyer.profilePicture.startsWith('http')) {
@@ -583,7 +611,6 @@ const SendCaseDetails = () => {
             }
           }
           
-          // Get fee information from various possible properties
           const caseHandlingFee = lawyer.caseHandlingFee || lawyer.caseHandlingFees || '5000';
           
           return (
@@ -621,7 +648,7 @@ const SendCaseDetails = () => {
                 <div className="lawyer-fees">
                   <div className="fee-item">
                     <span className="fee-label">Case Fee:</span>
-                    <span className="fee-amount">₹{caseHandlingFee}</span>
+                    <span className="fee-amount">{caseHandlingFee}</span>
                   </div>
                 </div>
                 
@@ -673,151 +700,193 @@ const SendCaseDetails = () => {
               </div>
             )}
             
-            <div className="content-grid">
-              <div className="form-section">
-                <div className="card">
-                  <div className="card-header">
-                    <h2>
-                      <FontAwesomeIcon icon={faFileAlt} className="icon-space" />
-                      Case Details
-                    </h2>
-                  </div>
-                  <div className="card-body">
-                    <form onSubmit={handleSendCase}>
-                      <div className="form-group">
-                        <label htmlFor="case-select">Select a Case</label>
-                        <select 
-                          id="case-select"
-                          className="form-control"
-                          value={selectedCaseId}
-                          onChange={handleCaseSelect}
-                          required
-                        >
-                          <option value="">-- Select a case --</option>
-                          {cases.length > 0 ? (
-                            cases.map(caseItem => (
-                            <option key={caseItem._id} value={caseItem._id}>
-                              {caseItem.title}
-                            </option>
-                            ))
-                          ) : (
-                            <option value="" disabled>No cases available</option>
-                          )}
-                        </select>
-                        {cases.length === 0 && !loading && (
-                          <div className="no-cases-message mt-2">
-                            <FontAwesomeIcon icon={faExclamationCircle} className="text-warning mr-2" />
-                            You don't have any active cases. <Link to="/client/create-case">Create a case</Link> first.
-                          </div>
+            <div className="form-section">
+              <div className="card">
+                <div className="card-header">
+                  <h2>
+                    <FontAwesomeIcon icon={faFileAlt} className="icon-space" />
+                    Case Details
+                  </h2>
+                </div>
+                <div className="card-body">
+                  <form onSubmit={handleSendCase}>
+                    <div className="form-group">
+                      <label htmlFor="case-select">Select a Case</label>
+                      <select 
+                        id="case-select"
+                        className="form-control"
+                        value={selectedCaseId}
+                        onChange={handleCaseSelect}
+                        required
+                      >
+                        <option value="">-- Select a case --</option>
+                        {cases.length > 0 ? (
+                          cases.map(caseItem => (
+                          <option key={caseItem._id} value={caseItem._id}>
+                            {caseItem.title}
+                          </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>No cases available</option>
                         )}
-                      </div>
-                      
-                      {renderCaseDetails()}
-                      
-                      {renderSpecializedLawyers()}
-                      
-                      <div className="form-group mt-4">
-                        <label htmlFor="lawyer-search">Select a Lawyer</label>
-                        <div className="search-box">
-                          <FontAwesomeIcon icon={faSearch} className="search-icon" />
-                          <input
-                            type="text"
-                            id="lawyer-search"
-                            placeholder="Search lawyers by name or specialization"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="form-control"
-                          />
+                      </select>
+                      {cases.length === 0 && !loading && (
+                        <div className="no-cases-message mt-2">
+                          <FontAwesomeIcon icon={faExclamationCircle} className="text-warning mr-2" />
+                          You don't have any active cases. <Link to="/client/create-case">Create a case</Link> first.
                         </div>
-                        
-                        {renderLawyerCards()}
-                        
-                        {selectedLawyerId && (
-                          <div className="selected-lawyer-info mt-2">
-                            <FontAwesomeIcon icon={faCheck} className="text-success me-2" />
-                            Lawyer selected
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="form-group">
-                        <label htmlFor="case-notes">Additional Notes (Optional)</label>
-                        <textarea
-                          id="case-notes"
+                      )}
+                    </div>
+                    
+                    {renderCaseDetails()}
+                    
+                    {renderSpecializedLawyers()}
+                    
+                    <div className="form-group mt-4">
+                      <label htmlFor="lawyer-search">Select a Lawyer</label>
+                      <div className="search-box">
+                        <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                        <input
+                          type="text"
+                          id="lawyer-search"
+                          placeholder="Search lawyers by name or specialization"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
                           className="form-control"
-                          rows="5"
-                          value={caseNotes}
-                          onChange={(e) => setCaseNotes(e.target.value)}
-                          placeholder="Add any additional information you want to share with the lawyer..."
-                        ></textarea>
+                        />
                       </div>
                       
-                      <div className="form-actions">
-                        <button 
-                          type="submit" 
-                          className="btn btn-primary"
-                          disabled={sendingCase || !selectedCaseId || !selectedLawyerId}
-                        >
-                          {sendingCase ? (
-                            <>
-                              <FontAwesomeIcon icon={faSpinner} spin className="icon-space" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <FontAwesomeIcon icon={faPaperPlane} className="icon-space" />
-                              Send Case Details
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+                      {renderLawyerCards()}
+                      
+                      {selectedLawyerId && (
+                        <div className="selected-lawyer-info mt-2">
+                          <FontAwesomeIcon icon={faCheck} className="text-success me-2" />
+                          Lawyer selected
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="form-group">
+                      <label htmlFor="case-notes">Additional Notes (Optional)</label>
+                      <textarea
+                        id="case-notes"
+                        className="form-control"
+                        rows="5"
+                        value={caseNotes}
+                        onChange={(e) => setCaseNotes(e.target.value)}
+                        placeholder="Add any additional information you want to share with the lawyer..."
+                      ></textarea>
+                    </div>
+                    
+                    <div className="form-actions">
+                      <button 
+                        type="submit" 
+                        className="btn btn-primary"
+                        disabled={sendingCase || !selectedCaseId || !selectedLawyerId}
+                      >
+                        {sendingCase ? (
+                          <>
+                            <FontAwesomeIcon icon={faSpinner} spin className="icon-space" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <FontAwesomeIcon icon={faPaperPlane} className="icon-space" />
+                            Send Case Details
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
-              
-              {/* <div className="info-section"> */}
-                {/* <div className="card">
-                  <div className="card-header">
-                    <h2>
-                      <FontAwesomeIcon icon={faUserTie} className="icon-space" />
-                      Why Share Your Case?
-                    </h2>
-                  </div>
-                  <div className="card-body">
-                    <div className="info-content">
-                      <div className="info-item">
-                        <FontAwesomeIcon icon={faGavel} className="info-icon" />
-                        <div>
-                          <h3>Expert Legal Advice</h3>
-                          <p>Get personalized legal guidance based on your specific case details.</p>
-                        </div>
-                      </div>
-                      
-                      <div className="info-item">
-                        <FontAwesomeIcon icon={faFileAlt} className="info-icon" />
-                        <div>
-                          <h3>Comprehensive Review</h3>
-                          <p>Lawyers can review your documents and provide more accurate assessments.</p>
-                        </div>
-                      </div>
-                      
-                      <div className="info-item">
-                        <FontAwesomeIcon icon={faPaperPlane} className="info-icon" />
-                        <div>
-                          <h3>Faster Communication</h3>
-                          <p>Sharing case details upfront saves time during consultations.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div> */}
-              {/* </div> */}
             </div>
           </div>
           <Footer />
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal show">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Send Case Details</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowConfirmModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to send these case details to the selected lawyer?</p>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={handleConfirmSend}
+                  disabled={sendingCase}
+                >
+                  {sendingCase ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Sending...
+                    </>
+                  ) : (
+                    'Yes, Send'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="modal show">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title">
+                  <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
+                  Success
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white"
+                  onClick={handleCloseSuccess}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="text-center">
+                  <FontAwesomeIcon icon={faCheckCircle} className="text-success mb-3" size="3x" />
+                  <h4>Case Details Sent Successfully!</h4>
+                  <p>The lawyer will be notified about your case.</p>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-success"
+                  onClick={handleCloseSuccess}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

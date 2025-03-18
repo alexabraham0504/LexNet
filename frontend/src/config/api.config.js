@@ -13,29 +13,52 @@ const api = axios.create({
   baseURL: 'http://localhost:5000',
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
-  withCredentials: true // Important for CORS with credentials
+  withCredentials: false // Change this to false if CORS is an issue
 });
 
-// Add request interceptor to include auth token
+// Add request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
+    // Log the outgoing request
+    console.log('Outgoing request:', {
+      method: config.method,
+      url: config.url,
+      data: config.data,
+      headers: config.headers
+    });
+    
     return config;
   },
   (error) => {
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
 
 // Add response interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Response received:', {
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
   (error) => {
+    console.error('Response error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: error.config
+    });
     if (error.response?.status === 403) {
       // Handle CORS errors
       console.error('CORS Error:', error);

@@ -48,6 +48,7 @@ import LawyerAvailability from "./pages/lawyer/LawyerAvailability";
 import Messages from "./pages/lawyer/Messages";
 import IPCSection from "./pages/lawyer/IPCSection";
 import LawyerCaseDetails from "./pages/lawyer/LawyerCaseDetails";
+import CaseHub from './pages/lawyer/CaseHub';
 
 function App() {
   return (
@@ -135,6 +136,7 @@ function App() {
               <LawyerCaseDetails />
             </ProtectedRoute>
           } />
+          <Route path="/lawyer/casehub" element={<CaseHub />} />
         </Routes>
       </Router>
     </AuthProvider>
