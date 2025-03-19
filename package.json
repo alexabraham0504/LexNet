@@ -15,7 +15,8 @@
     "react-places-autocomplete": "^7.3.0",
     "react-spring": "^9.7.4",
     "react-toastify": "^10.0.6",
-    "styled-components": "^6.1.14"
+    "styled-components": "^6.1.14",
+    "tesseract.js": "^6.0.0"
   },
   "name": "lexnet",
   "version": "1.0.0",

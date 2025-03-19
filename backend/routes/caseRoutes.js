@@ -28,6 +28,7 @@ const os = require('os');
 const fsPromises = require('fs').promises;
 const mongoose = require('mongoose');
 const Assignment = require('../models/assignmentModel');
+const { createWorker } = require('tesseract.js');
 
 // Initialize Gemini with API key and version
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -74,59 +75,119 @@ const validateLegalContent = (text) => {
 
 // Helper function to extract text from images
 async function extractTextFromImage(buffer) {
+  let worker = null;
   try {
-    const worker = await Tesseract.createWorker();
+    // Check if buffer is defined and valid
+    if (!buffer) {
+      throw new Error('No image buffer provided for text extraction');
+    }
+
+    // Create worker without logger
+    worker = await createWorker();
+    
+    // Initialize worker
     await worker.loadLanguage('eng');
     await worker.initialize('eng');
     
-    const { data: { text } } = await worker.recognize(buffer);
+    // Convert buffer to Uint8Array if needed (with proper checking)
+    const imageBuffer = buffer instanceof Uint8Array ? 
+      buffer : 
+      Buffer.isBuffer(buffer) ? 
+        buffer : 
+        Buffer.from(buffer);
     
-    await worker.terminate();
-    return text;
+    // Recognize text
+    const { data } = await worker.recognize(imageBuffer);
+    return data.text;
   } catch (error) {
     console.error('Error extracting text from image:', error);
     throw new Error(`Image text extraction failed: ${error.message}`);
+  } finally {
+    if (worker) {
+      await worker.terminate();
+    }
   }
 }
 
 // Helper function to extract text from documents
 const extractTextFromDocument = async (file) => {
   try {
+    if (!file) {
+      throw new Error('No file provided for text extraction');
+    }
+
     let extractedText = '';
     
     if (file.mimetype === 'application/pdf') {
       // Handle PDF files
-      const pdfData = await pdf(file.buffer);
-      extractedText = pdfData.text;
-      
-      console.log('\nExtracted text from PDF:');
-      console.log('----------------------------------------');
-      console.log(extractedText.substring(0, 200) + '...');
-      console.log('----------------------------------------');
+      if (file.buffer) {
+        // If we have a buffer (memory storage)
+        const pdfData = await pdf(file.buffer);
+        extractedText = pdfData.text;
+      } else if (file.path) {
+        // If we have a file path (disk storage)
+        const pdfBuffer = fs.readFileSync(file.path);
+        const pdfData = await pdf(pdfBuffer);
+        extractedText = pdfData.text;
+      } else {
+        throw new Error('PDF file has neither buffer nor path');
+      }
     } 
     else if (file.mimetype.includes('text') || file.mimetype.includes('document')) {
       // Handle text and doc files
-      extractedText = await new Promise((resolve, reject) => {
-        textract.fromBufferWithMime(
-          file.mimetype,
-          file.buffer,
-          { preserveLineBreaks: true },
-          (error, text) => {
-            if (error) reject(error);
-            else resolve(text);
-          }
-        );
-      });
+      if (file.buffer) {
+        // If we have a buffer (memory storage)
+        extractedText = await new Promise((resolve, reject) => {
+          textract.fromBufferWithMime(
+            file.mimetype,
+            file.buffer,
+            { preserveLineBreaks: true },
+            (error, text) => {
+              if (error) reject(error);
+              else resolve(text);
+            }
+          );
+        });
+      } else if (file.path) {
+        // If we have a file path (disk storage)
+        extractedText = await new Promise((resolve, reject) => {
+          textract.fromFileWithPath(
+            file.path,
+            { preserveLineBreaks: true },
+            (error, text) => {
+              if (error) reject(error);
+              else resolve(text);
+            }
+          );
+        });
+      } else {
+        throw new Error('Document file has neither buffer nor path');
+      }
     }
     else if (file.mimetype.includes('image')) {
       try {
-        // Use Tesseract directly with the buffer
-        extractedText = await extractTextFromImage(file.buffer);
+        // Use Tesseract for image processing
+        if (file.buffer) {
+          // If we have a buffer (memory storage)
+          extractedText = await extractTextFromImage(file.buffer);
+        } else if (file.path) {
+          // If we have a file path (disk storage)
+          extractedText = await performOCR(file.path);
+        } else {
+          throw new Error('Image file has neither buffer nor path');
+        }
         
-        // Fallback to Google Vision API if Tesseract fails or returns no text
+        // If Tesseract fails or returns no text, try Google Vision API
         if (!extractedText || extractedText.trim().length === 0) {
           console.log('Tesseract extraction failed, trying Google Vision API...');
-          const base64Image = file.buffer.toString('base64');
+          
+          let base64Image;
+          if (file.buffer) {
+            base64Image = file.buffer.toString('base64');
+          } else if (file.path) {
+            const imageBuffer = fs.readFileSync(file.path);
+            base64Image = imageBuffer.toString('base64');
+          }
           
           const response = await axios.post(
             `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_CLOUD_API_KEY}`,
@@ -3892,6 +3953,36 @@ router.get('/file/:filename', async (req, res) => {
       message: 'Error downloading file',
       error: error.message
     });
+  }
+});
+
+// When performing OCR, use this pattern:
+const performOCR = async (imagePath) => {
+  let worker = null;
+  try {
+    worker = await createWorker();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    
+    const { data } = await worker.recognize(imagePath);
+    return data.text;
+  } catch (error) {
+    console.error('OCR Error:', error);
+    throw error;
+  } finally {
+    if (worker) {
+      await worker.terminate();
+    }
+  }
+};
+
+// Use it in your route handler
+router.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    const text = await performOCR(req.file.path);
+    res.json({ text });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
