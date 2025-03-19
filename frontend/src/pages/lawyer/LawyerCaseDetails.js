@@ -13,7 +13,8 @@ import {
   faInfoCircle,
   faFileDownload,
   faEnvelope,
-  faCalendarCheck
+  faCalendarCheck,
+  faSearch
 } from '@fortawesome/free-solid-svg-icons';
 
 const LawyerCaseDetails = () => {
@@ -146,6 +147,23 @@ const LawyerCaseDetails = () => {
     } catch (error) {
       console.error('Error downloading document:', error);
       toast.error('Failed to download document. Please try again.');
+    }
+  };
+  
+  const handleScanDocument = (doc) => {
+    try {
+      // Navigate to the scan page with document information
+      navigate('/lawyer/scan-document', { 
+        state: { 
+          documentId: doc._id,
+          documentName: doc.fileName,
+          caseId: caseId,
+          caseTitle: caseDetails.title
+        } 
+      });
+    } catch (error) {
+      console.error('Error navigating to scan page:', error);
+      toast.error('Failed to open document scanner. Please try again.');
     }
   };
   
@@ -311,13 +329,22 @@ const LawyerCaseDetails = () => {
                         <td>{doc.fileType}</td>
                         <td>{new Date(doc.uploadDate || doc.createdAt).toLocaleDateString()}</td>
                         <td>
-                          <button 
-                            onClick={() => handleDocumentDownload(doc)}
-                            className="btn btn-sm btn-primary"
-                          >
-                            <FontAwesomeIcon icon={faFileDownload} className="me-1" />
-                            Download
-                          </button>
+                          <div className="btn-group">
+                            <button 
+                              onClick={() => handleDocumentDownload(doc)}
+                              className="btn btn-sm btn-primary"
+                            >
+                              <FontAwesomeIcon icon={faFileDownload} className="me-1" />
+                              Download
+                            </button>
+                            <button 
+                              onClick={() => handleScanDocument(doc)}
+                              className="btn btn-sm btn-info ms-1"
+                            >
+                              <FontAwesomeIcon icon={faSearch} className="me-1" />
+                              Scan Now
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

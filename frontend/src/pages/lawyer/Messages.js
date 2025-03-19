@@ -36,12 +36,13 @@ const Messages = () => {
           }
         );
 
-        // Ensure participants are properly populated
+        // Add null checks and default values when mapping participants
         const chatsWithPopulatedData = response.data.map(chat => ({
           ...chat,
-          participants: chat.participants.map(p => 
-            typeof p === 'object' ? p : { _id: p, fullName: 'Loading...' }
-          )
+          participants: chat.participants.map(p => {
+            if (!p) return { _id: 'unknown', fullName: 'Unknown User' };
+            return typeof p === 'object' ? p : { _id: p, fullName: 'Loading...' };
+          })
         }));
 
         console.log("Fetched chats with populated data:", chatsWithPopulatedData);
@@ -130,13 +131,14 @@ const Messages = () => {
 
   const handleChatSelect = async (chat) => {
     console.log("Selected chat:", chat);
-    const otherParticipant = chat.participants.find(p => p._id !== user._id);
+    // Add null check when finding other participant
+    const otherParticipant = chat.participants?.find(p => p?._id !== user?._id) || { _id: 'unknown', fullName: 'Unknown User' };
     
     setSelectedChat({
       ...chat,
-      participants: chat.participants,
-      receiverId: otherParticipant?._id,
-      receiverName: otherParticipant?.fullName
+      participants: chat.participants || [],
+      receiverId: otherParticipant._id,
+      receiverName: otherParticipant.fullName
     });
 
     if (chat.unreadCount > 0) {
@@ -192,9 +194,10 @@ const Messages = () => {
             <div className="no-messages">No messages yet</div>
           ) : (
             activeChats.map((chat) => {
-              const otherParticipant = chat.participants.find(
-                (p) => p._id !== user._id
-              );
+              // Add null check when finding other participant
+              const otherParticipant = chat.participants?.find(
+                (p) => p?._id !== user?._id
+              ) || { _id: 'unknown', fullName: 'Unknown User' };
               
               return (
                 <div
@@ -230,13 +233,8 @@ const Messages = () => {
           {selectedChat ? (
             <Chat
               chatRoomId={selectedChat.chatRoomId}
-              receiverId={
-                selectedChat.participants.find((p) => p._id !== user._id)?._id
-              }
-              receiverName={
-                selectedChat.participants.find((p) => p._id !== user._id)
-                  ?.fullName
-              }
+              receiverId={selectedChat.participants?.find((p) => p?._id !== user?._id)?._id || 'unknown'}
+              receiverName={selectedChat.participants?.find((p) => p?._id !== user?._id)?.fullName || 'Unknown User'}
             />
           ) : (
             <div className="no-chat-selected">

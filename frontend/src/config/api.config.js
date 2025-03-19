@@ -16,7 +16,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  withCredentials: false // Change this to false if CORS is an issue
+  withCredentials: true // Set to true for CORS with credentials
 });
 
 // Add request interceptor to add auth token

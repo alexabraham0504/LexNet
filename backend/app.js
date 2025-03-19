@@ -12,6 +12,7 @@ const socketIo = require('socket.io');
 const lawyerRoutes = require('./routes/lawyerRoutes');
 const lawyerRegistrationRoutes = require('./routes/lawyerRegistrationRoutes');
 const assignmentRoutes = require('./routes/assignments');
+const documentRoutes = require('./routes/documentRoutes');
 
 
 
@@ -54,7 +55,13 @@ try {
 
   // Middleware setup - IMPORTANT: These must come before routes
   app.use(cors({
-    origin: "http://localhost:3000", // Or use an array of allowed origins
+    origin: [
+      'http://localhost:3000', 
+      'http://localhost:3001', 
+      'http://localhost:3002',
+      'https://3956-136-232-57-110.ngrok-free.app',
+      /\.ngrok-free\.app$/  // This will allow any ngrok-free.app subdomain
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -107,6 +114,7 @@ try {
   app.use('/cases', casesRouter);
   app.use('/api/lawyers', lawyerRoutes);
   app.use('/api/lawyer-registration', lawyerRegistrationRoutes);
+  app.use('/api/documents', documentRoutes);
 
   // Add error handling middleware
   app.use((err, req, res, next) => {
@@ -134,6 +142,30 @@ try {
     console.log(`Server running on port ${PORT}`);
     console.log('Google Cloud Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
     console.log('Credentials path:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  });
+
+  // Set up Socket.io with CORS
+  const io = socketIo(server, {
+    cors: {
+      origin: [
+        'http://localhost:3000', 
+        'http://localhost:3001', 
+        'http://localhost:3002',
+        'https://3956-136-232-57-110.ngrok-free.app',
+        /\.ngrok-free\.app$/  // This will allow any ngrok-free.app subdomain
+      ],
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  });
+
+  // Socket.io connection handling
+  io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    
+    socket.on('disconnect', () => {
+      console.log('Client disconnected:', socket.id);
+    });
   });
 
   module.exports = app;

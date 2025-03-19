@@ -49,6 +49,8 @@ import Messages from "./pages/lawyer/Messages";
 import IPCSection from "./pages/lawyer/IPCSection";
 import LawyerCaseDetails from "./pages/lawyer/LawyerCaseDetails";
 import CaseHub from './pages/lawyer/CaseHub';
+import Meetings from './pages/lawyer/Meetings';
+import ScanDocument from './pages/lawyer/ScanDocument';
 
 function App() {
   return (
@@ -137,6 +139,16 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/lawyer/casehub" element={<CaseHub />} />
+          <Route path="/lawyer/meetings" element={
+            <ProtectedRoute>
+              <Meetings />
+            </ProtectedRoute>
+          } />
+          <Route path="/lawyer/scan-document" element={
+            <ProtectedRoute allowedRoles={['lawyer']}>
+              <ScanDocument />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

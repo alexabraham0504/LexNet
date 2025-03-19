@@ -12,7 +12,9 @@ import {
   faCalendarAlt,
   faVideo,
   faPhoneSlash,
-  faBell
+  faBell,
+  faHandshake,
+  faSearch
 } from "@fortawesome/free-solid-svg-icons";
 import api from '../../config/api.config';
 import { useAuth } from "../../context/AuthContext";
@@ -554,6 +556,19 @@ const LawyerDashboard = () => {
                     </Link>
                   </div>
                   <div className="col flex-grow-1">
+                    <Link to="/lawyer/meetings">
+                      <button
+                        className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                        aria-label="Meetings"
+                      >
+                        <span className="p-3">
+                          <FontAwesomeIcon icon={faHandshake} size="1x" />
+                        </span>
+                        Meetings
+                      </button>
+                    </Link>
+                  </div>
+                  <div className="col flex-grow-1">
                     <Link to="/message">
                       <button
                         className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
@@ -576,6 +591,19 @@ const LawyerDashboard = () => {
                           <FontAwesomeIcon icon={faGavel} size="1x" />
                         </span>
                         IPC Sections
+                      </button>
+                    </Link>
+                  </div>
+                  <div className="col flex-grow-1">
+                    <Link to="/lawyer/scan-document">
+                      <button
+                        className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                        aria-label="Document Scanner"
+                      >
+                        <span className="p-3">
+                          <FontAwesomeIcon icon={faSearch} size="1x" />
+                        </span>
+                        Document Scanner
                       </button>
                     </Link>
                   </div>

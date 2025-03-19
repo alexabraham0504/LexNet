@@ -20,7 +20,8 @@ module.exports = function override(config, env) {
       "os": require.resolve("os-browserify/browser"),
       "net": false,
       "tls": false,
-      "child_process": false
+      "child_process": false,
+      "dns": false
     },
     alias: {
       'process/browser': require.resolve('process/browser')
