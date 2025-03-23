@@ -13,6 +13,8 @@ const lawyerRoutes = require('./routes/lawyerRoutes');
 const lawyerRegistrationRoutes = require('./routes/lawyerRegistrationRoutes');
 const assignmentRoutes = require('./routes/assignments');
 const documentRoutes = require('./routes/documentRoutes');
+const documentScanRoutes = require('./routes/documentScanRoutes');
+const ocrRoutes = require('./routes/ocrRoutes');
 
 
 
@@ -59,7 +61,7 @@ try {
       'http://localhost:3000', 
       'http://localhost:3001', 
       'http://localhost:3002',
-      'https://3956-136-232-57-110.ngrok-free.app',
+      'https://11e4-2409-40f3-101d-37e1-c892-8a12-4941-72b1.ngrok-free.app/',
       /\.ngrok-free\.app$/  // This will allow any ngrok-free.app subdomain
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -115,6 +117,8 @@ try {
   app.use('/api/lawyers', lawyerRoutes);
   app.use('/api/lawyer-registration', lawyerRegistrationRoutes);
   app.use('/api/documents', documentRoutes);
+  app.use('/api/document-scans', documentScanRoutes);
+  app.use('/api/ocr', ocrRoutes);
 
   // Add error handling middleware
   app.use((err, req, res, next) => {
@@ -151,7 +155,7 @@ try {
         'http://localhost:3000', 
         'http://localhost:3001', 
         'http://localhost:3002',
-        'https://3956-136-232-57-110.ngrok-free.app',
+        'https://11e4-2409-40f3-101d-37e1-c892-8a12-4941-72b1.ngrok-free.app/',
         /\.ngrok-free\.app$/  // This will allow any ngrok-free.app subdomain
       ],
       methods: ["GET", "POST"],

@@ -55,24 +55,6 @@ const documentScanSchema = new mongoose.Schema({
   notes: String
 }, { timestamps: true });
 
-// Add methods for quick analysis
-documentScanSchema.methods.getRiskLevel = function() {
-  const score = this.scanResult.forgeryScore;
-  if (score <= 10) return 'Safe';
-  if (score <= 30) return 'Suspicious';
-  if (score <= 60) return 'High Risk';
-  return 'Critical';
-};
-
-documentScanSchema.methods.getColorCode = function() {
-  const score = this.scanResult.forgeryScore;
-  if (score <= 10) return 'success';
-  if (score <= 30) return 'warning';
-  if (score <= 60) return 'orange';
-  return 'danger';
-};
-
-// Create model
 const DocumentScan = mongoose.model('DocumentScan', documentScanSchema);
 
 module.exports = DocumentScan; 

@@ -30,6 +30,7 @@ const translationRoutes = require('./routes/translationRoutes');
 const meetingsRoutes = require('./routes/api/meetings');
 const paymentRoutes = require('./routes/payments');
 const reviewsRoutes = require('./routes/reviews');
+const documentScanRoutes = require('./routes/documentScanRoutes');
 
 // Initialize Express app
 const app = express();
@@ -80,6 +81,7 @@ app.use('/api/translation', translationRoutes);
 app.use('/api/meetings', meetingsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/document-scans', documentScanRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -89,7 +91,7 @@ app.get("/", (req, res) => {
 // Set up Socket.io
 const io = socketIO(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002','https://11e4-2409-40f3-101d-37e1-c892-8a12-4941-72b1.ngrok-free.app/'],
     methods: ["GET", "POST"],
     credentials: true
   }

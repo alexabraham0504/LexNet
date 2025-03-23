@@ -14,7 +14,8 @@ import {
   faPhoneSlash,
   faBell,
   faHandshake,
-  faSearch
+  faSearch,
+  faHistory
 } from "@fortawesome/free-solid-svg-icons";
 import api from '../../config/api.config';
 import { useAuth } from "../../context/AuthContext";
@@ -604,6 +605,19 @@ const LawyerDashboard = () => {
                           <FontAwesomeIcon icon={faSearch} size="1x" />
                         </span>
                         Document Scanner
+                      </button>
+                    </Link>
+                  </div>
+                  <div className="col flex-grow-1">
+                    <Link to="/lawyer/document-history">
+                      <button
+                        className="btn btn-lg btn-outline-dark type-button p-4 w-100 fw-bold"
+                        aria-label="Document History"
+                      >
+                        <span className="p-3">
+                          <FontAwesomeIcon icon={faHistory} size="1x" />
+                        </span>
+                        Document History
                       </button>
                     </Link>
                   </div>

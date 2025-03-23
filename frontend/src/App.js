@@ -51,6 +51,8 @@ import LawyerCaseDetails from "./pages/lawyer/LawyerCaseDetails";
 import CaseHub from './pages/lawyer/CaseHub';
 import Meetings from './pages/lawyer/Meetings';
 import ScanDocument from './pages/lawyer/ScanDocument';
+import DocumentHistory from './pages/lawyer/DocumentHistory';
+import ScanDetail from './pages/lawyer/ScanDetail';
 
 function App() {
   return (
@@ -149,6 +151,22 @@ function App() {
               <ScanDocument />
             </ProtectedRoute>
           } />
+          <Route 
+            path="/lawyer/document-history" 
+            element={
+              <ProtectedRoute allowedRoles={['lawyer']}>
+                <DocumentHistory />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/lawyer/scan-detail/:id" 
+            element={
+              <ProtectedRoute allowedRoles={['lawyer']}>
+                <ScanDetail />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </Router>
     </AuthProvider>

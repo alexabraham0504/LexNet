@@ -63,7 +63,7 @@
     "react-toastify": "^10.0.6",
     "socket.io": "^4.8.1",
     "styled-components": "^6.1.13",
-    "tesseract.js": "^4.1.1",
+    "tesseract.js": "^4.1.4",
     "textract": "^2.5.0",
     "web-token": "^1.1.4"
   },
