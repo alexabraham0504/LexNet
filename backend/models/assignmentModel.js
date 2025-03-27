@@ -56,6 +56,20 @@ const assignmentSchema = new Schema({
   lastUpdated: {
     type: Date,
     default: Date.now
+  },
+  payment: {
+    paymentId: String,
+    paymentRecordId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment'
+    },
+    amount: Number,
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'failed', 'refunded'],
+      default: 'pending'
+    },
+    paidAt: Date
   }
 }, { 
   timestamps: true,

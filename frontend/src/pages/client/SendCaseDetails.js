@@ -46,6 +46,10 @@ const SendCaseDetails = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   // Add state for success modal
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // Add state for payment
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [selectedLawyer, setSelectedLawyer] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -56,6 +60,19 @@ const SendCaseDetails = () => {
     fetchUserCases();
     fetchLawyers();
   }, [user, navigate]);
+
+  useEffect(() => {
+    // Load Razorpay script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    
+    return () => {
+      // Clean up - remove script when component unmounts
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const fetchUserCases = async () => {
     try {
@@ -304,48 +321,254 @@ const SendCaseDetails = () => {
     setShowConfirmModal(true);
   };
 
+  // Update the handleConfirmSend function to handle payment first
   const handleConfirmSend = async () => {
+    try {
+      // Find the selected lawyer
+      const lawyer = lawyers.find(l => l._id === selectedLawyerId);
+      
+      if (!lawyer) {
+        toast.error('Selected lawyer not found');
+        return;
+      }
+      
+      setSelectedLawyer(lawyer);
+      
+      // Determine the payment amount
+      const amount = lawyer.caseHandlingFee || lawyer.caseHandlingFees || 5000;
+      setPaymentAmount(amount);
+      
+      // Close confirmation modal 
+      setShowConfirmModal(false);
+      
+      // Initialize payment
+      initializePayment(amount, lawyer);
+    } catch (error) {
+      console.error('Error preparing payment:', error);
+      toast.error('Failed to prepare payment. Please try again.');
+      setShowConfirmModal(false);
+    }
+  };
+
+  // Function to initialize Razorpay payment with better error handling
+  const initializePayment = (amount, lawyer) => {
+    setProcessingPayment(true);
+    
+    // Clean amount string if needed
+    let amountValue = amount;
+    if (typeof amount === 'string') {
+      amountValue = parseFloat(amount.replace(/[^0-9.-]+/g, ""));
+    }
+    if (isNaN(amountValue) || amountValue <= 0) {
+      amountValue = 5000; // Default to 5000 if invalid
+    }
+    
+    const options = {
+      key: "rzp_test_bD1Alu6Su7sKSO",
+      amount: Math.round(amountValue * 100), // Amount in paise
+      currency: "INR",
+      name: "Lex Net Legal Services",
+      description: `Case Handling Fee for Lawyer Consultation`,
+      image: "/logo.png",
+      handler: function (response) {
+        console.log('Razorpay payment successful:', response);
+        toast.success('Payment successful! Processing your case...');
+        processCaseAfterPaymentSimplified(response, amountValue, lawyer);
+      },
+      prefill: {
+        name: user?.fullName || user?.name || "",
+        email: user?.email || "",
+        contact: user?.phone || ""
+      },
+      notes: {
+        caseId: selectedCaseId,
+        lawyerId: selectedLawyerId,
+        clientId: user?._id,
+        service: "case_handling"
+      },
+      theme: {
+        color: "#1a237e"
+      },
+      modal: {
+        ondismiss: function() {
+          console.log('Payment modal dismissed');
+          setProcessingPayment(false);
+          toast.info("Payment cancelled");
+        }
+      }
+    };
+    
+    try {
+      console.log('Opening Razorpay with options:', options);
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      
+      // Handle any payment failures
+      razorpay.on('payment.failed', function(failureResponse) {
+        console.error('Payment failed:', failureResponse.error);
+        toast.error(`Payment failed: ${failureResponse.error.description}`);
+        setProcessingPayment(false);
+      });
+    } catch (error) {
+      console.error("Error opening Razorpay:", error);
+      toast.error("Failed to open payment gateway. Please try again.");
+      setProcessingPayment(false);
+    }
+  };
+
+  // Improved function that handles payment storage reliably
+  const processCaseAfterPaymentSimplified = async (paymentResponse, amount, lawyer) => {
     try {
       setSendingCase(true);
       
-      // Get the selected case details
+      // Get the selected case
       const selectedCase = cases.find(c => c._id === selectedCaseId);
       if (!selectedCase) {
         throw new Error('Selected case not found');
       }
       
-      // Create assignment payload
-      const assignmentData = {
-        caseId: selectedCaseId,
-        lawyerId: selectedLawyerId,
-        clientId: user._id,
-        clientNotes: caseNotes,
-        caseDetails: {
-          title: selectedCase.title,
-          description: selectedCase.description,
-          ipcSection: selectedCase.ipcSection,
-          caseType: selectedCase.caseType || 'general',
-          status: selectedCase.status || 'pending'
-        }
-      };
+      console.log('Processing payment for case:', selectedCase.title);
+      console.log('Payment response:', paymentResponse);
       
-      const response = await api.post('/api/cases/send-to-lawyer', assignmentData);
-      
-      if (response.data.success) {
-        // Close confirmation modal and show success modal
-        setShowConfirmModal(false);
-        setShowSuccessModal(true);
+      // First, create a payment record in the Payment model
+      try {
+        const paymentData = {
+          appointmentId: selectedCaseId,
+          appointmentModel: 'Case',
+          lawyerId: selectedLawyerId,
+          clientId: user._id,
+          orderId: paymentResponse.razorpay_order_id || `order_${Date.now()}`,
+          paymentId: paymentResponse.razorpay_payment_id,
+          amount: amount,
+          currency: "INR",
+          status: 'captured',
+          paymentMethod: 'razorpay',
+          description: `Case handling fee for ${selectedCase.title}`,
+          feeType: 'caseHandling',
+          paidAt: new Date()
+        };
         
-        // Clear form
-        setSelectedCaseId('');
-        setSelectedLawyerId('');
-        setCaseNotes('');
+        console.log('Creating payment record with data:', paymentData);
+        
+        // Use axios directly to avoid any API configuration issues
+        const paymentResult = await axios.post(
+          'http://localhost:5000/api/payments/store',
+          paymentData,
+          {
+            headers: {
+              'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        console.log('Payment record created:', paymentResult.data);
+        
+        if (paymentResult.data.success) {
+          // Now create the assignment with the payment ID reference
+          const assignmentData = {
+            caseId: selectedCaseId,
+            lawyerId: selectedLawyerId,
+            clientId: user._id,
+            clientNotes: caseNotes,
+            caseDetails: {
+              title: selectedCase.title,
+              description: selectedCase.description,
+              ipcSection: selectedCase.ipcSection,
+              caseType: selectedCase.caseType || 'general',
+              status: 'pending'
+            },
+            payment: {
+              paymentId: paymentResponse.razorpay_payment_id,
+              paymentRecordId: paymentResult.data.payment._id,
+              amount: amount,
+              status: 'completed',
+              paidAt: new Date()
+            }
+          };
+          
+          console.log('Creating assignment with payment reference:', assignmentData);
+          
+          // Send case to lawyer
+          const response = await axios.post(
+            'http://localhost:5000/api/cases/send-to-lawyer',
+            assignmentData,
+            {
+              headers: {
+                'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          console.log('Assignment created:', response.data);
+          
+          if (response.data.success) {
+            setShowSuccessModal(true);
+            setSelectedCaseId('');
+            setSelectedLawyerId('');
+            setCaseNotes('');
+          } else {
+            throw new Error(response.data.message || 'Failed to assign case to lawyer');
+          }
+        } else {
+          throw new Error(paymentResult.data.message || 'Failed to store payment information');
+        }
+      } catch (error) {
+        console.error('Error storing payment or creating assignment:', error);
+        
+        // Fallback: if payment storage fails, still try to create the assignment
+        const assignmentData = {
+          caseId: selectedCaseId,
+          lawyerId: selectedLawyerId,
+          clientId: user._id,
+          clientNotes: caseNotes,
+          caseDetails: {
+            title: selectedCase.title,
+            description: selectedCase.description,
+            ipcSection: selectedCase.ipcSection,
+            caseType: selectedCase.caseType || 'general',
+            status: 'pending'
+          },
+          payment: {
+            paymentId: paymentResponse.razorpay_payment_id,
+            amount: amount,
+            status: 'completed',
+            paidAt: new Date()
+          }
+        };
+        
+        console.log('Fallback: Creating assignment without payment reference:', assignmentData);
+        
+        // Send case to lawyer without payment reference
+        const response = await axios.post(
+          'http://localhost:5000/api/cases/send-to-lawyer',
+          assignmentData,
+          {
+            headers: {
+              'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        console.log('Fallback assignment created:', response.data);
+        
+        if (response.data.success) {
+          setShowSuccessModal(true);
+          setSelectedCaseId('');
+          setSelectedLawyerId('');
+          setCaseNotes('');
+        } else {
+          throw new Error(response.data.message || 'Failed to assign case to lawyer');
+        }
       }
     } catch (error) {
-      console.error('Error sending case:', error);
-      toast.error(error.response?.data?.message || 'Failed to send case details');
+      console.error('Error processing case after payment:', error);
+      toast.error(error.message || 'Failed to process case after payment');
     } finally {
       setSendingCase(false);
+      setProcessingPayment(false);
     }
   };
 
@@ -581,7 +804,7 @@ const SendCaseDetails = () => {
     );
   };
 
-  // Update the renderLawyerCards function to remove consultation fees
+  // Update the renderLawyerCards function to prevent the modal from showing
   const renderLawyerCards = () => {
     if (lawyers.length === 0) {
       return (
@@ -617,7 +840,10 @@ const SendCaseDetails = () => {
             <div 
               key={lawyer._id} 
               className={`lawyer-card ${selectedLawyerId === lawyer._id ? 'selected' : ''}`}
-              onClick={() => setSelectedLawyerId(lawyer._id)}
+              onClick={(e) => {
+                e.preventDefault();
+                setSelectedLawyerId(lawyer._id);
+              }}
             >
               <div className="lawyer-card-header">
                 <div className="lawyer-avatar">
@@ -662,11 +888,24 @@ const SendCaseDetails = () => {
               
               <div className="lawyer-card-footer">
                 {selectedLawyerId === lawyer._id ? (
-                  <button className="btn btn-success">
+                  <button 
+                    className="btn btn-success"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation(); // Prevent parent div's onClick from firing
+                    }}
+                  >
                     <FontAwesomeIcon icon={faCheck} className="me-2" /> Selected
                   </button>
                 ) : (
-                  <button className="btn btn-primary">
+                  <button 
+                    className="btn btn-primary"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation(); // Prevent parent div's onClick from firing
+                      setSelectedLawyerId(lawyer._id);
+                    }}
+                  >
                     Select
                   </button>
                 )}
@@ -821,6 +1060,11 @@ const SendCaseDetails = () => {
               </div>
               <div className="modal-body">
                 <p>Are you sure you want to send these case details to the selected lawyer?</p>
+                <p>You will be charged a case handling fee of ₹{
+                  lawyers.find(l => l._id === selectedLawyerId)?.caseHandlingFee?.replace(/[₹]/g, '') || 
+                  lawyers.find(l => l._id === selectedLawyerId)?.caseHandlingFees?.replace(/[₹]/g, '') || 
+                  '5000'
+                }</p>
               </div>
               <div className="modal-footer">
                 <button 
@@ -834,15 +1078,15 @@ const SendCaseDetails = () => {
                   type="button" 
                   className="btn btn-primary" 
                   onClick={handleConfirmSend}
-                  disabled={sendingCase}
+                  disabled={sendingCase || processingPayment}
                 >
-                  {sendingCase ? (
+                  {sendingCase || processingPayment ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Sending...
+                      Processing...
                     </>
                   ) : (
-                    'Yes, Send'
+                    'Yes, Proceed to Payment'
                   )}
                 </button>
               </div>
@@ -851,7 +1095,7 @@ const SendCaseDetails = () => {
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Success Modal - Updated with payment receipt information */}
       {showSuccessModal && (
         <div className="modal show">
           <div className="modal-dialog">
@@ -872,6 +1116,30 @@ const SendCaseDetails = () => {
                   <FontAwesomeIcon icon={faCheckCircle} className="text-success mb-3" size="3x" />
                   <h4>Case Details Sent Successfully!</h4>
                   <p>The lawyer will be notified about your case.</p>
+                  
+                  <div className="payment-receipt mt-4 mb-2">
+                    <h5>Payment Receipt</h5>
+                    <table className="table table-bordered">
+                      <tbody>
+                        <tr>
+                          <th>Service</th>
+                          <td>Case Handling Fee</td>
+                        </tr>
+                        <tr>
+                          <th>Lawyer</th>
+                          <td>{selectedLawyer?.fullName || selectedLawyer?.fullname || 'Selected Lawyer'}</td>
+                        </tr>
+                        <tr>
+                          <th>Amount Paid</th>
+                          <td>₹{String(paymentAmount).replace(/[₹]/g, '')}</td>
+                        </tr>
+                        <tr>
+                          <th>Status</th>
+                          <td><span className="text-success">Paid</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">

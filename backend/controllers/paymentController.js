@@ -5,6 +5,7 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const Meeting = require('../models/Meeting');
+const Assignment = require('../models/assignmentModel');
 
 // Initialize Razorpay with proper environment variables
 const razorpay = new Razorpay({
@@ -708,6 +709,85 @@ exports.getVideoCallPaymentStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error checking payment status",
+      error: error.message
+    });
+  }
+};
+
+exports.storePayment = async (req, res) => {
+  try {
+    console.log('Payment store request received:', req.body);
+    
+    const {
+      appointmentId,
+      appointmentModel,
+      lawyerId,
+      clientId,
+      orderId,
+      paymentId,
+      amount,
+      currency,
+      status,
+      paymentMethod,
+      description,
+      feeType,
+      razorpayResponse,
+      paidAt
+    } = req.body;
+
+    // Validate required fields
+    if (!appointmentId || !lawyerId || !clientId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required payment information"
+      });
+    }
+
+    // Check if a payment with this Razorpay ID already exists
+    if (paymentId) {
+      const existingPayment = await Payment.findOne({ paymentId });
+      if (existingPayment) {
+        console.log('Payment already exists with ID:', existingPayment._id);
+        return res.status(200).json({
+          success: true,
+          message: "Payment already recorded",
+          payment: existingPayment
+        });
+      }
+    }
+
+    // Create new payment record
+    const newPayment = new Payment({
+      appointmentId,
+      appointmentModel: appointmentModel || 'Case',
+      lawyerId,
+      clientId,
+      orderId: orderId || `order_${Date.now()}`,
+      paymentId,
+      amount,
+      currency: currency || "INR",
+      status: status || "captured",
+      paymentMethod: paymentMethod || "razorpay",
+      description,
+      feeType: feeType || "caseHandling",
+      razorpayResponse,
+      paidAt: paidAt || new Date()
+    });
+
+    // Save payment to database
+    const savedPayment = await newPayment.save();
+    console.log('Payment saved successfully:', savedPayment._id);
+
+    return res.status(201).json({
+      success: true,
+      message: "Payment recorded successfully",
+      payment: savedPayment
+    });
+  } catch (error) {
+    console.error("Error storing payment:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to store payment information",
       error: error.message
     });
   }

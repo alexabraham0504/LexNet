@@ -29,6 +29,7 @@ const fsPromises = require('fs').promises;
 const mongoose = require('mongoose');
 const Assignment = require('../models/assignmentModel');
 const { createWorker } = require('tesseract.js');
+const Payment = require('../models/Payment');
 
 // Initialize Gemini with API key and version
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -3261,12 +3262,17 @@ function getContentType(filename) {
 // Add this route to your caseRoutes.js file
 router.post('/send-to-lawyer', isAuthenticated, async (req, res) => {
   try {
-    const { caseId, lawyerId, clientId, clientNotes, caseDetails } = req.body;
+    const { caseId, lawyerId, clientId, clientNotes, caseDetails, payment } = req.body;
     
-    console.log('Creating new assignment:', {
-      caseId, lawyerId, clientId, clientNotes
+    console.log('Creating new assignment with payment:', {
+      caseId, lawyerId, clientId, 
+      payment: payment ? { 
+        paymentId: payment.paymentId,
+        amount: payment.amount 
+      } : 'No payment info'
     });
     
+    // Create the assignment with payment information if provided
     const newAssignment = new Assignment({
       caseId,
       lawyerId,
@@ -3274,18 +3280,21 @@ router.post('/send-to-lawyer', isAuthenticated, async (req, res) => {
       clientNotes,
       caseDetails,
       status: 'pending',
-      assignmentDate: new Date(), // Explicitly set assignment date
+      assignmentDate: new Date(),
       documentCount: caseDetails?.documents?.length || 0,
-      fileNames: caseDetails?.documents?.map(doc => doc.fileName) || []
+      fileNames: caseDetails?.documents?.map(doc => doc.fileName) || [],
+      // Include payment information if provided
+      payment: payment ? {
+        paymentId: payment.paymentId,
+        paymentRecordId: payment.paymentRecordId,
+        amount: payment.amount,
+        status: payment.status || 'completed',
+        paidAt: payment.paidAt || new Date()
+      } : undefined
     });
     
     await newAssignment.save();
-    
-    // Populate the client and case details before sending response
-    await newAssignment.populate([
-      { path: 'clientId', select: 'name email' },
-      { path: 'caseId', select: 'title caseType' }
-    ]);
+    console.log('Assignment saved successfully with ID:', newAssignment._id);
     
     res.status(201).json({
       success: true,

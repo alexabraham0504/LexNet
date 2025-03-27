@@ -33,6 +33,7 @@
     "@zoom/meetingsdk": "^3.11.2",
     "@zoomus/websdk": "^2.18.3",
     "axios": "^1.8.1",
+    "bad-words": "^4.0.0",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.7",
     "cheerio": "^1.0.0",

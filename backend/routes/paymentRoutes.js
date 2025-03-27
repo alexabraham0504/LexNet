@@ -1,33 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
-const { isAuthenticated } = require('../middleware/auth');
 
-// Create a payment order
+// Add all payment routes here
 router.post('/create-order', paymentController.createOrder);
-
-// Verify payment
 router.post('/verify', paymentController.verifyPayment);
-
-// Get payment status
 router.get('/status/:appointmentId', paymentController.getPaymentStatus);
-
-// Get all payments for a lawyer
-router.get('/lawyer/:lawyerId', isAuthenticated, paymentController.getLawyerPayments);
-
-// Get payment statistics for a lawyer
-router.get('/lawyer/:lawyerId/stats', isAuthenticated, paymentController.getLawyerPaymentStats);
-
-// Get receipt details
+router.get('/lawyer/:lawyerId', paymentController.getLawyerPayments);
+router.get('/stats/:lawyerId', paymentController.getLawyerPaymentStats);
 router.get('/receipt/:paymentId', paymentController.getReceiptDetails);
-
-// Get all receipts for a client
-router.get('/receipts/client/:clientEmail', paymentController.getClientReceipts);
-
-// Add these new routes
+router.get('/client/:clientEmail', paymentController.getClientReceipts);
 router.post('/create-video-call-order', paymentController.createVideoCallOrder);
 router.post('/verify-video-call', paymentController.verifyVideoCallPayment);
-router.get('/status/video-call/:roomId', paymentController.getVideoCallPaymentStatus);
+router.get('/video-call-status/:roomId', paymentController.getVideoCallPaymentStatus);
 
 // Add the store payment route
 router.post('/store', paymentController.storePayment);

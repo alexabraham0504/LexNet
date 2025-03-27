@@ -193,6 +193,8 @@ const startServer = async () => {
     });
     console.log("MongoDB connected successfully.");
 
+    console.log("Available Mongoose models:", Object.keys(mongoose.models));
+
     server.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
       updateAnalytics().then(analytics => {

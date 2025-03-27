@@ -400,14 +400,13 @@ const FindLawyers = () => {
       return;
     }
     
-    if (userCases.length === 0) {
-      toast.error('You need to create a case first');
-      navigate('/case-details/' + user._id);
-      return;
-    }
-    
-    setSelectedLawyerForCase(lawyer);
-    setShowCaseSelectionModal(true);
+    // Navigate to SendCaseDetails page with the lawyer ID
+    navigate('/client/send-case-details', {
+      state: {
+        selectedLawyerId: lawyer._id,
+        lawyerName: lawyer.fullName
+      }
+    });
   };
 
   const handleSendCaseToLawyer = async () => {

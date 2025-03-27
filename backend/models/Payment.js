@@ -3,8 +3,14 @@ const mongoose = require("mongoose");
 const paymentSchema = new mongoose.Schema({
   appointmentId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Appointment",
     required: true,
+    refPath: 'appointmentModel'
+  },
+  appointmentModel: {
+    type: String,
+    required: true,
+    enum: ['Appointment', 'Case', 'Meeting'],
+    default: 'Appointment'
   },
   lawyerId: {
     type: mongoose.Schema.Types.ObjectId,

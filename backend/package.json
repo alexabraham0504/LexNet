@@ -22,6 +22,7 @@
     "@zoomus/websdk": "^2.18.3",
     "aws-sdk": "^2.1691.0",
     "axios": "^1.8.1",
+    "bad-words": "^4.0.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "bert-tokenizer": "^1.1.2",
